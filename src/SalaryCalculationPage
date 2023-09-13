@@ -1,0 +1,69 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
+
+function SalaryCalculation() {
+  const { month, year } = useParams();
+  const [validEmployees, setValidEmployees] = useState([]);
+  const [salaryResults, setSalaryResults] = useState([]);
+
+  useEffect(() => {
+    fetchValidEmployees();
+  }, []);
+
+  const fetchValidEmployees = async () => {
+    try {
+      const response = await axios.post('http://localhost:3001/api/valid-employees', { month, year });
+      setValidEmployees(response.data.employees);
+    } catch (error) {
+      console.error('Error fetching valid employees:', error);
+    }
+  };
+
+  const calculateSalary = async (employeeId) => {
+    try {
+      const response = await axios.post('http://localhost:3001/api/calculate-salary', { employeeId, month, year });
+      setSalaryResults((prevResults) => [...prevResults, response.data]);
+    } catch (error) {
+      console.error('Error calculating salary:', error);
+    }
+  };
+
+  return (
+    <div>
+      <h2>Salary Calculation</h2>
+      <p>Selected Month: {month}</p>
+      <p>Selected Year: {year}</p>
+
+      <h3>Valid Employees:</h3>
+      {validEmployees.length === 0 ? (
+        <p>No valid employees found for the selected period.</p>
+      ) : (
+        <ul>
+          {validEmployees.map((employee) => (
+            <li key={employee.id} onClick={() => calculateSalary(employee.id)}>
+              {employee.name} {employee.surname}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3>Salary Calculation Results:</h3>
+      {salaryResults.length === 0 ? (
+        <p>No salary calculation results available.</p>
+      ) : (
+        <ul>
+          {salaryResults.map((result, index) => (
+            <li key={index}>
+              <strong>Employee ID:</strong> {result.employeeId}<br />
+              <strong>Employee Name:</strong> {result.employeeName}<br />
+              <strong>Salary:</strong> {result.salaryAmount}<br />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export default SalaryCalculation;
