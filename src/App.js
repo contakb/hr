@@ -13,6 +13,7 @@ import SalarySelectionPage from './SalarySelectionPage';
 import SalaryListPage from './SalaryListPage';
 import NavigationPage from './NavigationPage';
 import ReportsPage from './ReportsPage';
+import SettingsPage from './SettingsPage';
 
 
 
@@ -36,6 +37,8 @@ function App() {
 		  <Route path="/salary-selection" element={<SalarySelectionPage />} />
 		  <Route path="/salary-list" element={<SalaryListPage />} />
 		  <Route path="/Reports" element={<ReportsPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
+
 		  
         </Routes>
       </Router>
