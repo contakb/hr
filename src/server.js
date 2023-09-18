@@ -737,41 +737,43 @@ app.post('/register', (req, res) => {
 
 
 
-app.get('/account/:username', (req, res) => {
-  const { username } = req.params;
-
-  pool.query('SELECT email, username FROM public.users WHERE username = $1', [username], (error, result) => {
-    if (error) {
-      console.error('Error executing query:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Account not found' });
-    }
-
-    const accountDetails = result.rows[0];
-    return res.json(accountDetails);
+  app.get('/account/:username', (req, res) => {
+    const { username } = req.params;
+  
+    pool.query('SELECT email, username, userid FROM public.users WHERE username = $1', [username], (error, result) => {
+      if (error) {
+        console.error('Error executing query:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+  
+      const accountDetails = result.rows[0];
+      return res.json(accountDetails);
+    });
   });
-});
-
-app.get('/account/:userid', (req, res) => {
-  const { username } = req.params;
-
-  pool.query('SELECT userid FROM public.users WHERE userid = $1', [userid], (error, result) => {
-    if (error) {
-      console.error('Error executing query:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Account not found' });
-    }
-
-    const accountDetails = result.rows[0];
-    return res.json(accountDetails);
+  
+  app.get('/accountById/:userid', (req, res) => { // Change the route URL here
+    const { userid } = req.params;
+  
+    pool.query('SELECT userid FROM public.users WHERE userid = $1', [userid], (error, result) => {
+      if (error) {
+        console.error('Error executing query:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+  
+      const accountDetails = result.rows[0];
+      return res.json(accountDetails);
+    });
   });
-});
+  
+
 
 
 app.post('/check-registration', (req, res) => {

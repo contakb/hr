@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom';
 import CreateCompanyForm from './CreateCompanyForm';
 
 function AccountDetails() {
-  const { username } = useParams();
+  const { username, userid } = useParams();
   const [accountDetails, setAccountDetails] = useState(null);
+  const [fetchedUserId, setFetchedUserId] = useState(null); // New state for userid
 
   useEffect(() => {
     // Fetch the account details using the username parameter
@@ -21,6 +22,7 @@ function AccountDetails() {
         <div>
           <p>Email: {accountDetails.email}</p>
           <p>Username: {accountDetails.username}</p>
+          <p>Userid: {accountDetails.userid}</p>
         </div>
       ) : (
         <p>Loading account details...</p>

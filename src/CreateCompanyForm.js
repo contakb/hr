@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import AccountDetails from './AccountDetails';
 
 function CreateCompanyForm() {
   const [companyname, setCompanyname] = useState('');
@@ -8,14 +9,16 @@ function CreateCompanyForm() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [userid, setUserid] = useState('');
+  const [username, setUsername] = useState('');
+  
 
   useEffect(() => {
     // Fetch the userid from the server and set it in the state
     axios
-      .get('http://localhost:3001/userid', { withCredentials: true })
-      .then((response) => {
-        const userid = response.data.userid;
-        setUserid(userid);
+    .get(`http://localhost:3001/accountById/${userid}`, { withCredentials: true }) // Replace :userid with the actual userid
+    .then((response) => {
+      const userid = response.data.userid;
+      setUsername(userid);
       })
       .catch((error) => {
         console.error('Error fetching userid:', error);
