@@ -23,7 +23,10 @@ function SettingsPage() {
     // formData now contains all the entered details
     console.log(formData); // Replace with your API call
   };
-  return (
+// SettingsPage.js
+// ... (previous code)
+
+return (
     <div>
       <h1>Company Settings</h1>
       <form onSubmit={handleSubmit}>
@@ -48,20 +51,33 @@ function SettingsPage() {
           </select>
         </label>
         <label>
+          Tax ID:
+          <input
+            type="text"
+            name="taxId"
+            value={formData.taxId}
+            onChange={handleChange}
+          />
+        </label>
+        {formData.formaPrawna === "osobaFizyczna" && (
+          <>
+            <label>
+              PESEL Number:
+              <input
+                type="text"
+                name="pesel"
+                value={formData.pesel}
+                onChange={handleChange}
+              />
+            </label>
+          </>
+        )}
+        <label>
           Address:
           <input
             type="text"
             name="address"
             value={formData.address}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Tax ID Number:
-          <input
-            type="text"
-            name="taxId"
-            value={formData.taxId}
             onChange={handleChange}
           />
         </label>
@@ -88,6 +104,9 @@ function SettingsPage() {
       </form>
     </div>
   );
+  
+  
+  
 }  
 
 export default SettingsPage;
