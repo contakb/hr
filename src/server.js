@@ -529,7 +529,7 @@ app.get('/loginUser', (req, res) => {
 
   // Query the PostgreSQL database to check the user's credentials and fetch the associated companyid
   const query = `
-    SELECT u. email, u.userid, u.username, c.companyid, c.companyname
+    SELECT u.email, u.userid, u.username, c.companyid, c.companyname
     FROM public.users u
     LEFT JOIN public.user_companies uc ON u.userid = uc.userid
     LEFT JOIN public.companies c ON uc.companyid = c.companyid
@@ -590,8 +590,7 @@ app.get('/loginUser', (req, res) => {
         req.session.userid = userid;
         req.session.companyname = companyname;
         req.session.email = email;
-        req.session.storedUsername = storedUsername;
-
+        req.session.username = storedUsername; // Change to `username`
 
         console.log('Session data before saving:', req.session); // Log the session data before saving
 
@@ -608,9 +607,10 @@ app.get('/loginUser', (req, res) => {
           // Use the AuthenticatedUserID obtained from the database
           // For session-based authentication
           // or
-          // const token = jwt.sign({ userid: AuthenticatedUserID, companyid, companyname }, 'secretKey'); // For token-based authentication
+          // const token = jwt.sign({ userid, companyid, companyname }, 'secretKey'); // For token-based authentication
 
           res.json({ message: 'Logged in successfully', username: storedUsername, userid, companyid, companyname, email });
+
         });
       });
     } else {
@@ -621,6 +621,7 @@ app.get('/loginUser', (req, res) => {
   });
 });
 
+
 app.get('/userid', (req, res) => {
   if (req.session && req.session.userid) {
     const userid = req.session.userid;
@@ -630,26 +631,25 @@ app.get('/userid', (req, res) => {
   }
 });
 
-const isAuthenticated = (req, res, next) => {
-  if (req.session && req.session.userid) {
-    // User is authenticated, proceed to the next middleware or route handler
-    next();
-  } else {
-    // User is not authenticated, send an error response
-    res.status(401).json({ error: 'Unauthorized' });
+function isAuthenticated(req, res, next) {
+  if (!req.session.userid) {
+    return res.status(401).json({ error: 'Unauthorized: User not authenticated' });
   }
-};
+  // Continue with the next middleware if the user is authenticated
+  next();
+}
+
 
 app.get('/account/:username', isAuthenticated, (req, res) => {
   const { username } = req.params;
-  
+
   // Ensure that the user making the request is the same as the requested user
   if (req.session.storedUsername !== username) {
     return res.status(403).json({ error: 'Access forbidden' });
   }
 
   pool.query(
-    'SELECT email, username FROM public.users WHERE username = $1',
+    'SELECT username, email FROM public.users WHERE username = $1',
     [username],
     (error, result) => {
       if (error) {
@@ -663,19 +663,19 @@ app.get('/account/:username', isAuthenticated, (req, res) => {
 
       const accountDetails = result.rows[0];
 
-      // Include session data in the response
-      const sessionData = {
-        userid: req.session.userid,
-        companyid: req.session.companyid,
-        companyname: req.session.companyname,
-        email: req.session.email,
-        storedUsername: req.session.storedUsername,
-      };
-
-      return res.json({ accountDetails, sessionData });
+      // Now, you can use this information to render your account details page
+      res.render('account-details', {
+        username: accountDetails.username, // Include username
+        email: accountDetails.email, // Include email
+        userid: req.session.userid, // Include userid from the session
+        companyid: req.session.companyid, // Include companyid from the session
+        companyname: req.session.companyname, // Include companyname from the session
+      });
     }
   );
 });
+
+
 
 
 

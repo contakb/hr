@@ -10,8 +10,12 @@ function AccountDetails() {
 
   useEffect(() => {
     if (userData) {
+      // Debugging: Log the userData object
+      console.log('userData:', userData);
       // Fetch the account details using the username from userData
-      fetch(`http://localhost:3001/account/${userData.username}`)
+      fetch(`http://localhost:3001/account/${userData.storedUsername}`, {
+        credentials: 'include', // Include cookies with the request
+      })
         .then(response => response.json())
         .then(data => {
           console.log('Response data:', data);
@@ -24,13 +28,14 @@ function AccountDetails() {
     }
   }, [userData]);
 
+
   return (
     <div>
       <h1>Account Details</h1>
       {accountDetails && sessionData ? (
         <div>
           <p>Email: {accountDetails.email}</p>
-          <p>Username: {sessionData.storedUsername}</p>
+          <p>Username: {accountDetails.username}</p>
           <p>Userid: {sessionData.userid}</p>
         </div>
       ) : (

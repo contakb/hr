@@ -27,8 +27,10 @@ function LoginUser() {
         console.log('Server Response:', response);
   
         // Redirect to account details page with user data
-        const userData = response.data;
-        navigate(`/account/${userData.username}`, { state: userData });
+        // In LoginUser.js after successful login
+const userData = response.data;
+navigate(`/account/${userData.storedUsername}`, { state: userData });
+
       })
       .catch((error) => {
         // Handle login error
