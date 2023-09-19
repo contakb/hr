@@ -529,7 +529,7 @@ app.get('/loginUser', (req, res) => {
 
   // Query the PostgreSQL database to check the user's credentials and fetch the associated companyid
   const query = `
-    SELECT u.userid, u.username, c.companyid, c.companyname
+    SELECT u. email, u.userid, u.username, c.companyid, c.companyname
     FROM public.users u
     LEFT JOIN public.user_companies uc ON u.userid = uc.userid
     LEFT JOIN public.companies c ON uc.companyid = c.companyid
@@ -555,7 +555,6 @@ app.get('/loginUser', (req, res) => {
     const companyid = user.companyid;
     const companyname = user.companyname;
     const email = user.email;
-    const username = user.username;
 
     console.log('Retrieved username, companyid, and companyname:', storedUsername, companyid, companyname);
     console.log('Input username or email:', usernameOrEmail);
@@ -591,7 +590,7 @@ app.get('/loginUser', (req, res) => {
         req.session.userid = userid;
         req.session.companyname = companyname;
         req.session.email = email;
-        req.session.username = username;
+        req.session.storedUsername = storedUsername;
 
 
         console.log('Session data before saving:', req.session); // Log the session data before saving
@@ -603,7 +602,8 @@ app.get('/loginUser', (req, res) => {
             return;
           }
 
-          console.log('Session data after saving:', req.session); // Log the session data after saving
+          console.log('Session data after saving:', req.session);
+          console.log('Session data after login:', req.session); // Log the session data after saving
 
           // Use the AuthenticatedUserID obtained from the database
           // For session-based authentication
@@ -639,6 +639,43 @@ const isAuthenticated = (req, res, next) => {
     res.status(401).json({ error: 'Unauthorized' });
   }
 };
+
+app.get('/account/:username', isAuthenticated, (req, res) => {
+  const { username } = req.params;
+  
+  // Ensure that the user making the request is the same as the requested user
+  if (req.session.storedUsername !== username) {
+    return res.status(403).json({ error: 'Access forbidden' });
+  }
+
+  pool.query(
+    'SELECT email, username FROM public.users WHERE username = $1',
+    [username],
+    (error, result) => {
+      if (error) {
+        console.error('Error executing query:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+
+      const accountDetails = result.rows[0];
+
+      // Include session data in the response
+      const sessionData = {
+        userid: req.session.userid,
+        companyid: req.session.companyid,
+        companyname: req.session.companyname,
+        email: req.session.email,
+        storedUsername: req.session.storedUsername,
+      };
+
+      return res.json({ accountDetails, sessionData });
+    }
+  );
+});
 
 
 
@@ -744,23 +781,10 @@ app.post('/register', (req, res) => {
 
 
 
-  app.get('/account/:username',isAuthenticated, (req, res) => {
-    const { username } = req.params;
+
   
-    pool.query('SELECT email, username FROM public.users WHERE username = $1', [username], (error, result) => {
-      if (error) {
-        console.error('Error executing query:', error);
-        return res.status(500).json({ error: 'Internal server error' });
-      }
   
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Account not found' });
-      }
   
-      const accountDetails = result.rows[0];
-      return res.json(accountDetails);
-    });
-  });
   app.use((req, res, next) => {
     console.log('Session Data:', req.session);
     console.log('User ID set in session:', req.session.userid);
