@@ -13,7 +13,7 @@ function LoginUser() {
 
   const handleLogin = (event) => {
     event.preventDefault();
-
+  
     // Perform login request to the server
     axios
       .get('http://localhost:3001/loginUser', {
@@ -22,10 +22,13 @@ function LoginUser() {
       .then((response) => {
         // Handle successful login
         console.log('Logged in successfully:', response.data);
-
-        // Redirect to account details page
-        const username = response.data.username;
-        navigate(`/account/${username}`);
+  
+        // Log the entire response received from the server
+        console.log('Server Response:', response);
+  
+        // Redirect to account details page with user data
+        const userData = response.data;
+        navigate(`/account/${userData.username}`, { state: userData });
       })
       .catch((error) => {
         // Handle login error
@@ -33,6 +36,7 @@ function LoginUser() {
         setErrorMessage('Invalid username or email');
       });
   };
+  
 
   const handleIdentifierChange = (event) => {
     setIdentifier(event.target.value);

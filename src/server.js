@@ -554,6 +554,8 @@ app.get('/loginUser', (req, res) => {
     const storedUsername = user.username;
     const companyid = user.companyid;
     const companyname = user.companyname;
+    const email = user.email;
+    const username = user.username;
 
     console.log('Retrieved username, companyid, and companyname:', storedUsername, companyid, companyname);
     console.log('Input username or email:', usernameOrEmail);
@@ -582,12 +584,15 @@ app.get('/loginUser', (req, res) => {
           return;
         }
 
-        const AuthenticatedUserID = useridResult.rows[0].userid;
+        const userid = useridResult.rows[0].userid;
 
         // Set the `companyid` and `companyname` in the user's session
         req.session.companyid = companyid;
-        req.session.userid = AuthenticatedUserID;
+        req.session.userid = userid;
         req.session.companyname = companyname;
+        req.session.email = email;
+        req.session.username = username;
+
 
         console.log('Session data before saving:', req.session); // Log the session data before saving
 
@@ -605,7 +610,7 @@ app.get('/loginUser', (req, res) => {
           // or
           // const token = jwt.sign({ userid: AuthenticatedUserID, companyid, companyname }, 'secretKey'); // For token-based authentication
 
-          res.json({ message: 'Logged in successfully', username: storedUsername, AuthenticatedUserID, companyid, companyname });
+          res.json({ message: 'Logged in successfully', username: storedUsername, userid, companyid, companyname, email });
         });
       });
     } else {
@@ -634,6 +639,8 @@ const isAuthenticated = (req, res, next) => {
     res.status(401).json({ error: 'Unauthorized' });
   }
 };
+
+
 
 app.post('/company', isAuthenticated, (req, res) => {
   const { companyname, address, taxid } = req.body;
@@ -737,10 +744,10 @@ app.post('/register', (req, res) => {
 
 
 
-  app.get('/account/:username', (req, res) => {
+  app.get('/account/:username',isAuthenticated, (req, res) => {
     const { username } = req.params;
   
-    pool.query('SELECT email, username, userid FROM public.users WHERE username = $1', [username], (error, result) => {
+    pool.query('SELECT email, username FROM public.users WHERE username = $1', [username], (error, result) => {
       if (error) {
         console.error('Error executing query:', error);
         return res.status(500).json({ error: 'Internal server error' });
@@ -754,8 +761,15 @@ app.post('/register', (req, res) => {
       return res.json(accountDetails);
     });
   });
+  app.use((req, res, next) => {
+    console.log('Session Data:', req.session);
+    console.log('User ID set in session:', req.session.userid);
+   
+
+    next();
+  })
   
-  app.get('/accountById/:userid', (req, res) => { // Change the route URL here
+  app.get('/accountById/:userid', isAuthenticated, (req, res) => {
     const { userid } = req.params;
   
     pool.query('SELECT userid FROM public.users WHERE userid = $1', [userid], (error, result) => {
@@ -769,9 +783,12 @@ app.post('/register', (req, res) => {
       }
   
       const accountDetails = result.rows[0];
+      console.log('Received userid from the database:', accountDetails.userid); // Log the retrieved userid
       return res.json(accountDetails);
     });
   });
+  
+  
   
 
 

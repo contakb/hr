@@ -40,6 +40,7 @@ function App() {
 		  <Route path="/Reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/accountById/:userid" element={<AccountDetails/>} />
+       
 
 		  
         </Routes>

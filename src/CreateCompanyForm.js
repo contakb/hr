@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 import AccountDetails from './AccountDetails';
 
 function CreateCompanyForm() {
@@ -10,23 +11,33 @@ function CreateCompanyForm() {
   const [successMessage, setSuccessMessage] = useState('');
   const [userid, setUserid] = useState('');
   const [username, setUsername] = useState('');
+  const [fetchedUserId, setUserId] = useState('');
+  const [accountDetails, setAccountDetails] = useState(null);
+  const location = useLocation();
+  const userData = location.state; // Get user data from the route state
+  const [AuthenticatedUserID, setAuthenticatedUserID] = useState('');
+
   
 
+  
   useEffect(() => {
     // Fetch the userid from the server and set it in the state
     axios
-    .get(`http://localhost:3001/accountById/${userid}`, { withCredentials: true }) // Replace :userid with the actual userid
-    .then((response) => {
-      const userid = response.data.userid;
-      setUsername(userid);
+      .get(`http://localhost:3001/accountById/${userid}`, { withCredentials: true })
+      .then((response) => {
+        const fetchedUserId = response.data.userid;
+        setUserId(fetchedUserId);
       })
       .catch((error) => {
         console.error('Error fetching userid:', error);
       });
-  }, []);
+  }, [userid]);
+
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    console.log(userid)
 
     // Perform create company request to the server
     axios
