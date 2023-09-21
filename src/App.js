@@ -14,7 +14,7 @@ import SalaryListPage from './SalaryListPage';
 import NavigationPage from './NavigationPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
-
+import EmployeeContract from './EmployeeContract';
 
 
 
@@ -40,6 +40,8 @@ function App() {
 		  <Route path="/Reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/accountById/:userid" element={<AccountDetails/>} />
+      <Route path="/EmployeeContract" element={<EmployeeContract />} />
+
        
 
 		  
