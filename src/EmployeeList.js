@@ -14,6 +14,7 @@ function Employee({ employee }) {
   const [contracts, setContracts] = useState([]);
   const [generateContractVisible, setGenerateContractVisible] = useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
+  const [showPDF, setShowPDF] = useState(false); // Add this line
   const navigate = useNavigate();
 
   const handleAddContract = () => {
@@ -71,35 +72,36 @@ function Employee({ employee }) {
   
 
   const generatePDF = () => {
-    console.log('Generate PDF function called');
-    console.log('Generating PDF...');
-  
     const contractContent = document.getElementById('contract-content');
-    console.log('contractContent:', contractContent); // Add this line
-
-  
     if (contractContent) {
       html2canvas(contractContent)
         .then((canvas) => {
-          console.log('HTML content captured successfully.');
           const imgData = canvas.toDataURL('image/png');
-          console.log('Image data obtained:', imgData);
-  
-          // Create a new instance of jsPDF
           const pdf = new jsPDF();
-  
-          // Add the image to the PDF
           pdf.addImage(imgData, 'PNG', 10, 10, 190, 260);
-  
-          // Save the PDF
           pdf.save('employment_contract.pdf');
+          setShowPDF(true); // Show the PDF content
         })
         .catch((error) => {
           console.error('Error generating PDF:', error);
         });
     }
   };
-  
+
+  useEffect(() => {
+    // Register the click event for the button after component mount
+    const pdfButton = document.getElementById('pdf-button');
+    if (pdfButton) {
+      pdfButton.addEventListener('click', generatePDF);
+    }
+
+    // Cleanup: remove the event listener when the component unmounts
+    return () => {
+      if (pdfButton) {
+        pdfButton.removeEventListener('click', generatePDF);
+      }
+    };
+  }, []); // Empty dependency array to run this effect once after component
 
   return (
     <div>
@@ -138,13 +140,21 @@ function Employee({ employee }) {
         </div>
       )}
 
-      {generateContractVisible && (
+{generateContractVisible && (
         <div>
           <h3>Generated Contract:</h3>
           {console.log('employeeData:', employee)} {/* Add this line */}
           <EmployeeContract employeeData={employee} contract={selectedContract} />
-          <button onClick={generatePDF}>Download PDF</button>
-          <button onClick={toggleGenerateContract}>Hide Contract</button> {/* Add this button */}
+          {showPDF ? (
+            <div>
+              <button onClick={() => setShowPDF(false)}>Close PDF</button>
+            </div>
+          ) : (
+            <div>
+              <button id="pdf-button">Download PDF</button>
+              <button onClick={toggleGenerateContract}>Hide Contract</button> {/* Add this button */}
+            </div>
+          )}
         </div>
       )}
     </div>
