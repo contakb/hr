@@ -15,6 +15,7 @@
     "dotenv": "^16.3.1",
     "express-session": "^1.17.3",
     "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.10.1",
     "jspdf": "^2.5.1",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",

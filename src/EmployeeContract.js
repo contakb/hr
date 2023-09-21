@@ -4,6 +4,8 @@ const EmployeeContract = ({ employeeData, contract }) => {
   // Replace placeholders with actual data from the employeeData object
   const { name, surname } = employeeData;
   const { contract_from_date } = contract;
+
+  
   
 
   return (

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import EmployeeContract from './EmployeeContract';
+import html2pdf from 'html2pdf.js';
 
 // Employee component
 function Employee({ employee }) {
@@ -23,6 +24,10 @@ function Employee({ employee }) {
     setShowDetails(!showDetails);
   };
 
+  const toggleGenerateContract = () => {
+    setGenerateContractVisible(!generateContractVisible);
+  };  
+
   const toggleContracts = async () => {
     if (!contractsVisible) {
       try {
@@ -40,8 +45,23 @@ function Employee({ employee }) {
   const handleGenerateContract = async () => {
     try {
       const contractResponse = await axios.get(`http://localhost:3001/api/contracts/${id}`);
-      setSelectedContract(contractResponse.data.contracts[0]); // Assuming your contract data is available here
-      setGenerateContractVisible(true); // Show the contract template
+      const contracts = contractResponse.data.contracts;
+  
+      if (contracts.length === 0) {
+        console.error('No contracts found.');
+        return;
+      }
+  
+      if (contracts.length === 1) {
+        // If there's only one contract, select it
+        setSelectedContract(contracts[0]);
+        setGenerateContractVisible(true);
+        toggleGenerateContract();
+      } else {
+        // If there are multiple contracts, you can provide a way for the user to select one
+        // For example, display a dropdown or modal for contract selection
+        // You'll need to implement the contract selection logic here
+      }
     } catch (error) {
       console.error('Error generating contract:', error);
     }
@@ -51,30 +71,35 @@ function Employee({ employee }) {
   
 
   const generatePDF = () => {
-    // Create a new instance of jsPDF
-    const doc = new jsPDF();
-
-    // Reference to the contract content element
+    console.log('Generate PDF function called');
+    console.log('Generating PDF...');
+  
     const contractContent = document.getElementById('contract-content');
+    console.log('contractContent:', contractContent); // Add this line
 
+  
     if (contractContent) {
-      // Use html2canvas to capture the HTML content as an image
       html2canvas(contractContent)
         .then((canvas) => {
-          // Convert the canvas to a data URL
+          console.log('HTML content captured successfully.');
           const imgData = canvas.toDataURL('image/png');
-
+          console.log('Image data obtained:', imgData);
+  
+          // Create a new instance of jsPDF
+          const pdf = new jsPDF();
+  
           // Add the image to the PDF
-          doc.addImage(imgData, 'PNG', 10, 10, 190, 260);
-
-          // Save or display the generated PDF
-          doc.save('employment_contract.pdf');
+          pdf.addImage(imgData, 'PNG', 10, 10, 190, 260);
+  
+          // Save the PDF
+          pdf.save('employment_contract.pdf');
         })
         .catch((error) => {
           console.error('Error generating PDF:', error);
         });
     }
   };
+  
 
   return (
     <div>
@@ -119,6 +144,7 @@ function Employee({ employee }) {
           {console.log('employeeData:', employee)} {/* Add this line */}
           <EmployeeContract employeeData={employee} contract={selectedContract} />
           <button onClick={generatePDF}>Download PDF</button>
+          <button onClick={toggleGenerateContract}>Hide Contract</button> {/* Add this button */}
         </div>
       )}
     </div>
