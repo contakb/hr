@@ -10,17 +10,17 @@ const EmployeeContract = ({ employeeData, contract }) => {
 
   return (
     <div className="contract">
-      <div className="header">Employee Contract</div>
+      <div className="header">Umowa o pracę</div>
       <div className="employee-info">
         <p><strong>Name:</strong> {name}</p>
         <p><strong>Surname:</strong> {surname}</p>
         {/* Add more employee information here */}
       </div>
       <div className="contract-terms">
-        <h2>Contract Terms</h2>
-        <p>This employment contract ("Contract") is entered into on {new Date(contract_from_date).toLocaleDateString()} between:</p>
-        <p><strong>Employer:</strong> Your Company Name, located at Your Company Address</p>
-        <p><strong>Employee:</strong> {name} {surname}</p>
+        <h2>Waruni umowy</h2>
+        <p>This employment contract ("Contract") is entered into on {new Date(contract_from_date).toLocaleDateString()} pomiędzy:</p>
+        <p><strong>Pracodawca:</strong> Your Company Name, located at Your Company Address</p>
+        <p><strong>Pracownik:</strong> {name} {surname}</p>
         {/* Add more contract terms here */}
       </div>
       <div className="signatures">
