@@ -15,9 +15,6 @@ import NavigationPage from './NavigationPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
 import EmployeeContract from './EmployeeContract';
-
-
-
 function App() {
   return (
     <div className="App">
