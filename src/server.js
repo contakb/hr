@@ -412,10 +412,10 @@ app.get('/api/contracts/:employeeId', (req, res) => {
 });
 
 app.post('/api/valid-employees', (req, res) => {
-  const { month, year } = req.body;
+  const { startDate, endDate } = req.body;
 
   const query = `
-    SELECT employees.name, employees.surname, contracts.gross_amount
+    SELECT employees.id AS employee_id, employees.name, employees.surname, contracts.gross_amount
     FROM employees
     INNER JOIN contracts ON employees.id = contracts.employee_id
     WHERE
@@ -423,8 +423,6 @@ app.post('/api/valid-employees', (req, res) => {
       contracts.contract_to_date >= $2
   `;
 
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0);
 
   pool.query(query, [endDate, startDate], (error, result) => {
     if (error) {

@@ -630,8 +630,8 @@ console.log('additionalBreaks:', additionalBreaks);
       </div>
     </td>
     <td>{employee.gross_amount[contractIndex]}</td>
-    <td>{contract.social_base}</td>
-    <td>{contract.wyn_chorobowe}</td>
+    <td>{employee.social_base}</td>
+    <td>{employee.wyn_chorobowe}</td>
     <td>{contract.emeryt_pr}</td>
     <td>{contract.emeryt_ub}</td>
     <td>{contract.rent_pr}</td>
