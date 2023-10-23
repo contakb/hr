@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker'; // Import DatePicker
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
 
@@ -12,7 +11,6 @@ function SalarySelectionPage() {
   const [year, setYear] = useState('');
   const [validContracts, setValidContracts] = useState([]);
   const [salaryDate, setSalaryDate] = useState('');
-  const navigate = useNavigate();
   const [healthBreaks, setHealthBreaks] = useState([]); // Initialize healthBreaks as an empty array
   const [additionalBreaks, setAdditionalBreaks] = useState([]);
   const [additionalBreakDays, setAdditionalBreakDays] = useState([]);
@@ -23,13 +21,19 @@ const [calculatedContracts, setCalculatedContracts] = useState([]);
 
 
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
+
+
+
+useEffect(() => {
+  setLoading(false);
+}, []);
+
+
 
   const fetchEmployees = async () => {
     try {
       const response = await axios.get('http://localhost:3001/employees');
+      console.log("Fetching employees...");
       setEmployees(response.data.employees);
       // Initialize healthBreaks for each employee
       const initialHealthBreaks = response.data.employees.map(() => ({ startDate: null, endDate: null, days: 0, type: '' }));
@@ -55,23 +59,36 @@ const [calculatedContracts, setCalculatedContracts] = useState([]);
   
 
   const fetchValidContracts = async () => {
-    try {
-      // Calculate the start and end dates based on user input
-      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-      const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+    console.log("Fetching valid contracts...");
   
-      // Send the calculated date range to the server
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+  
+    console.log("Dates:", startDate, endDate);
+  
+    try {
+      console.log("About to make axios request...");
+  
       const response = await axios.post('http://localhost:3001/api/valid-employees', {
         startDate,
         endDate,
       });
   
-      setValidContracts(response.data.employees);
+      console.log("Response received:", response.data);
+      
+      const employeesData = response.data.employees;
+      setValidContracts(employeesData);
+      setCalculatedContracts(employeesData); // Set the same fetched data to calculatedContracts
+
     } catch (error) {
       console.error('Error fetching valid contracts:', error);
       setValidContracts([]);
+      setCalculatedContracts([]); // Resetting calculatedContracts too
+      setLoading(false);
     }
-  };
+};
+
+  
   
   
   
@@ -230,377 +247,139 @@ function roundUpToCent(value) {
 // Define a function to calculate salary
 // Define a function to calculate salary
 const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
-  if (isNaN(grossAmountValue)) {
-    return {
-      gross_amount: '',
-      tax: '',
-      insurance: '',
-      netAmount: '',
-      emeryt_pr: '',
-      emeryt_ub: '',
-      rent_pr: '',
-      rent_ub: '',
-      chorobowe: '',
-      wypadkowe: '',
-      FP: '',
-      FGSP: '',
-      podstawa_zdrow: '',
-      zdrowotne: '',
-      koszty: '',
-      podstawa_zaliczki: '',
-      ulga: '',
-      zaliczka: '',
-      zal_2021: '',
-      wyn_chorobowe: '',
-      social_base: '',
-    };
+  let customGrossAmount = parseFloat(grossAmountValue);
+
+  let wynChorobowe = 0;
+  let podstawa_zdrow;
+  let pod_zal;
+  let zaliczka;
+  let zdrowotne;
+  let zal_2021;
+  let netAmount;
+
+  if (breakType === 'zwolnienie') {
+      customGrossAmount = (grossAmountValue - (grossAmountValue / 30 * daysOfBreak)).toFixed(2);
+      wynChorobowe = (((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (daysOfBreak * 0.8)).toFixed(2);
+
+      if (additionalBreakType === 'bezpłatny') {
+          customGrossAmount -= (grossAmountValue / 168 * additionalDays * 8).toFixed(2);
+      }
+
+      if (additionalBreakType === 'zwolnienie') {
+          customGrossAmount = (grossAmountValue - (grossAmountValue / 30 * (daysOfBreak + additionalDays))).toFixed(2);
+      }
+  } else if (breakType === 'bezpłatny') {
+      customGrossAmount = (grossAmountValue - (grossAmountValue / 168 * (daysOfBreak + additionalDays) * 8)).toFixed(2);
   }
 
-  const emeryt_pr = (grossAmountValue * 0.0976).toFixed(2);
-  const emeryt_ub = (grossAmountValue * 0.0976).toFixed(2);
-  const rent_pr = (grossAmountValue * 0.065).toFixed(2);
-  const rent_ub = roundUpToCent(grossAmountValue * 0.015).toFixed(2);
-  const chorobowe = (grossAmountValue * 0.0245).toFixed(2);
-  const wypadkowe = (grossAmountValue * 0.0167).toFixed(2);
-  const FP = roundUpToCent(grossAmountValue * 0.0245).toFixed(2);
-  const FGSP = roundUpToCent(grossAmountValue * 0.001).toFixed(2);
-  const wyn_chorobowe = (
-    ((grossAmountValue - (0.1371 * grossAmountValue)) / 30) * (daysOfBreak * 0.8)
-  ).toFixed(2);
-  const podstawa_zdrow = (
-    grossAmountValue - emeryt_ub - rent_ub - chorobowe
-  ).toFixed(2);
-  const podstawa_zaliczki = (podstawa_zdrow - 250).toFixed(0);
-  const zaliczka = ((podstawa_zaliczki * 0.12) - 300) < 0 ? 0 : ((podstawa_zaliczki * 0.12) - 300).toFixed(0);
-  const zal_2021 = (podstawa_zaliczki * 0.17 - 43.76).toFixed(2);
-  const zdrowotne = zal_2021 < (podstawa_zdrow * 0.09) ? zal_2021 : (podstawa_zdrow * 0.09).toFixed(2);
-  const netAmount = (podstawa_zdrow - zdrowotne - zaliczka).toFixed(2);
-  const ulga = (300).toFixed(2);
-  const koszty = (250).toFixed(2);
-  const social_base = grossAmountValue.toFixed(2);
+  podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
+  pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
+
+  zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
+  zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
+  zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09 ? parseFloat(zal_2021) : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
+  
+  netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
 
   return {
-    grossAmount: grossAmountValue.toFixed(2),
-    netAmount,
-    emeryt_pr,
-    emeryt_ub,
-    rent_pr,
-    rent_ub,
-    chorobowe,
-    wypadkowe,
-    FP,
-    FGSP,
-    podstawa_zdrow,
-    zdrowotne,
-    koszty,
-    podstawa_zaliczki,
-    ulga,
-    zaliczka,
-    zal_2021,
-    wyn_chorobowe,
-    social_base
+      grossAmount: customGrossAmount,
+      netAmount,
+      emeryt_pr: (grossAmountValue * 0.0976).toFixed(2),
+      emeryt_ub: (grossAmountValue * 0.0976).toFixed(2),
+      rent_pr: (grossAmountValue * 0.065).toFixed(2),
+      rent_ub: roundUpToCent(grossAmountValue * 0.015).toFixed(2),
+      chorobowe: (grossAmountValue * 0.0245).toFixed(2),
+      wypadkowe: (grossAmountValue * 0.0167).toFixed(2),
+      FP: roundUpToCent(grossAmountValue * 0.0245).toFixed(2),
+      FGSP: roundUpToCent(grossAmountValue * 0.001).toFixed(2),
+      wyn_chorobowe: wynChorobowe,
+      podstawa_zdrow: podstawa_zdrow,
+      podstawa_zaliczki: pod_zal,
+      zaliczka,
+      zal_2021,
+      zdrowotne,
+      ulga: '300.00',
+      koszty: '250.00',
+      social_base: grossAmountValue.toFixed(2),
+      additionalDays
   };
 };
 
 
+
 const handleCalculateSalary = () => {
   console.log("Calculating salary...");
-  console.log('Button clicked!'); // Add this line
-  const updatedEmployees = employees.map((employee) => {
-    if (employee.gross_amount && employee.gross_amount.length > 0) {
-      const updatedContracts = employee.gross_amount.map((grossAmount, index) => {
-        const daysOfBreak = parseInt(healthBreaks[index].days, 10) || 0;
-        const breakType = healthBreaks[index].type || '';
-        const additionalDays = parseInt(additionalBreaks[index].additionalDays, 10) || 0;
-        const additionalBreakType = additionalBreaks[index].type || '';
 
-        console.log(updatedEmployees)
+  // Declare the updatedContracts variable
+  const updatedContracts = validContracts.map((employee, index) => {
+      // Check if gross_amount is an array, if not, convert it to an array.
+      const normalizedGrossAmount = Array.isArray(employee.gross_amount) 
+          ? employee.gross_amount.map(gross => parseFloat(gross)) // Convert each element into a float number
+          : [parseFloat(employee.gross_amount)]; // Convert the string into a float number
 
-        let customGrossAmount = grossAmount
+      // Use the normalizedGrossAmount for calculations.
+      const updatedEmployeeContracts = normalizedGrossAmount.map((grossAmount, index) => {
+          const daysOfBreak = parseInt(healthBreaks[index]?.days, 10) || 0;
+          const breakType = healthBreaks[index]?.type || '';
+          const additionalDays = parseInt(additionalBreaks[index]?.additionalDays, 10) || 0;
+          const additionalBreakType = additionalBreaks[index]?.type || '';
 
-        let wynChorobowe = 0;
-        let pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) - 250).toFixed(0);
-        let zal_2021;
-        let zaliczka;
-        let zdrowotne;
-        let netAmount;
-
-        let emeryt_ub = roundUpToCent(customGrossAmount * 0.0976).toFixed(2);
-        let emeryt_pr = roundUpToCent(customGrossAmount * 0.0976).toFixed(2);
-        let rent_pr = roundUpToCent(customGrossAmount * 0.065).toFixed(2);
-        let rent_ub = roundUpToCent(customGrossAmount * 0.015).toFixed(2);
-        let chorobowe = roundUpToCent(customGrossAmount * 0.0245).toFixed(2);
-
-        let podstawa_zdrow;
-
-        if (breakType === 'zwolnienie') {
-          customGrossAmount = (grossAmount - (grossAmount / 30 * daysOfBreak)).toFixed(2);
-          wynChorobowe = (((grossAmount - 0.1371 * grossAmount) / 30) * ((daysOfBreak) * 0.8)).toFixed(2);
-          pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
-
-          if (additionalBreakType === 'bezpłatny') {
-            customGrossAmount -= (grossAmount / 168 * additionalDays * 8).toFixed(2);
-            podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
-            pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
-            zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
-            zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
-          }
-
-          if (additionalBreakType === 'zwolnienie') {
-            customGrossAmount = (grossAmount - (grossAmount / 30 * (daysOfBreak + additionalDays))).toFixed(2);
-            wynChorobowe = (((grossAmount - 0.1371 * grossAmount) / 30) * ((daysOfBreak + additionalDays) * 0.8)).toFixed(2);
-
-            podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
-            pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
-            zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
-            zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
-          }
-
-          zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
-          zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
-
-          podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
-
-          zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09
-            ? parseFloat(zal_2021)
-            : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
-          netAmount = (
-            parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)
-          ).toFixed(2);
-        } else if (breakType === 'bezpłatny') {
-          customGrossAmount = (grossAmount - (grossAmount / 168 * (daysOfBreak + additionalDays) * 8)).toFixed(2);
-          podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
-          pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
-          zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
-          zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
-          zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09
-            ? parseFloat(zal_2021)
-            : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
-          netAmount = (
-            parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)
-          ).toFixed(2);
-
-          // Add your "bezpłatny" specific calculations here
-        } else {
-          podstawa_zdrow = (customGrossAmount - (customGrossAmount * 0.0976) - (customGrossAmount * 0.015) - (customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
-
-          const podstawa_zaliczki = (pod_zal - 250).toFixed(0);
-          zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
-          zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
-
-          zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09
-            ? parseFloat(zal_2021)
-            : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
-          netAmount = (
-            parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)
-          ).toFixed(2);
-        }
-
-        // Calculate other fields
-        const ulga = (300).toFixed(2);
-        const koszty = (250).toFixed(2);
-        const social_base = customGrossAmount;
-
-        return {
-          ...calculateSalary(customGrossAmount, daysOfBreak, breakType, additionalDays, additionalBreakType),
-          wyn_chorobowe: wynChorobowe,
-          podstawa_zdrow: podstawa_zdrow,
-          podstawa_zaliczki: pod_zal,
-          zdrowotne: zdrowotne,
-          zal_2021: zal_2021,
-          zaliczka: zaliczka,
-          netAmount: netAmount,
-          additionalDays: additionalDays
-          // Include other fields as needed
-          // Include podstawa_zdrow in the result
-          // Set other fields with their calculated values based on customGrossAmount
-        };
+          return calculateSalary(
+              grossAmount, 
+              daysOfBreak, 
+              breakType, 
+              additionalDays, 
+              additionalBreakType
+          );
       });
 
-      return { ...employee, contracts: updatedContracts };
-    }
-    return employee;
+      return { ...employee, contracts: updatedEmployeeContracts };
   });
-  setCalculatedContracts(updatedEmployees);
+
+  console.log(updatedContracts);
+  setCalculatedContracts(updatedContracts);
 };
+
+
 
 
 
 const renderEmployeeTable = () => {
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  if (validContracts.length === 0) {
-    return <div>No employees with valid contracts for the selected month and year.</div>;
-  }
-
-  // The return statement should be placed here, inside the function
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  
   return (
     <div>
-      <h2>Lista płac za {month} {year}</h2>
-      <label htmlFor="salaryDate">Salary Date:</label>
-      <input
-        type="date"
-        id="salaryDate"
-        value={salaryDate}
-        onChange={(e) => setSalaryDate(e.target.value)}
-      />
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Surname</th>
-            {/* Add more table headers for contract properties */}
-            <th>Przerwa od</th>
-            <th>Przerwa do</th>
-            <th>Dni</th>
-            <th>typ</th>
-            <th>Brutto</th>
-            <th>Pods_społ</th>
-            <th>wyn.chorobowe</th>
-            <th>em.pr</th>
-            <th>em.ub</th>
-            <th>rent.pr</th>
-            <th>rent.ub</th>
-            <th>chorobowe</th>
-            <th>wypadkowe</th>
-            <th>FP</th>
-            <th>FGSP</th>
-            <th>Pods_zdrow</th>
-            <th>zdrow</th>
-            <th>koszty</th>
-            <th>podstawa_zaliczki</th>
-            <th>ulga</th>
-            <th>zaliczka</th>
-            <th>zal_2021</th>
-            <th>Netto</th>
-          </tr>
-        </thead>
-        <tbody>
-        {validContracts.map((contract, index) => {
-            return (
-              <tr key={index}>
-                <td>{contract.employee_id}</td>
-                <td>{contract.name}</td>
-                <td>{contract.surname}</td>
-        <td>
-          <DatePicker
-            selected={healthBreaks[index].startDate || null}
-            selectsStart
-            startDate={healthBreaks[index].startDate}
-            endDate={healthBreaks[index].endDate}
-            onChange={(date) => handleHealthBreakStartDateChange(date, index)}
-            dateFormat="dd/MM/yyyy"
-          />
-        </td>
-        <td>
-          <DatePicker
-            selected={healthBreaks[index].endDate || null}
-            selectsEnd
-            startDate={healthBreaks[index].startDate}
-            endDate={healthBreaks[index].endDate}
-            onChange={(date) => handleHealthBreakEndDateChange(date, index)}
-            dateFormat="dd/MM/yyyy"
-          />
-        </td>
-        <td>{healthBreaks[index].days}</td>
-        <td>
-          <div>
-            <select
-              value={healthBreaks[index].type || ''}
-              onChange={(e) => handleHealthBreakTypeChange(e, index)}
-            >
-              <option value="">Jaka przerwa</option>
-              <option value="brak">Brak</option>
-              <option value="zwolnienie">Zwolnienie</option>
-              <option value="bezpłatny">Bezpłatny</option>
-              <option value="nieobecność">Nieobecność</option>
-            </select>
-            <button onClick={addAdditionalBreak}>Add Przerwa</button>
-          </div>
-        </td>
-        <td>{contract.gross_amount}</td>
-        <td>{contract.social_base}</td>
-    <td>{contract.wyn_chorobowe}</td>
-    <td>{contract.emeryt_pr}</td>
-    <td>{contract.emeryt_ub}</td>
-    <td>{contract.rent_pr}</td>
-    <td>{contract.rent_ub}</td>
-    <td>{contract.chorobowe}</td>
-    <td>{contract.wypadkowe}</td>
-    <td>{contract.FP}</td>
-    <td>{contract.FGSP}</td>
-    <td>{contract.podstawa_zdrow}</td>
-    <td>{contract.zdrowotne}</td>
-    <td>{contract.koszty}</td>
-    <td>{contract.podstawa_zaliczki}</td>
-    <td>{contract.ulga}</td>
-    <td>{contract.zaliczka}</td>
-    <td>{contract.zal_2021}</td>
-    <td>{contract.netAmount}</td>
-        {/* Add more table cells for contract properties */}
-      </tr>
-  );
-})}
-{/* Additional breaks */}
-{additionalBreaks.length > 0 && additionalBreaks.map((breakData, breakIndex) => (
-  <tr key={breakIndex}>
-    {/* Render the additional break rows only if additional breaks exist */}
-    <td>
-      <div>
-        <DatePicker
-          selected={breakData.startDate || null}
-          selectsStart
-          startDate={breakData.startDate}
-          endDate={breakData.endDate}
-          onChange={(date) => handleAdditionalBreakStartDateChange(date, breakIndex)}
-          dateFormat="dd/MM/yyyy"
-        />
-      </div>
-    </td>
-    <td>
-      <div>
-        <DatePicker
-          selected={breakData.endDate || null}
-          selectsEnd
-          startDate={breakData.startDate}
-          endDate={breakData.endDate}
-          onChange={(date) => handleAdditionalBreakEndDateChange(date, breakIndex)}
-          dateFormat="dd/MM/yyyy"
-        />
-      </div>
-    </td>
-    <td>{additionalBreaks[breakIndex].additionalDays}</td>
-    <td>
-      <select
-        value={breakData.type || ''}
-        onChange={(e) => handleAdditionalBreakTypeChange(e, breakIndex)}
-      >
-        <option value="">Jaka przerwa</option>
-        <option value="brak">Brak</option>
-        <option value="zwolnienie">Zwolnienie</option>
-        <option value="bezpłatny">Bezpłatny</option>
-        <option value="nieobecność">Nieobecność</option>
-      </select>
-    </td>
-    <td>
-      <button onClick={() => deleteAdditionalBreak(breakIndex)}>Delete Przerwa</button>
-    </td>
-  </tr>
-))}
+            <button onClick={handleCalculateSalary}>Calculate Salary</button>
 
-        </tbody>
-      </table>
-      <button onClick={handleCalculateSalary}>Wylicz wynagrodzenie</button>
+    <table>
+      <thead>
+        <tr>
+        <th>ID</th>
+          <th>Name</th>
+          <th>Surname</th>
+          <th>Gross Amount</th>
+          <th>Netto</th>
+        </tr>
+      </thead>
+      <tbody>
+      {calculatedContracts.map((employee, index) => {
+                        return (
+                            <tr key={employee.employee_id || index}>
+                                <td>{employee.employee_id}</td>
+                                <td>{employee.name}</td>
+                                <td>{employee.surname}</td>
+                                <td>{employee.gross_amount}</td>
+                                <td>{employee.contracts?.[0]?.netAmount}</td>
+                                </tr>
+                        )
+                      })}
+      </tbody>
+    </table>
     </div>
   );
 };
+
 
 
 
