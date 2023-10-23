@@ -18,6 +18,8 @@ function SalarySelectionPage() {
   const [additionalBreakDays, setAdditionalBreakDays] = useState([]);
   const [additionalDays, setAdditionalDays] = useState(0);
 const [additionalBreakType, setAdditionalBreakType] = useState('');
+const [calculatedContracts, setCalculatedContracts] = useState([]);
+
 
 
 
@@ -227,8 +229,8 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (employee,  grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
-  if (isNaN(employee.gross_amount)) {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
+  if (isNaN(grossAmountValue)) {
     return {
       gross_amount: '',
       tax: '',
@@ -254,19 +256,19 @@ const calculateSalary = (employee,  grossAmountValue, daysOfBreak, breakType, ad
     };
   }
 
-  const emeryt_pr = (employee.gross_amount * 0.0976).toFixed(2);
-  const emeryt_ub = (employee.gross_amount * 0.0976).toFixed(2);
-  const rent_pr = (employee.gross_amount * 0.065).toFixed(2);
-  const rent_ub = roundUpToCent(employee.gross_amount * 0.015).toFixed(2);
-  const chorobowe = (employee.gross_amount * 0.0245).toFixed(2);
-  const wypadkowe = (employee.gross_amount * 0.0167).toFixed(2);
-  const FP = roundUpToCent(employee.gross_amount * 0.0245).toFixed(2);
-  const FGSP = roundUpToCent(employee.gross_amount * 0.001).toFixed(2);
+  const emeryt_pr = (grossAmountValue * 0.0976).toFixed(2);
+  const emeryt_ub = (grossAmountValue * 0.0976).toFixed(2);
+  const rent_pr = (grossAmountValue * 0.065).toFixed(2);
+  const rent_ub = roundUpToCent(grossAmountValue * 0.015).toFixed(2);
+  const chorobowe = (grossAmountValue * 0.0245).toFixed(2);
+  const wypadkowe = (grossAmountValue * 0.0167).toFixed(2);
+  const FP = roundUpToCent(grossAmountValue * 0.0245).toFixed(2);
+  const FGSP = roundUpToCent(grossAmountValue * 0.001).toFixed(2);
   const wyn_chorobowe = (
-    ((employee.gross_amount - (0.1371 * employee.gross_amount)) / 30) * (daysOfBreak * 0.8)
+    ((grossAmountValue - (0.1371 * grossAmountValue)) / 30) * (daysOfBreak * 0.8)
   ).toFixed(2);
   const podstawa_zdrow = (
-    employee.gross_amount - emeryt_ub - rent_ub - chorobowe
+    grossAmountValue - emeryt_ub - rent_ub - chorobowe
   ).toFixed(2);
   const podstawa_zaliczki = (podstawa_zdrow - 250).toFixed(0);
   const zaliczka = ((podstawa_zaliczki * 0.12) - 300) < 0 ? 0 : ((podstawa_zaliczki * 0.12) - 300).toFixed(0);
@@ -275,10 +277,10 @@ const calculateSalary = (employee,  grossAmountValue, daysOfBreak, breakType, ad
   const netAmount = (podstawa_zdrow - zdrowotne - zaliczka).toFixed(2);
   const ulga = (300).toFixed(2);
   const koszty = (250).toFixed(2);
-  const social_base = employee.gross_amount;
+  const social_base = grossAmountValue.toFixed(2);
 
   return {
-    grossAmount: employee.gross_amount.toFixed(2),
+    grossAmount: grossAmountValue.toFixed(2),
     netAmount,
     emeryt_pr,
     emeryt_ub,
@@ -299,6 +301,7 @@ const calculateSalary = (employee,  grossAmountValue, daysOfBreak, breakType, ad
     social_base
   };
 };
+
 
 const handleCalculateSalary = () => {
   console.log("Calculating salary...");
@@ -418,6 +421,7 @@ const handleCalculateSalary = () => {
     }
     return employee;
   });
+  setCalculatedContracts(updatedEmployees);
 };
 
 
@@ -435,6 +439,7 @@ const renderEmployeeTable = () => {
     return <div>No employees with valid contracts for the selected month and year.</div>;
   }
 
+  // The return statement should be placed here, inside the function
   return (
     <div>
       <h2>Lista płac za {month} {year}</h2>
@@ -451,6 +456,7 @@ const renderEmployeeTable = () => {
             <th>ID</th>
             <th>Name</th>
             <th>Surname</th>
+            {/* Add more table headers for contract properties */}
             <th>Przerwa od</th>
             <th>Przerwa do</th>
             <th>Dni</th>
@@ -469,7 +475,7 @@ const renderEmployeeTable = () => {
             <th>Pods_zdrow</th>
             <th>zdrow</th>
             <th>koszty</th>
-            <th>podstawa_zdrow</th>
+            <th>podstawa_zaliczki</th>
             <th>ulga</th>
             <th>zaliczka</th>
             <th>zal_2021</th>
@@ -477,62 +483,51 @@ const renderEmployeeTable = () => {
           </tr>
         </thead>
         <tbody>
-        {employees.map((employee, index) => {
-  const { name, id, surname, contracts } = employee;
-
-    <React.Fragment key={index}>
-{contracts.map((contract, contractIndex) => (
-  <tr key={`${index}-${contractIndex}`}>
-      <>
-        <td rowSpan={contracts.length}>{contract.employee.id}</td>
-        <td rowSpan={contracts.length}>{contract.name}</td>
-        <td rowSpan={contracts.length}>{contract.surname}</td>
-      </>
-  
-    <td>
-      <div>
-        <DatePicker
-          selected={healthBreaks[index].startDate || null}
-          selectsStart
-          startDate={healthBreaks[index].startDate}
-          endDate={healthBreaks[index].endDate}
-          onChange={(date) => handleHealthBreakStartDateChange(date, index)}
-          dateFormat="dd/MM/yyyy"
-        />
-      </div>
-    </td>
-    <td>
-      <div>
-        <DatePicker
-          selected={healthBreaks[index].endDate || null}
-          selectsEnd
-          startDate={healthBreaks[index].startDate}
-          endDate={healthBreaks[index].endDate}
-          onChange={(date) => handleHealthBreakEndDateChange(date, index)}
-          dateFormat="dd/MM/yyyy"
-        />
-      </div>
-    </td>
-    <td>{healthBreaks[index].days}</td>
-    <td>
-      <div>
-        <select
-          value={healthBreaks[index].type || ''}
-          onChange={(e) => handleHealthBreakTypeChange(e, index)}
-        >
-          <option value="">Jaka przerwa</option>
-          <option value="brak">Brak</option>
-          <option value="zwolnienie">Zwolnienie</option>
-          <option value="bezpłatny">Bezpłatny</option>
-          <option value="nieobecność">Nieobecność</option>
-        </select>
-         <button onClick={addAdditionalBreak}>Add Przerwa</button>
-
-      </div>
-    </td>
-    <td>{employee.gross_amount[contractIndex]}</td>
-    <td>{employee.social_base}</td>
-    <td>{employee.wyn_chorobowe}</td>
+        {validContracts.map((contract, index) => {
+            return (
+              <tr key={index}>
+                <td>{contract.employee_id}</td>
+                <td>{contract.name}</td>
+                <td>{contract.surname}</td>
+        <td>
+          <DatePicker
+            selected={healthBreaks[index].startDate || null}
+            selectsStart
+            startDate={healthBreaks[index].startDate}
+            endDate={healthBreaks[index].endDate}
+            onChange={(date) => handleHealthBreakStartDateChange(date, index)}
+            dateFormat="dd/MM/yyyy"
+          />
+        </td>
+        <td>
+          <DatePicker
+            selected={healthBreaks[index].endDate || null}
+            selectsEnd
+            startDate={healthBreaks[index].startDate}
+            endDate={healthBreaks[index].endDate}
+            onChange={(date) => handleHealthBreakEndDateChange(date, index)}
+            dateFormat="dd/MM/yyyy"
+          />
+        </td>
+        <td>{healthBreaks[index].days}</td>
+        <td>
+          <div>
+            <select
+              value={healthBreaks[index].type || ''}
+              onChange={(e) => handleHealthBreakTypeChange(e, index)}
+            >
+              <option value="">Jaka przerwa</option>
+              <option value="brak">Brak</option>
+              <option value="zwolnienie">Zwolnienie</option>
+              <option value="bezpłatny">Bezpłatny</option>
+              <option value="nieobecność">Nieobecność</option>
+            </select>
+            <button onClick={addAdditionalBreak}>Add Przerwa</button>
+          </div>
+        </td>
+        <td>{contract.gross_amount}</td>
+        <td>{contract.social_base}</td>
+    <td>{contract.wyn_chorobowe}</td>
     <td>{contract.emeryt_pr}</td>
     <td>{contract.emeryt_ub}</td>
     <td>{contract.rent_pr}</td>
@@ -549,9 +544,10 @@ const renderEmployeeTable = () => {
     <td>{contract.zaliczka}</td>
     <td>{contract.zal_2021}</td>
     <td>{contract.netAmount}</td>
-  </tr>
-))}
-
+        {/* Add more table cells for contract properties */}
+      </tr>
+  );
+})}
 {/* Additional breaks */}
 {additionalBreaks.length > 0 && additionalBreaks.map((breakData, breakIndex) => (
   <tr key={breakIndex}>
@@ -599,19 +595,12 @@ const renderEmployeeTable = () => {
   </tr>
 ))}
 
-
-
-    </React.Fragment>
-  
-})}
-
-
         </tbody>
       </table>
       <button onClick={handleCalculateSalary}>Wylicz wynagrodzenie</button>
     </div>
   );
-}
+};
 
 
 
@@ -633,5 +622,4 @@ return (
   </div>
 );
 }
-
 export default SalarySelectionPage;
