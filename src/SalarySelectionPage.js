@@ -26,8 +26,16 @@ const [calculatedContracts, setCalculatedContracts] = useState([]);
 
 useEffect(() => {
   setLoading(false);
-}, []);
+  const initialHealthBreaks = calculatedContracts.map(() => ({ ...defaultHealthBreak }));
+}, [calculatedContracts]);
 
+
+const defaultHealthBreak = {
+  startDate: null,
+  endDate: null,
+  days: 0,
+  type: ''
+};
 
 
   const fetchEmployees = async () => {
@@ -246,7 +254,9 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
+const calculateSalary = (employeeId, grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
+  
+
   let customGrossAmount = parseFloat(grossAmountValue);
 
   let wynChorobowe = 0;
@@ -281,8 +291,8 @@ const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDay
   
   netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
 
-  return {
-      grossAmount: customGrossAmount,
+  const calculatedValues = {
+      grossAmount: grossAmountValue,
       netAmount,
       emeryt_pr: (grossAmountValue * 0.0976).toFixed(2),
       emeryt_ub: (grossAmountValue * 0.0976).toFixed(2),
@@ -300,40 +310,41 @@ const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDay
       zdrowotne,
       ulga: '300.00',
       koszty: '250.00',
-      social_base: grossAmountValue.toFixed(2),
+      social_base: customGrossAmount,
       additionalDays
   };
-};
+  return calculatedValues; // Return the calculated values
+}
 
 
 
 const handleCalculateSalary = () => {
   console.log("Calculating salary...");
 
-  // Declare the updatedContracts variable
   const updatedContracts = validContracts.map((employee, index) => {
-      // Check if gross_amount is an array, if not, convert it to an array.
       const normalizedGrossAmount = Array.isArray(employee.gross_amount) 
-          ? employee.gross_amount.map(gross => parseFloat(gross)) // Convert each element into a float number
-          : [parseFloat(employee.gross_amount)]; // Convert the string into a float number
+          ? employee.gross_amount.map(gross => parseFloat(gross))
+          : [parseFloat(employee.gross_amount)];
 
-      // Use the normalizedGrossAmount for calculations.
       const updatedEmployeeContracts = normalizedGrossAmount.map((grossAmount, index) => {
           const daysOfBreak = parseInt(healthBreaks[index]?.days, 10) || 0;
           const breakType = healthBreaks[index]?.type || '';
           const additionalDays = parseInt(additionalBreaks[index]?.additionalDays, 10) || 0;
           const additionalBreakType = additionalBreaks[index]?.type || '';
 
-          return calculateSalary(
+          const calculatedValues = calculateSalary(
               grossAmount, 
               daysOfBreak, 
               breakType, 
               additionalDays, 
               additionalBreakType
           );
+          console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
+
+          return { ...employee, contracts: calculatedValues };
       });
 
-      return { ...employee, contracts: updatedEmployeeContracts };
+      return updatedEmployeeContracts;
   });
 
   console.log(updatedContracts);
@@ -347,10 +358,21 @@ const handleCalculateSalary = () => {
 const renderEmployeeTable = () => {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
+  if (validContracts.length === 0) {
+    return <div>No employees with valid contracts for the selected month and year.</div>;
+  }
   
   return (
     <div>
-            <button onClick={handleCalculateSalary}>Calculate Salary</button>
+       <h2>Lista płac za {month} {year}</h2>
+      <label htmlFor="salaryDate">Salary Date:</label>
+      <input
+        type="date"
+        id="salaryDate"
+        value={salaryDate}
+        onChange={(e) => setSalaryDate(e.target.value)}
+      />
+            
 
     <table>
       <thead>
@@ -358,12 +380,36 @@ const renderEmployeeTable = () => {
         <th>ID</th>
           <th>Name</th>
           <th>Surname</th>
-          <th>Gross Amount</th>
+          <th>Wyn.zasadnicze</th>
           <th>Netto</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Days</th>
+          <th>Health Break Type</th>
+          <th>Pods_społ</th>
+			<th>wyn.chorobowe</th>
+            <th>em.pr</th>
+            <th>em.ub</th>
+            <th>rent.pr</th>
+            <th>rent.ub</th>
+            <th>chorobowe</th>
+            <th>wypadkowe</th>
+            <th>FP</th>
+            <th>FGSP</th>
+            <th>Pods_zdrow</th>
+            <th>zdrow</th>
+			<th>koszty</th>
+            <th>podstawa_zaliczki</th>
+			<th>ulga</th>
+            <th>zaliczka</th>
+            <th>zal_2021</th>
+            <th>Netto</th>
         </tr>
       </thead>
       <tbody>
       {calculatedContracts.map((employee, index) => {
+        const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
+
                         return (
                             <tr key={employee.employee_id || index}>
                                 <td>{employee.employee_id}</td>
@@ -371,11 +417,93 @@ const renderEmployeeTable = () => {
                                 <td>{employee.surname}</td>
                                 <td>{employee.gross_amount}</td>
                                 <td>{employee.contracts?.[0]?.netAmount}</td>
+                                <td>
+          <DatePicker
+            selected={healthBreak.startDate || null}
+            selectsStart
+            startDate={healthBreak.startDate}
+            endDate={healthBreak.endDate}
+            onChange={(date) => handleHealthBreakStartDateChange(date, index)}
+            dateFormat="dd/MM/yyyy"
+          />
+        </td>
+        <td>
+          <DatePicker
+            selected={healthBreak.endDate || null}
+            selectsEnd
+            startDate={healthBreak.startDate}
+            endDate={healthBreak.endDate}
+            onChange={(date) => handleHealthBreakEndDateChange(date, index)}
+            dateFormat="dd/MM/yyyy"
+          />
+        </td>
+        <td>{healthBreak.days}</td>
+        <td>
+          <div>
+          <select
+  value={healthBreak?.type || ''}
+  onChange={(e) => handleHealthBreakTypeChange(e, index)}
+>
+
+              <option value="">Jaka przerwa</option>
+              <option value="brak">Brak</option>
+              <option value="zwolnienie">Zwolnienie</option>
+              <option value="bezpłatny">Bezpłatny</option>
+              <option value="nieobecność">Nieobecność</option>
+            </select>
+            <button onClick={addAdditionalBreak}>Add Przerwa</button>
+          </div>
+        </td>
+        <td>{employee.contracts?.[0]?.social_base}</td>                       
+        <td>{employee.contracts?.[0]?.wyn_chorobowe}</td>                        
+        <td>{employee.contracts?.[0]?.emeryt_pr}</td>
+    <td>{employee.contracts?.[0]?.emeryt_ub}</td>
+    <td>{employee.contracts?.[0]?.rent_pr}</td>
+    <td>{employee.contracts?.[0]?.rent_ub}</td>
+    <td>{employee.contracts?.[0]?.chorobowe}</td>
+    <td>{employee.contracts?.[0]?.wypadkowe}</td>
+    <td>{employee.contracts?.[0]?.FP}</td>
+    <td>{employee.contracts?.[0]?.FGSP}</td>
+    <td>{employee.contracts?.[0]?.podstawa_zdrow}</td>
+    <td>{employee.contracts?.[0]?.zdrowotne}</td>
+    <td>{employee.contracts?.[0]?.koszty}</td>
+    <td>{employee.contracts?.[0]?.podstawa_zaliczki}</td>
+    <td>{employee.contracts?.[0]?.ulga}</td>
+    <td>{employee.contracts?.[0]?.zaliczka}</td>
+    <td>{employee.contracts?.[0]?.zal_2021}</td>
+    <td>{employee.contracts?.[0]?.netAmount}</td>
+    <td>
+                  <button onClick={() => {
+                    const grossAmountValue = employee.gross_amount; 
+                    const daysOfBreak = healthBreak.days;
+                    const breakType = healthBreak.type;
+
+                    // For now, I'm setting dummy values for additionalDays and additionalBreakType.
+                    // You should replace these with actual values or methods to fetch these values.
+                    const additionalDays = 0; // TODO: Replace with the actual method or value
+                    const additionalBreakType = ''; // TODO: Replace with the actual method or value
+                    
+                    handleCalculateSalary(
+                      employee.employee_id, 
+                      grossAmountValue, 
+                      daysOfBreak, 
+                      breakType, 
+                      additionalDays, 
+                      additionalBreakType
+                    );
+                  }}>
+                    Calculate
+                  </button>
+                </td>
                                 </tr>
                         )
                       })}
       </tbody>
     </table>
+    
+
+
+
     </div>
   );
 };
