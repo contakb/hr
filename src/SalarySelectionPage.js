@@ -264,50 +264,84 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
-  
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray) => {
+  // Check if the additionalDaysArray is an array, if not, log an error and return
+  if (!Array.isArray(additionalDaysArray)) {
+      console.error("additionalDaysArray must be an array.");
+      return;  // You might want to handle this more gracefully or return default values.
+  }
+
+  // Check if the additionalBreakTypesArray is an array, if not, log an error and return
+  if (!Array.isArray(additionalBreakTypesArray)) {
+      console.error("additionalBreakTypesArray must be an array.");
+      return;  // You might want to handle this more gracefully or return default values.
+  }
 
   let customGrossAmount = parseFloat(grossAmountValue);
+let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
+let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
+let wynChorobowe = 0;
 
-  let wynChorobowe = 0;
-  let podstawa_zdrow;
-  let pod_zal;
-  let zaliczka;
-  let zdrowotne;
-  let zal_2021;
-  let netAmount;
 
-  if (breakType === 'zwolnienie') {
-      customGrossAmount = (grossAmountValue - (grossAmountValue / 30 * daysOfBreak)).toFixed(2);
-      wynChorobowe = (((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (daysOfBreak * 0.8)).toFixed(2);
-
-      if (additionalBreakType === 'bezpłatny') {
-          customGrossAmount -= (grossAmountValue / 168 * additionalDays * 8).toFixed(2);
+  // Summing up additional days for each break type
+  for(let i = 0; i < additionalDaysArray.length; i++) {
+      if(additionalBreakTypesArray[i] === 'zwolnienie') {
+          totalDaysZwolnienie += additionalDaysArray[i];
+      } else if(additionalBreakTypesArray[i] === 'bezpłatny') {
+          totalDaysBezplatny += additionalDaysArray[i];
       }
-
-      if (additionalBreakType === 'zwolnienie') {
-          customGrossAmount = (grossAmountValue - (grossAmountValue / 30 * (daysOfBreak + additionalDays))).toFixed(2);
-          wynChorobowe = (((grossAmountValue - 0.1371 * grossAmountValue) / 30) * ((daysOfBreak + additionalDays) * 0.8)).toFixed(2);
-      }
-  } else if (breakType === 'bezpłatny') {
-    console.log("Original grossAmountValue:", grossAmountValue); // Log the original value
-    console.log("daysOfBreak:", daysOfBreak);
-    console.log("additionalDays:", additionalDays);
-    let reduction = (grossAmountValue / 168 * (daysOfBreak + additionalDays) * 8);
-    console.log("Reduction:", reduction); // Log the computed reduction value
-    customGrossAmount = parseFloat((grossAmountValue - reduction).toFixed(2));
-    console.log("New customGrossAmount:", customGrossAmount); // Log the new customGrossAmount
   }
-  
+  // Logging the total number of days for 'bezpłatny' break
+console.log('Total Days Bezplatny:', totalDaysBezplatny);
 
-  podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
-  pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
+  const allBreakTypes = [breakType, ...additionalBreakTypesArray];
+  const allBreakDays = [daysOfBreak, ...additionalDaysArray];
 
-  zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
-  zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
-  zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09 ? parseFloat(zal_2021) : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
+  const hasZwolnienie = allBreakTypes.includes('zwolnienie');
+  const hasBezplatny = allBreakTypes.includes('bezpłatny');
+
+  // Logging the presence of the break types
+console.log('Has Bezplatny:', hasBezplatny);
+console.log('Has Zwolnienie:', hasZwolnienie);
+
+
+  // Special handling for combined 'bezpłatny' and 'zwolnienie':
+  // Logging the gross amount before reduction
+console.log('Custom Gross Amount before reduction:', customGrossAmount);
+  if (hasBezplatny && !hasZwolnienie) {
+      const reduction = (grossAmountValue / 168 * totalDaysBezplatny * 8);
+      customGrossAmount -= reduction;
+  }
+// Logging the gross amount after reduction
+console.log('Custom Gross Amount after reduction:', customGrossAmount);
+  // Process other breaks in order:
+  for (let i = 0; i < allBreakTypes.length; i++) {
+      const currentBreakType = allBreakTypes[i];
+      const currentBreakDays = allBreakDays[i];
+
+      
+      if (currentBreakType === 'zwolnienie') {
+        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / 30 * currentBreakDays)).toFixed(2));
+
+        wynChorobowe = parseFloat((wynChorobowe + ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays * 0.8)).toFixed(2));
+
+      } else if (currentBreakType === 'bezpłatny' && hasZwolnienie) {
+        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / 168 * currentBreakDays * 8)).toFixed(2));
+
+      }
+  }
+
+  customGrossAmount = parseFloat(customGrossAmount.toFixed(2)); // To ensure it's 2 decimal places after all calculations
+
+  // The rest of your logic remains unchanged
+  let podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
+  let pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
+
+  let zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
+  let zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
+  let zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09 ? parseFloat(zal_2021) : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
   
-  netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
+  let netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
 
   const calculatedValues = {
       grossAmount: grossAmountValue,
@@ -329,10 +363,11 @@ const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDay
       ulga: '300.00',
       koszty: '250.00',
       social_base: customGrossAmount,
-      additionalDays
+      additionalDays: additionalDaysArray.reduce((acc, val) => acc + val, 0)  // Sum of all additional days
   };
-  return calculatedValues; // Return the calculated values
-}
+
+  return calculatedValues;
+};
 
 
 
@@ -347,8 +382,14 @@ const handleCalculateSalary = () => {
       const updatedEmployeeContracts = normalizedGrossAmount.map((grossAmount, index) => {
           const daysOfBreak = parseInt(healthBreaks[index]?.days, 10) || 0;
           const breakType = healthBreaks[index]?.type || '';
-          const additionalDays = parseInt(additionalBreaks[index]?.additionalDays, 10) || 0;
-          const additionalBreakType = additionalBreaks[index]?.type || '';
+          const additionalDays = [parseInt(additionalBreaks[index]?.additionalDays, 10) || 0];
+
+
+
+          const additionalBreakType = [additionalBreaks[index]?.type || ''];
+
+
+          console.log("Inside handleCalculateSalary. Type of additionalDays:", typeof additionalDays, "Value:", additionalDays);
 
           const calculatedValues = calculateSalary(
               grossAmount, 
@@ -368,6 +409,8 @@ const handleCalculateSalary = () => {
   console.log(updatedContracts);
   setCalculatedContracts(updatedContracts);
 };
+
+
 
 
 
@@ -546,22 +589,17 @@ const renderEmployeeTable = () => {
     const daysOfBreak = healthBreak.days;
     const breakType = healthBreak.type;
     const grossAmountValue = employee.gross_amount;
-    const additionalDays = additionalBreaks.reduce((acc, currentBreak) => acc + (currentBreak.additionalDays || 0), 0);
-
-
-    const additionalBreakType = additionalBreaks && additionalBreaks.length > 0 && additionalBreaks[0].type;
-    // This might not work directly, depending on the structure of additionalBreaks. 
-    // You might have to adjust this if `additionalDays` is an array or nested differently.
-
-    // This might cause issues if `additionalBreaks` contains multiple items. 
-    // You might need to loop through them if there's more than one breakItem.
     
+    // Construct the arrays here, based on the additionalBreaks structure.
+    const additionalDaysArray = additionalBreaks.map(breakItem => breakItem.additionalDays || 0);
+    const additionalBreakTypesArray = additionalBreaks.map(breakItem => breakItem.type || '');
+
     const calculatedValues = calculateSalary(
       grossAmountValue, 
       daysOfBreak, 
       breakType, 
-      additionalDays, 
-      additionalBreakType
+      additionalDaysArray,  // pass the entire array
+      additionalBreakTypesArray  // pass the entire array
     );
     
     // Update this specific employee's data in the state:
@@ -571,6 +609,7 @@ const renderEmployeeTable = () => {
 }}>
     Calculate
 </button>
+
 
 
             </tr>
