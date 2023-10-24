@@ -254,7 +254,7 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (employeeId, grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDays, additionalBreakType) => {
   
 
   let customGrossAmount = parseFloat(grossAmountValue);
@@ -473,27 +473,29 @@ const renderEmployeeTable = () => {
     <td>{employee.contracts?.[0]?.zal_2021}</td>
     <td>{employee.contracts?.[0]?.netAmount}</td>
     <td>
-                  <button onClick={() => {
-                    const grossAmountValue = employee.gross_amount; 
-                    const daysOfBreak = healthBreak.days;
-                    const breakType = healthBreak.type;
+    <button onClick={() => {
+    const daysOfBreak = healthBreak.days;
+    const breakType = healthBreak.type;
+    const grossAmountValue = employee.gross_amount;
+    const additionalDays = 0;  // TODO: Fetch this properly
+    const additionalBreakType = '';  // TODO: Fetch this properly
+    
+    const calculatedValues = calculateSalary(
+      grossAmountValue, 
+      daysOfBreak, 
+      breakType, 
+      additionalDays, 
+      additionalBreakType
+    );
+    
+    // Now update this specific employee's data in the state:
+    const updatedEmployees = [...calculatedContracts];
+    updatedEmployees[index] = { ...employee, contracts: [calculatedValues] };
+    setCalculatedContracts(updatedEmployees);
+}}>
+    Calculate
+</button>
 
-                    // For now, I'm setting dummy values for additionalDays and additionalBreakType.
-                    // You should replace these with actual values or methods to fetch these values.
-                    const additionalDays = 0; // TODO: Replace with the actual method or value
-                    const additionalBreakType = ''; // TODO: Replace with the actual method or value
-                    
-                    handleCalculateSalary(
-                      employee.employee_id, 
-                      grossAmountValue, 
-                      daysOfBreak, 
-                      breakType, 
-                      additionalDays, 
-                      additionalBreakType
-                    );
-                  }}>
-                    Calculate
-                  </button>
                 </td>
                                 </tr>
                         )
