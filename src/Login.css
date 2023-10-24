@@ -154,5 +154,15 @@ tbody tr {
 tbody tr:last-child {
   border-bottom: none;
 }
+.nestedTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+}
+
+.nestedTable td {
+  border: none;
+  padding: 2px;
+}
 
 

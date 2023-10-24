@@ -249,6 +249,16 @@ const handleAdditionalBreakDaysChange = (e, breakIndex) => {
   setAdditionalBreaks(updatedAdditionalBreaks);
 };
 
+const calculateDaysForBreakType = (breakType) => {
+  return additionalBreaks
+    .filter(breakItem => breakItem.type === breakType)
+    .reduce((totalDays, breakItem) => totalDays + breakItem.additionalDays, 0);
+};
+
+const zwolnienieDays = calculateDaysForBreakType("zwolnienie");
+const bezplatnyDays = calculateDaysForBreakType("bezpłatny");
+const nieobecnoscDays = calculateDaysForBreakType("nieobecność");
+
 function roundUpToCent(value) {
   return Math.ceil(value * 100) / 100;
 }
@@ -277,10 +287,18 @@ const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDay
 
       if (additionalBreakType === 'zwolnienie') {
           customGrossAmount = (grossAmountValue - (grossAmountValue / 30 * (daysOfBreak + additionalDays))).toFixed(2);
+          wynChorobowe = (((grossAmountValue - 0.1371 * grossAmountValue) / 30) * ((daysOfBreak + additionalDays) * 0.8)).toFixed(2);
       }
   } else if (breakType === 'bezpłatny') {
-      customGrossAmount = (grossAmountValue - (grossAmountValue / 168 * (daysOfBreak + additionalDays) * 8)).toFixed(2);
+    console.log("Original grossAmountValue:", grossAmountValue); // Log the original value
+    console.log("daysOfBreak:", daysOfBreak);
+    console.log("additionalDays:", additionalDays);
+    let reduction = (grossAmountValue / 168 * (daysOfBreak + additionalDays) * 8);
+    console.log("Reduction:", reduction); // Log the computed reduction value
+    customGrossAmount = parseFloat((grossAmountValue - reduction).toFixed(2));
+    console.log("New customGrossAmount:", customGrossAmount); // Log the new customGrossAmount
   }
+  
 
   podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
   pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
@@ -294,14 +312,14 @@ const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDay
   const calculatedValues = {
       grossAmount: grossAmountValue,
       netAmount,
-      emeryt_pr: (grossAmountValue * 0.0976).toFixed(2),
-      emeryt_ub: (grossAmountValue * 0.0976).toFixed(2),
-      rent_pr: (grossAmountValue * 0.065).toFixed(2),
-      rent_ub: roundUpToCent(grossAmountValue * 0.015).toFixed(2),
-      chorobowe: (grossAmountValue * 0.0245).toFixed(2),
-      wypadkowe: (grossAmountValue * 0.0167).toFixed(2),
-      FP: roundUpToCent(grossAmountValue * 0.0245).toFixed(2),
-      FGSP: roundUpToCent(grossAmountValue * 0.001).toFixed(2),
+      emeryt_pr: (customGrossAmount * 0.0976).toFixed(2),
+      emeryt_ub: (customGrossAmount * 0.0976).toFixed(2),
+      rent_pr: (customGrossAmount * 0.065).toFixed(2),
+      rent_ub: roundUpToCent(customGrossAmount * 0.015).toFixed(2),
+      chorobowe: (customGrossAmount * 0.0245).toFixed(2),
+      wypadkowe: (customGrossAmount * 0.0167).toFixed(2),
+      FP: roundUpToCent(customGrossAmount * 0.0245).toFixed(2),
+      FGSP: roundUpToCent(customGrossAmount * 0.001).toFixed(2),
       wyn_chorobowe: wynChorobowe,
       podstawa_zdrow: podstawa_zdrow,
       podstawa_zaliczki: pod_zal,
@@ -409,51 +427,56 @@ const renderEmployeeTable = () => {
       <tbody>
       {calculatedContracts.map((employee, index) => {
         const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
+        
 
                         return (
-                            <tr key={employee.employee_id || index}>
+                          <React.Fragment key={employee.employee_id || index}>
+                            <tr>
                                 <td>{employee.employee_id}</td>
                                 <td>{employee.name}</td>
                                 <td>{employee.surname}</td>
                                 <td>{employee.gross_amount}</td>
                                 <td>{employee.contracts?.[0]?.netAmount}</td>
                                 <td>
-          <DatePicker
-            selected={healthBreak.startDate || null}
-            selectsStart
-            startDate={healthBreak.startDate}
-            endDate={healthBreak.endDate}
-            onChange={(date) => handleHealthBreakStartDateChange(date, index)}
-            dateFormat="dd/MM/yyyy"
-          />
-        </td>
-        <td>
-          <DatePicker
-            selected={healthBreak.endDate || null}
-            selectsEnd
-            startDate={healthBreak.startDate}
-            endDate={healthBreak.endDate}
-            onChange={(date) => handleHealthBreakEndDateChange(date, index)}
-            dateFormat="dd/MM/yyyy"
-          />
-        </td>
-        <td>{healthBreak.days}</td>
-        <td>
-          <div>
-          <select
-  value={healthBreak?.type || ''}
-  onChange={(e) => handleHealthBreakTypeChange(e, index)}
->
+                <DatePicker
+                    selected={healthBreak.startDate || null}
+                    selectsStart
+                    startDate={healthBreak.startDate}
+                    endDate={healthBreak.endDate}
+                    onChange={(date) => handleHealthBreakStartDateChange(date, index)}
+                    dateFormat="dd/MM/yyyy"
+                />
+            </td>
 
-              <option value="">Jaka przerwa</option>
-              <option value="brak">Brak</option>
-              <option value="zwolnienie">Zwolnienie</option>
-              <option value="bezpłatny">Bezpłatny</option>
-              <option value="nieobecność">Nieobecność</option>
-            </select>
-            <button onClick={addAdditionalBreak}>Add Przerwa</button>
-          </div>
-        </td>
+            <td>
+                <DatePicker
+                    selected={healthBreak.endDate || null}
+                    selectsEnd
+                    startDate={healthBreak.startDate}
+                    endDate={healthBreak.endDate}
+                    onChange={(date) => handleHealthBreakEndDateChange(date, index)}
+                    dateFormat="dd/MM/yyyy"
+                />
+            </td>
+
+            <td>{healthBreak.days}</td>
+
+            <td>
+                <select
+                    value={healthBreak?.type || ''}
+                    onChange={(e) => handleHealthBreakTypeChange(e, index)}
+                >
+                   
+                    <option value="brak">Brak</option>
+                    <option value="zwolnienie">Zwolnienie</option>
+                    <option value="bezpłatny">Bezpłatny</option>
+                    <option value="nieobecność">Nieobecność</option>
+                </select>
+                
+                    <button onClick={addAdditionalBreak}>Add Przerwa</button>
+                
+            </td>
+
         <td>{employee.contracts?.[0]?.social_base}</td>                       
         <td>{employee.contracts?.[0]?.wyn_chorobowe}</td>                        
         <td>{employee.contracts?.[0]?.emeryt_pr}</td>
@@ -473,12 +496,65 @@ const renderEmployeeTable = () => {
     <td>{employee.contracts?.[0]?.zal_2021}</td>
     <td>{employee.contracts?.[0]?.netAmount}</td>
     <td>
-    <button onClick={() => {
+
+
+                </td>
+                                </tr>
+                                
+                                
+                                {additionalBreaks.map((breakItem, breakIndex) => (
+                                 
+                <tr key={`additional-${index}-${breakIndex}`}>
+                    <td colSpan={27}> {/* You can adjust colSpan according to the number of columns you have */}
+                        <React.Fragment>
+                            <td>
+                                <DatePicker
+                                    selected={breakItem.startDate}
+                                    onChange={(date) => handleAdditionalBreakStartDateChange(date, breakIndex)}
+                                    dateFormat="dd/MM/yyyy"
+                                />
+                            </td>
+                            <td>
+                                <DatePicker
+                                    selected={breakItem.endDate}
+                                    onChange={(date) => handleAdditionalBreakEndDateChange(date, breakIndex)}
+                                    dateFormat="dd/MM/yyyy"
+                                />
+                            </td>
+                            
+                            <td>{breakItem.additionalDays}</td>
+
+                            <td colSpan="2">
+                                <select
+                                    value={breakItem.type}
+                                    onChange={(e) => handleAdditionalBreakTypeChange(e, breakIndex)}
+                                >
+                                    <option value="">Choose break type</option>
+                                    <option value="zwolnienie">Zwolnienie</option>
+                                    <option value="bezpłatny">Bezpłatny</option>
+                                    <option value="nieobecność">Nieobecność</option>
+                                </select>
+                                <button onClick={() => deleteAdditionalBreak(breakIndex)}>Remove</button>
+                            </td>
+                        </React.Fragment>
+                    </td>
+                </tr>
+      ))}
+            
+            <tr>
+            <button onClick={() => {
     const daysOfBreak = healthBreak.days;
     const breakType = healthBreak.type;
     const grossAmountValue = employee.gross_amount;
-    const additionalDays = 0;  // TODO: Fetch this properly
-    const additionalBreakType = '';  // TODO: Fetch this properly
+    const additionalDays = additionalBreaks.reduce((acc, currentBreak) => acc + (currentBreak.additionalDays || 0), 0);
+
+
+    const additionalBreakType = additionalBreaks && additionalBreaks.length > 0 && additionalBreaks[0].type;
+    // This might not work directly, depending on the structure of additionalBreaks. 
+    // You might have to adjust this if `additionalDays` is an array or nested differently.
+
+    // This might cause issues if `additionalBreaks` contains multiple items. 
+    // You might need to loop through them if there's more than one breakItem.
     
     const calculatedValues = calculateSalary(
       grossAmountValue, 
@@ -488,7 +564,7 @@ const renderEmployeeTable = () => {
       additionalBreakType
     );
     
-    // Now update this specific employee's data in the state:
+    // Update this specific employee's data in the state:
     const updatedEmployees = [...calculatedContracts];
     updatedEmployees[index] = { ...employee, contracts: [calculatedValues] };
     setCalculatedContracts(updatedEmployees);
@@ -496,10 +572,11 @@ const renderEmployeeTable = () => {
     Calculate
 </button>
 
-                </td>
-                                </tr>
-                        )
-                      })}
+
+            </tr>
+        </React.Fragment>
+                                )
+})}
       </tbody>
     </table>
     
