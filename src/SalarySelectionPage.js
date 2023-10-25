@@ -17,6 +17,8 @@ function SalarySelectionPage() {
   const [additionalDays, setAdditionalDays] = useState(0);
 const [additionalBreakType, setAdditionalBreakType] = useState('');
 const [calculatedContracts, setCalculatedContracts] = useState([]);
+const [healthBreaksByEmployee, setHealthBreaksByEmployee] = useState({});
+const [additionalBreaksByEmployee, setAdditionalBreaksByEmployee] = useState({});
 
 
 
@@ -168,35 +170,31 @@ const handleHealthBreakTypeChange = (e, index) => {
 };
 
 // Define the handleAdditionalBreakStartDateChange function
-const handleAdditionalBreakStartDateChange = (date, breakIndex) => {
-  const updatedBreaks = [...additionalBreaks];
-  updatedBreaks[breakIndex] = {
-    ...updatedBreaks[breakIndex],
-    startDate: date,
-  };
-  setAdditionalBreaks(updatedBreaks);
+const handleAdditionalBreakStartDateChange = (date, employeeId, breakIndex) => {
+  const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
+  breaksForEmployee[breakIndex].startDate = date;
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 
   // Calculate the number of days and update the state
-  calculateAdditionalDays(breakIndex, updatedBreaks);
+  calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
 };
+
 
 // Define the handleAdditionalBreakEndDateChange function
-const handleAdditionalBreakEndDateChange = (date, breakIndex) => {
-  const updatedBreaks = [...additionalBreaks];
-  updatedBreaks[breakIndex] = {
-    ...updatedBreaks[breakIndex],
-    endDate: date,
-  };
-  setAdditionalBreaks(updatedBreaks);
+const handleAdditionalBreakEndDateChange = (date, employeeId, breakIndex) => {
+  const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
+  breaksForEmployee[breakIndex].endDate = date;
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 
   // Calculate the number of days and update the state
-  calculateAdditionalDays(breakIndex, updatedBreaks);
+  calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
 };
 
+
 // Function to calculate the number of days between start and end dates for additional breaks and update the state
-const calculateAdditionalDays = (breakIndex, updatedBreaks) => {
-  const startDate = updatedBreaks[breakIndex].startDate;
-  const endDate = updatedBreaks[breakIndex].endDate;
+const calculateAdditionalDays = (employeeId, breakIndex, breaksForEmployee) => {
+  const startDate = breaksForEmployee[breakIndex].startDate;
+  const endDate = breaksForEmployee[breakIndex].endDate;
 
   if (startDate && endDate) {
     const startDateWithoutTime = new Date(startDate);
@@ -211,42 +209,43 @@ const calculateAdditionalDays = (breakIndex, updatedBreaks) => {
     // Calculate the number of days, considering partial days
     const daysDiff = timeDifference / (1000 * 60 * 60 * 24) + 1;
 
-    updatedBreaks[breakIndex].additionalDays = daysDiff;
+    breaksForEmployee[breakIndex].additionalDays = daysDiff;
   } else {
-    updatedBreaks[breakIndex].additionalDays = 0;
+    breaksForEmployee[breakIndex].additionalDays = 0;
   }
 
-  setAdditionalBreaks(updatedBreaks);
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 };
+
 
 // Define the handleAdditionalBreakTypeChange function
-const handleAdditionalBreakTypeChange = (e, breakIndex) => {
-  const updatedBreaks = [...additionalBreaks];
-  updatedBreaks[breakIndex] = {
-    ...updatedBreaks[breakIndex],
-    type: e.target.value,
-  };
-  setAdditionalBreaks(updatedBreaks);
+const handleAdditionalBreakTypeChange = (e, employeeId, breakIndex) => {
+  const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
+  breaksForEmployee[breakIndex].type = e.target.value;
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 };
 
 
-const addAdditionalBreak = () => {
-  const newBreak = { startDate: null, endDate: null, type: '', additionalDays: 0 }; // Initialize additionalDays to 0
-  setAdditionalBreaks([...additionalBreaks, newBreak]);
+
+const addAdditionalBreak = (employeeId) => {
+  const newBreak = { startDate: null, endDate: null, type: '', additionalDays: 0 };
+  const updatedBreaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || []), newBreak];
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: updatedBreaksForEmployee });
 };
 
-  const deleteAdditionalBreak = (breakIndex) => {
-    // Delete the specified additional break
-    const updatedAdditionalBreaks = [...additionalBreaks];
-    updatedAdditionalBreaks.splice(breakIndex, 1);
-    setAdditionalBreaks(updatedAdditionalBreaks);
-  };
 
-const handleAdditionalBreakDaysChange = (e, breakIndex) => {
+const deleteAdditionalBreak = (employeeId, breakIndex) => {
+  const breaksForEmployee = additionalBreaksByEmployee[employeeId] || [];
+  breaksForEmployee.splice(breakIndex, 1);
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+};
+
+
+const handleAdditionalBreakDaysChange = (e, employeeId, breakIndex) => {
   const { name, value } = e.target;
-  const updatedAdditionalBreaks = [...additionalBreaks];
-  updatedAdditionalBreaks[breakIndex][name] = value;
-  setAdditionalBreaks(updatedAdditionalBreaks);
+  const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
+  breaksForEmployee[breakIndex][name] = value;
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 };
 
 const calculateDaysForBreakType = (breakType) => {
@@ -516,7 +515,8 @@ const renderEmployeeTable = () => {
                     <option value="nieobecność">Nieobecność</option>
                 </select>
                 
-                    <button onClick={addAdditionalBreak}>Add Przerwa</button>
+                <button onClick={() => addAdditionalBreak(employee.employee_id)}>Add Przerwa</button>
+
                 
             </td>
 
@@ -545,45 +545,49 @@ const renderEmployeeTable = () => {
                                 </tr>
                                 
                                 
-                                {additionalBreaks.map((breakItem, breakIndex) => (
+                                {(additionalBreaksByEmployee[employee.employee_id] || []).map((breakItem, breakIndex) => (
                                  
                 <tr key={`additional-${index}-${breakIndex}`}>
                     <td colSpan={27}> {/* You can adjust colSpan according to the number of columns you have */}
                         <React.Fragment>
                             <td>
-                                <DatePicker
-                                    selected={breakItem.startDate}
-                                    onChange={(date) => handleAdditionalBreakStartDateChange(date, breakIndex)}
-                                    dateFormat="dd/MM/yyyy"
-                                />
+                            <DatePicker
+  selected={breakItem.startDate} // ensure this gets the correct date
+  onChange={(date) => handleAdditionalBreakStartDateChange(date, employee.employee_id, breakIndex)}
+  dateFormat="dd/MM/yyyy"
+/>
+
                             </td>
                             <td>
-                                <DatePicker
-                                    selected={breakItem.endDate}
-                                    onChange={(date) => handleAdditionalBreakEndDateChange(date, breakIndex)}
-                                    dateFormat="dd/MM/yyyy"
-                                />
+                            <DatePicker
+  selected={breakItem.endDate}
+  onChange={(date) => handleAdditionalBreakEndDateChange(date, employee.employee_id, breakIndex)}
+  dateFormat="dd/MM/yyyy"
+/>
+
                             </td>
                             
                             <td>{breakItem.additionalDays}</td>
 
-                            <td colSpan="2">
+                            <td colSpan="4">
                                 <select
                                     value={breakItem.type}
-                                    onChange={(e) => handleAdditionalBreakTypeChange(e, breakIndex)}
+                                    onChange={(e) => handleAdditionalBreakTypeChange(e, employee.employee_id, breakIndex)}
                                 >
                                     <option value="">Choose break type</option>
                                     <option value="zwolnienie">Zwolnienie</option>
                                     <option value="bezpłatny">Bezpłatny</option>
                                     <option value="nieobecność">Nieobecność</option>
                                 </select>
-                                <button onClick={() => deleteAdditionalBreak(breakIndex)}>Remove</button>
+                                <button onClick={() => deleteAdditionalBreak(employee.employee_id, breakIndex)}>Remove</button>
+
                             </td>
                         </React.Fragment>
                     </td>
                 </tr>
+                
       ))}
-            
+
             <tr>
             <button onClick={() => {
     const daysOfBreak = healthBreak.days;
@@ -591,8 +595,10 @@ const renderEmployeeTable = () => {
     const grossAmountValue = employee.gross_amount;
     
     // Construct the arrays here, based on the additionalBreaks structure.
-    const additionalDaysArray = additionalBreaks.map(breakItem => breakItem.additionalDays || 0);
-    const additionalBreakTypesArray = additionalBreaks.map(breakItem => breakItem.type || '');
+     // Extract the arrays for the specific employee from the additionalBreaksByEmployee structure.
+     const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
+     const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
+     const additionalBreakTypesArray = breaksForEmployee.map(breakItem => breakItem.type || '');
 
     const calculatedValues = calculateSalary(
       grossAmountValue, 

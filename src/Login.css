@@ -164,5 +164,7 @@ tbody tr:last-child {
   border: none;
   padding: 2px;
 }
-
+.indented {
+  margin-left: 500px; /* Adjust this value as needed */
+}
 
