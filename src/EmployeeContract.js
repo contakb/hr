@@ -3,7 +3,8 @@ import React from 'react';
 const EmployeeContract = ({ employeeData, contract }) => {
   // Replace placeholders with actual data from the employeeData object
   const { name, surname } = employeeData;
-  const { contract_from_date } = contract;
+  const { contract_from_date, contract_to_date } = contract;
+  
 
   
   
@@ -18,7 +19,9 @@ const EmployeeContract = ({ employeeData, contract }) => {
       </div>
       <div className="contract-terms">
         <h2>Waruni umowy</h2>
-        <p>This employment contract ("Contract") is entered into on {new Date(contract_from_date).toLocaleDateString()} pomiędzy:</p>
+        <p>This employment contract ("Contract") is entered into on {new Date(contract_from_date).toLocaleDateString()}
+        od {new Date(contract_from_date).toLocaleDateString()} do {new Date(contract_to_date).toLocaleDateString()} </p>
+         pomiędzy:
         <p><strong>Pracodawca:</strong> Your Company Name, located at Your Company Address</p>
         <p><strong>Pracownik:</strong> {name} {surname}</p>
         {/* Add more contract terms here */}

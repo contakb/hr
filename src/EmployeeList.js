@@ -21,6 +21,11 @@ function Employee({ employee }) {
     navigate(`/add-contract/${id}`);
   };
 
+  const handleGenerateContractPage = () => {
+    navigate('/EmployeeContractPage', { state: { employeeData: employee, contract: selectedContract } });
+
+  };
+
   const toggleDetails = () => {
     setShowDetails(!showDetails);
   };
@@ -152,7 +157,7 @@ function Employee({ employee }) {
           ) : (
             <div>
               <button id="pdf-button">Download PDF</button>
-              <button onClick={toggleGenerateContract}>Hide Contract</button> {/* Add this button */}
+              <button onClick={handleGenerateContractPage}>Generuj</button> {/* Add this button */}
             </div>
           )}
         </div>

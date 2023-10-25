@@ -15,6 +15,9 @@ import NavigationPage from './NavigationPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
 import EmployeeContract from './EmployeeContract';
+import EmployeeContractPage from './EmployeeContractPage';
+
+
 function App() {
   return (
     <div className="App">
@@ -38,6 +41,7 @@ function App() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/accountById/:userid" element={<AccountDetails/>} />
       <Route path="/EmployeeContract" element={<EmployeeContract />} />
+      <Route path="/EmployeeContractPage" element={<EmployeeContractPage />} />
 
        
 
