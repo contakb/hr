@@ -116,6 +116,7 @@ function Employee({ employee }) {
       <button onClick={handleAddContract}>Add Contract</button>
       <button onClick={toggleContracts}>{contractsVisible ? 'Hide Contracts' : 'Show Contracts'}</button>
       <button onClick={handleGenerateContract}>{generateContractVisible ? 'Hide Contract' : 'Show Contract'}</button>
+      <button onClick={handleGenerateContractPage}>Generuj</button> {/* Add this button */}
 
       {showDetails && (
         <div>

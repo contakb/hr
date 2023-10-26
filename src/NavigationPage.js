@@ -19,6 +19,9 @@ function NavigationPage() {
         <Link to="/settings">
           <button>Settings</button>
         </Link>
+        <Link to="/ToDo">
+          <button>ToDo</button>
+        </Link>
       </div>
     </div>
   );

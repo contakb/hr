@@ -168,3 +168,29 @@ tbody tr:last-child {
   margin-left: 500px; /* Adjust this value as needed */
 }
 
+.ToDo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100vh;
+}
+
+.ToDo h1 {
+  margin-bottom: 20px;
+}
+
+.ToDo ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.ToDo li {
+  margin: 10px 0;
+}
+
+.ToDo button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+}

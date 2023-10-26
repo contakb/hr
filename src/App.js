@@ -16,6 +16,7 @@ import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
 import EmployeeContract from './EmployeeContract';
 import EmployeeContractPage from './EmployeeContractPage';
+import ToDo from './ToDo';
 
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
       <Route path="/accountById/:userid" element={<AccountDetails/>} />
       <Route path="/EmployeeContract" element={<EmployeeContract />} />
       <Route path="/EmployeeContractPage" element={<EmployeeContractPage />} />
+      <Route path="/ToDo" element={<ToDo />} />
 
        
 
