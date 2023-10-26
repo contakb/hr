@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function EmployeeForm() {
   const [employeeName, setEmployeeName] = useState('');
@@ -12,9 +13,49 @@ function EmployeeForm() {
   const [PESEL, setPESEL] = useState('');
   const [country, setCountry] = useState('');
   const [createdEmployee, setCreatedEmployee] = useState(null); // Track the created employee
+  const navigate = useNavigate();  // Import the useNavigate hook
+
+  const [validationError, setValidationError] = useState(null);  // Add this line
+
+  function isValidPESEL(pesel) {
+    if (pesel.length !== 11 || !/^\d{11}$/.test(pesel)) {
+      return false;  // check for length and digits only
+    }
+  
+    // Compute the checksum using weights for each digit
+    const weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3];
+    let sum = 0;
+  
+    for (let i = 0; i < 10; i++) {
+      sum += weights[i] * parseInt(pesel[i], 10);
+    }
+  
+    const checksum = (10 - (sum % 10)) % 10;
+  
+    // The last digit should match the checksum
+    return parseInt(pesel[10], 10) === checksum;
+  }
+  function isValidPostcode(postcode) {
+    const regex = /^\d{2}-\d{3}$/;
+    return regex.test(postcode);
+  }
+  
 
   const handleCreateEmployee = (event) => {
     event.preventDefault();
+
+    if (!employeeName || !employeeSurname || !street || !number || !postcode || !city || !country || !taxOffice || !PESEL) {
+      setValidationError("All fields must be entered!");  // Set the error message
+      return;
+    }
+    if (!isValidPESEL(PESEL)) {
+      setValidationError("Invalid PESEL number!");  // Set the error message
+      return;
+    }
+    if (!isValidPostcode(postcode)) {
+      setValidationError("Invalid postcode format! It should be XX-XXX.");
+      return;
+    }
 
     // Perform create employee request to the server
     axios
@@ -33,20 +74,30 @@ function EmployeeForm() {
         // Handle successful create employee
   console.log('Employee created:', response.data);
 
-  const createdEmployeeData = {
-    employeeName,
-    employeeSurname,
-    street,
-    number,
-    postcode,
-    city,
-    country,
-    taxOffice,
-    PESEL
-  };
+// Use the returned employeeId from the server response
+const createdEmployeeData = {
+  id: response.data.employeeId,
+  employeeName: response.data.employeeName,
+  employeeSurname: response.data.employeeSurname,
+  street,
+  number,
+  postcode,
+  city,
+  country,
+  taxOffice,
+  PESEL
+};
 
-  // Set the created employee data in the state
-  setCreatedEmployee(createdEmployeeData);
+
+  
+  // This function will redirect to the AddContractForm for the specific employee
+  const handleGoToAddContract = (employeeId) => {
+    navigate(`/add-contract/${employeeId}`);
+  }
+
+// Set the created employee data in the state
+setCreatedEmployee(createdEmployeeData);
+
 
         // Clear form fields
         setEmployeeName('');
@@ -104,6 +155,8 @@ function EmployeeForm() {
   return (
     <div>
       <h1>Employee Form</h1>
+      {/* Display validation error if present */}
+      {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
       <form onSubmit={handleCreateEmployee}>
         <label>Employee Name:</label>
         <input type="text" value={employeeName} onChange={handleEmployeeNameChange} />
@@ -134,9 +187,15 @@ function EmployeeForm() {
 
         <button type="submit">Create Employee</button>
       </form>
+      {/* Conditionally render the Add Contract button */}
+    {createdEmployee ? (
+      <button onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}`)}>Add Contract</button>
+    ) : (
+      <button disabled>Add Contract</button>
+    )}
 	  {createdEmployee && (
         <div>
-          <h2>Created Employee</h2>
+          <h2>Employee Created Successfully!</h2>
           <p>Name: {createdEmployee.employeeName}</p>
           <p>Surname: {createdEmployee.employeeSurname}</p>
           <p>Street: {createdEmployee.street}</p>
