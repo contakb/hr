@@ -1,14 +1,12 @@
-const bcrypt = require('bcrypt');
 const cors = require('cors');
 const express = require('express');
-const { Pool } = require('pg');
 const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
 const axios = require('axios');
 const crypto = require('crypto');
 const bodyParser = require('body-parser');
+const { createClient } = require('@supabase/supabase-js');
+const moment = require('moment');
 
-const moment = require('moment-timezone');
 
 
 require('dotenv').config();
@@ -19,14 +17,10 @@ const generateSecretKey = () => {
 
 const secretKey = generateSecretKey();
 
+const supabaseUrl = 'https://hxaxnwozubxemmygmmkw.supabase.co'; // Replace with your Supabase project URL
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXhud296dWJ4ZW1teWdtbWt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyNDk0NzAsImV4cCI6MjAxMTgyNTQ3MH0.re-MQMIldEU9bhypt54b_14IPDqjOzTQhrcMEoLeTBg'; // Replace with your Supabase API key
 
-const pool = new Pool({
-  host: 'localhost',
-  port: '5432',
-  database: 'Users',
-  user: 'postgres',
-  password: 'Conta123!',
-});
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
 
@@ -35,16 +29,12 @@ app.use(express.static('public'));
 
 app.use(
   session({
-    store: new pgSession({
-      pool,
-      tableName: 'session', // Name of the session table in the database
-    }),
-    secret: secretKey, // Secret key used for session encryption (replace with your own secret)
+    secret: secretKey,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true if using HTTPS
-      maxAge: 30 * 24 * 60 * 60 * 1000, // Session expiration time (in milliseconds)
+      secure: false,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     },
   })
 );
@@ -53,83 +43,106 @@ app.use(express.json());
 
 console.log('Generated secret key:', secretKey);
 
-app.use(cors({ // Add this code to enable CORS
-  origin: 'http://localhost:3000', // Replace with the origin of your client-side application
-  credentials: true, // Enable credentials (cookies, authorization headers, etc)
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
 }));
 
 
-pool.connect((err, client, done) => {
-  if (err) {
-    console.error('Error connecting to the database:', err);
-  } else {
-    console.log('Connected to the database');
-  }
-});
-
-// Create employee route
-app.post('/create-employee', (req, res) => {
+app.post('/create-employee', async (req, res) => {
   const employeeName = req.body.employeeName;
   const employeeSurname = req.body.employeeSurname;
   const street = req.body.street;
   const number = req.body.number;
   const postcode = req.body.postcode;
   const city = req.body.city;
-  const country = req.body.country; // Add the missing parameter for the "country" column
-  const taxOffice = req.body.taxOffice;
+  const country = req.body.country;
+  const taxOfficeName = req.body.taxOfficeName;
   const PESEL = req.body.PESEL;
 
-  // Insert employee data into the employees table
-  const insertEmployeeQuery = 'INSERT INTO employees (name, surname, street, number, postcode, city, country, tax_office, PESEL) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id';
-  const employeeValues = [employeeName, employeeSurname, street, number, postcode, city, country, taxOffice, PESEL];
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .insert([
+        {
+          name: employeeName,
+          surname: employeeSurname,
+          street: street,
+          number: number,
+          postcode: postcode,
+          city: city,
+          country: country,
+          tax_office: taxOfficeName,
+          pesel: PESEL
+        }
+      ])
+      .select();
 
+      const { data: secondData, error: secondError } = await supabase.from('employees').insert(/*...*/);
 
-  pool.connect((error, client, done) => {
+      console.log('Supabase Response:', data, error);
+        
+
     if (error) {
-      console.error('Error acquiring client from pool', error);
+      console.error('Error inserting employee data', error);
       res.status(500).send('Error occurred while saving data.');
       return;
     }
 
-    client.query(insertEmployeeQuery, employeeValues, (error, result) => {
-      done();
-
-      if (error) {
-        console.error('Error inserting employee data', error);
-        res.status(500).send('Error occurred while saving data.');
-        return;
-      }
-
-      const employeeId = result.rows[0].id;
-
+    // Check if data has the expected structure
+    if (data && data.length > 0) {
+      const employeeId = data[0].id;
       res.send({
         employeeId,
         employeeName,
         employeeSurname
       });
-    });
-  });
+    } else {
+      console.error('Unexpected response structure from Supabase');
+      res.status(500).send('Error occurred while processing the response.');
+    }
+  } catch (err) {
+    console.error('An unexpected error occurred', err);
+    res.status(500).send('An unexpected error occurred.');
+  }
 });
 
 
-// Get employees route
-app.get('/employees', (req, res) => {
-  // Retrieve employee data from the employees table
-  const getEmployeesQuery = 'SELECT id, name, surname, street, number, postcode, city, country, tax_office, pesel FROM employees';
+app.get('/tax-offices', async (req, res) => {
+  try {
+      let { data, error } = await supabase
+          .from('taxoffices')
+          .select('id, tax_office');
+      
+      if (error) throw error;
 
-  pool.query(getEmployeesQuery, (error, result) => {
+      res.json(data);
+  } catch (error) {
+      console.error('Error fetching tax offices', error);
+      res.status(500).send('Error occurred fetching data.');
+  }
+});
+
+// Get employees route
+app.get('/employees', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('id, name, surname, street, number, postcode, city, country, tax_office, pesel');
+
     if (error) {
       console.error('Error retrieving employees data', error);
       res.status(500).send('Error occurred while retrieving data.');
-      return;
+    } else {
+      const employees = data;
+      res.send({
+        employees,
+      });
     }
-
-    const employees = result.rows;
-
-    res.send({
-      employees
-    });
-  });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error occurred while retrieving data.');
+  }
 });
 
 // Define the function to get the current date in the format: YYYY-MM-DD
@@ -163,276 +176,329 @@ function formatTimestamp(timestampString) {
   return timestampObj.toISOString().split('T')[0]; // Extract YYYY-MM-DD format
 }
 
-app.post('/api/save-salary-data', (req, res) => {
+app.post('/api/save-salary-data', async (req, res) => {
   const salaryData = req.body; // The salary data received from the frontend
 
-  // Construct the query and execute it for each row in salaryData
-  const insertSalaryDataQuery = `
-    INSERT INTO salaries (
-      employee_id,
-      gross_total,
-      social_base,
-      emeryt_ub,
-      emeryt_pr,
-      rent_ub,
-      rent_pr,
-      chorobowe,
-      wypadkowe,
-      fp,
-      fgsp,
-      health_base,
-      heath_amount,
-      tax_base,
-      tax,
-      ulga,
-      koszty,
-      net_amount,
-      salary_month,
-      salary_year,
-      salary_date,
-      created_at,
-      updated_at,
-      zal_2021
-    )
-    VALUES 
-    ${salaryData.map((_, index) => `(${generatePlaceholders(index * 24 + 1, 24)})`).join(',\n')}
-  `;
+  try {
+    // Construct the array of salary records
+    const salaryRecords = salaryData.map((salary) => ({
+      employee_id: salary.employee_id,
+      gross_total: salary.gross_total,
+      social_base: salary.social_base,
+      emeryt_ub: salary.emeryt_ub,
+      emeryt_pr: salary.emeryt_pr,
+      rent_ub: salary.rent_ub,
+      rent_pr: salary.rent_pr,
+      chorobowe: salary.chorobowe,
+      wypadkowe: salary.wypadkowe,
+      fp: salary.fp,
+      fgsp: salary.fgsp,
+      health_base: salary.health_base,
+      heath_amount: salary.heath_amount,
+      tax_base: salary.tax_base,
+      tax: salary.tax,
+      ulga: salary.ulga,
+      koszty: salary.koszty,
+      net_amount: salary.net_amount,
+      salary_month: salary.salary_month,
+      salary_year: salary.salary_year,
+      salary_date: formatDate(salary.salary_date), // Convert salary_date to a valid date format using formatDate()
+      created_at: formatTimestamp(salary.created_at), // Convert created_at to a valid date format using formatTimestamp()
+      updated_at: formatTimestamp(salary.updated_at), // Convert updated_at to a valid date format using formatTimestamp()
+      zal_2021: salary.zal_2021,
+    }));
 
-  const values = [];
+    // Insert all salary records into the 'salaries' table using Supabase
+    const { data, error } = await supabase
+      .from('salaries')
+      .upsert(salaryRecords);
 
-  salaryData.forEach((salary) => {
-    // Assuming contract is an object, not an array
-    const rowValues = [
-      salary.employee_id,
-      salary.gross_total,
-      salary.social_base,
-      salary.emeryt_ub,
-      salary.emeryt_pr,
-      salary.rent_ub,
-      salary.rent_pr,
-      salary.chorobowe,
-      salary.wypadkowe,
-      salary.fp,
-      salary.fgsp,
-      salary.health_base,
-      salary.heath_amount,
-      salary.tax_base,
-      salary.tax,
-      salary.ulga,
-      salary.koszty,
-      salary.net_amount,
-      salary.salary_month,
-      salary.salary_year,
-      formatDate(salary.salary_date), // Convert salary_date to a valid date format using formatDate()
-      formatTimestamp(salary.created_at), // Convert created_at to a valid date format using formatTimestamp()
-      formatTimestamp(salary.updated_at), // Convert updated_at to a valid date format using formatTimestamp()
-      salary.zal_2021,
-    ];
 
-    values.push(...rowValues);
-  });
-
-  // Function to generate placeholders for the query
-  function generatePlaceholders(startIndex, count) {
-    return Array.from({ length: count }, (_, i) => `$${startIndex + i}`).join(', ');
-  }
-
-  // Execute the query for all rows of data in salaryData
-  pool
-    .query(insertSalaryDataQuery, values)
-    .then((result) => {
-      // Handle the result
-      console.log('Successfully inserted salary data:', result);
-      res.status(200).json({ success: true });
-    })
-    .catch((error) => {
-      // Handle errors
+    if (error) {
       console.error('Error inserting salary data:', error);
       res.status(500).json({ success: false, error: 'Error inserting salary data' });
-    });
+    } else {
+      console.log('Successfully inserted salary data:', data);
+      res.status(200).json({ success: true });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ success: false, error: 'Error inserting salary data' });
+  }
 });
 
-// Get salary list route
-app.get('/salary-list', (req, res) => {
+
+
+app.get('/salary-list', async (req, res) => {
   const { month, year } = req.query;
 
-  // Construct the SQL query to retrieve salary data based on month and year
-  let getSalaryListQuery = `
-    SELECT s.id, e.name, e.surname, s.gross_total, s.salary_month, s.salary_year, s.salary_date, s.net_amount, employee_id, emeryt_ub, rent_ub, chorobowe, heath_amount, koszty, tax
-    FROM salaries s
-    JOIN employees e ON s.employee_id = e.id
-  `;
+  try {
+    // Define the base query for retrieving salary data
+    let baseQuery = supabase
+      .from('salaries')
+      .select('id, employee_id, gross_total, salary_month, salary_year, salary_date, net_amount, emeryt_ub, rent_ub, chorobowe, heath_amount, koszty,  tax, employees!salaries_employee_id_fkey(name, surname)')
+      .order('salary_date', { ascending: false });
 
-  if (month && year) {
-    getSalaryListQuery += `
-      WHERE s.salary_month = $1 AND s.salary_year = $2
-    `;
-  }
+    // Add filters for month and year if provided
+    if (month && year) {
+      baseQuery = baseQuery
+        .eq('salary_month', month)
+        .eq('salary_year', year);
+    }
 
-  const queryValues = month && year ? [month, year] : [];
+    // Fetch employee data
+    const { data: employeeData, error: employeeError } = await supabase
+      .from('employees')
+      .select('id, name, surname');
 
-  pool.query(getSalaryListQuery, queryValues, (error, result) => {
-    if (error) {
-      console.error('Error retrieving salary list data', error);
-      res.status(500).send('Error occurred while retrieving data.');
+    if (employeeError) {
+      console.error('Error retrieving employee data', employeeError);
+      res.status(500).send('Error occurred while retrieving employee data.');
       return;
     }
 
-    const salaryList = result.rows;
-    res.send(salaryList);
-  });
+    // Fetch the salary data
+    const { data: salaryList, error } = await baseQuery;
+
+    if (error) {
+      console.error('Error retrieving salary list data', error);
+      res.status(500).send('Error occurred while retrieving salary data.');
+      return;
+    }
+
+    // Combine salary and employee data
+    const combinedData = salaryList.map((salary) => {
+      const matchingEmployee = employeeData.find((employee) => employee.id === salary.employee_id);
+
+      if (matchingEmployee) {
+        return {
+          ...salary,
+          employee_name: matchingEmployee.name,
+          employee_surname: matchingEmployee.surname,
+        };
+      }
+      return salary;
+    });
+
+    // Send the combined data as the response
+    res.json(combinedData);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error occurred while retrieving data.');
+  }
 });
 
 
 
-app.get('/distinct-salary-months-years', (req, res) => {
-  const getDistinctMonthsYearsQuery = `
-    SELECT DISTINCT EXTRACT(MONTH FROM salary_date) AS month, EXTRACT(YEAR FROM salary_date) AS year
-    FROM salaries;
-  `;
 
-  pool.query(getDistinctMonthsYearsQuery, (error, result) => {
+
+
+
+
+
+
+const fetchSalaryList = async () => {
+  try {
+    const response = await axios.get('http://localhost:3001/salary-list');
+    if (response.data) {
+      setSalaryList(response.data);
+      setLoading(false);
+    } else {
+      console.error('No data received from the server.');
+      setError('No data received from the server.');
+      setLoading(false);
+    }
+  } catch (error) {
+    console.error('Error fetching salary list:', error);
+    setError('Error fetching salary list. Please try again later.');
+    setLoading(false);
+  }
+};
+
+
+
+
+app.get('/distinct-salary-months-years', async (req, res) => {
+  try {
+    // Construct the query to retrieve distinct months and years from the 'salary_date' column using Supabase
+    const { data: distinctMonthsYears, error } = await supabase
+      .from('salaries')
+      .select('distinct(salary_month), distinct(salary_year)')
+      .embed('fk_salaries_employee_id');
+
     if (error) {
       console.error('Error retrieving distinct months and years:', error);
       res.status(500).send('Error occurred while retrieving data.');
       return;
     }
 
-    const distinctMonthsYears = result.rows;
     res.json(distinctMonthsYears);
-  });
-});
-
-
-// Get report data route
-app.get('/reports', async (req, res) => {
-  const { type, month, year } = req.query;
-
-  if (type === 'total-gross-amount') {
-    // Query for total gross amount report
-    const getGrossAmountReportQuery = `
-      SELECT salary_month, salary_year, SUM(gross_total) AS total_gross_amount
-      FROM salaries
-      WHERE salary_month = $1 AND salary_year = $2
-      GROUP BY salary_month, salary_year;
-    `;
-
-    try {
-      const result = await pool.query(getGrossAmountReportQuery, [month, year]);
-      res.send(result.rows);
-    } catch (error) {
-      console.error('Error fetching total gross amount report:', error);
-      res.status(500).send('Error fetching report data.');
-    }
-  } else if (type === 'total-net-amount') {
-    // Query for total net amount report
-    const getNetAmountReportQuery = `
-      SELECT salary_month, salary_year, SUM(net_amount) AS total_net_amount
-      FROM salaries
-      WHERE salary_month = $1 AND salary_year = $2
-      GROUP BY salary_month, salary_year;
-    `;
-
-    try {
-      const result = await pool.query(getNetAmountReportQuery, [month, year]);
-      res.send(result.rows);
-    } catch (error) {
-      console.error('Error fetching total net amount report:', error);
-      res.status(500).send('Error fetching report data.');
-    }
-  } else {
-    res.status(400).send('Invalid report type.');
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error occurred while retrieving data.');
   }
 });
 
 
-app.post('/employees/:employeeId/add-contract', (req, res) => {
+
+app.get('/reports', async (req, res) => {
+  const { type, month, year } = req.query;
+
+  try {
+    if (type === 'total-gross-amount') {
+      // Query for total gross amount report
+      const { data, error } = await supabase
+        .from('salaries')
+        .select('salary_month, salary_year, SUM(gross_total) AS total_gross_amount')
+        .eq('salary_month', month)
+        .eq('salary_year', year)
+        .group('salary_month, salary_year');
+
+      if (error) {
+        console.error('Error fetching total gross amount report:', error);
+        res.status(500).send('Error fetching report data.');
+        return;
+      }
+
+      res.send(data);
+    } else if (type === 'total-net-amount') {
+      // Query for total net amount report
+      const { data, error } = await supabase
+        .from('salaries')
+        .select('salary_month, salary_year, SUM(net_amount) AS total_net_amount')
+        .eq('salary_month', month)
+        .eq('salary_year', year)
+        .group('salary_month, salary_year');
+
+      if (error) {
+        console.error('Error fetching total net amount report:', error);
+        res.status(500).send('Error fetching report data.');
+        return;
+      }
+
+      res.send(data);
+    } else {
+      res.status(400).send('Invalid report type.');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error fetching report data.');
+  }
+});
+
+
+
+app.post('/employees/:employeeId/add-contract', async (req, res) => {
   const { employeeId } = req.params; // Retrieve the employeeId from the URL parameter
   const { grossAmount, startDate, endDate } = req.body;
 
-  const addContractQuery = 'INSERT INTO contracts (employee_id, contract_from_date, contract_to_date, gross_amount) VALUES ($1, $2, $3, $4) RETURNING *';
-  const values = [employeeId, startDate, endDate, grossAmount];
+  try {
+    // Construct the contract data
+    const contractData = {
+      employee_id: employeeId,
+      contract_from_date: startDate,
+      contract_to_date: endDate,
+      gross_amount: grossAmount,
+    };
 
-  console.log('Employee ID:', employeeId);
-  console.log('Start Date:', startDate);
-  console.log('End Date:', endDate);
-  console.log('Gross Amount:', grossAmount);
+    // Insert the contract data into the 'contracts' table using Supabase
+    const { data, error } = await supabase
+      .from('contracts')
+      .upsert([contractData]);
 
-  pool.query(addContractQuery, values, (error, result) => {
     if (error) {
       console.error('Error adding contract:', error);
       res.status(500).send('Error occurred while adding contract.');
       return;
     }
 
-    const contract = result.rows[0];
+    // Return the added contract data as the response
+    const contract = data[0];
     res.send({
       message: 'Contract added successfully',
       contract,
     });
-  });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error occurred while adding contract.');
+  }
 });
 
 
-app.get('/api/contracts/:employeeId', (req, res) => {
+
+app.get('/api/contracts/:employeeId', async (req, res) => {
   const employeeId = req.params.employeeId;
 
-  // Perform the database query to fetch the contracts for the specified employee
-  const query = `
-    SELECT *
-    FROM contracts
-    WHERE employee_id = $1
-  `;
+  try {
+    // Perform the database query to fetch the contracts for the specified employee
+    const { data, error } = await supabase
+      .from('contracts')
+      .select('*')
+      .eq('employee_id', employeeId);
 
-  pool.query(query, [employeeId], (error, results) => {
     if (error) {
       console.error('Error fetching contracts:', error);
       res.status(500).json({ error: 'Error fetching contracts' });
       return;
     }
 
-    // Convert the dates using Moment.js
-    console.log('Contracts:', results.rows);
+    // Format the dates using Moment.js and include them in the response
+    const contracts = Array.isArray(data)
+      ? data.map(contract => {
+          const contractFrom = moment(contract.contract_from_date).format('YYYY-MM-DD');
+          const contractTo = moment(contract.contract_to_date).format('YYYY-MM-DD');
 
-    const contracts = Array.isArray(results.rows)
-      ? results.rows.map(contract => {
-          const contractFrom = moment(contract.contract_from).format('YYYY-MM-DD');
-          const contractTo = moment(contract.contract_to).format('YYYY-MM-DD');
-
-          return { ...contract, contract_from: contractFrom, contract_to: contractTo };
+          return {
+            ...contract,
+            contract_from_date: contractFrom,
+            contract_to_date: contractTo
+          };
         })
       : [];
 
-    console.log('Converted Contracts:', contracts);
+    console.log('Contracts:', contracts);
 
     res.json({ contracts });
 
-
-  });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Error fetching contracts' });
+  }
 });
 
-app.post('/api/valid-employees', (req, res) => {
-  const { startDate, endDate } = req.body;
-
-  const query = `
-    SELECT employees.id AS employee_id, employees.name, employees.surname, contracts.gross_amount
-    FROM employees
-    INNER JOIN contracts ON employees.id = contracts.employee_id
-    WHERE
-      contracts.contract_from_date <= $1 AND
-      contracts.contract_to_date >= $2
-  `;
 
 
-  pool.query(query, [endDate, startDate], (error, result) => {
+
+app.post('/api/valid-employees', async (req, res) => {
+  const { month, year } = req.body;
+
+  try {
+    // Calculate the start and end dates for the specified month and year
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    // Format the dates in 'YYYY-MM-DD' format
+    const formattedStartDate = startDate.toISOString().split('T')[0];
+    const formattedEndDate = endDate.toISOString().split('T')[0];
+
+    // Perform the database query to fetch valid employees with their contracts
+    const { data, error } = await supabase
+      .from('employees')
+      .select('name, surname, id, contracts(gross_amount, contract_from_date, contract_to_date)')
+      .gt('contracts.contract_to_date', formattedStartDate) // Contract ends after the start of the month
+      .lt('contracts.contract_from_date', formattedEndDate); // Contract starts before the end of the month
+
     if (error) {
       console.error('Error fetching valid employees:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     } else {
-      const employees = result.rows;
+      const employees = Array.isArray(data) ? data : [];
       res.status(200).json({ employees });
     }
-  });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 
@@ -443,73 +509,91 @@ app.post('/api/valid-employees', (req, res) => {
 
 
 
-app.post('/api/calculate-salary', (req, res) => {
+
+
+
+
+app.post('/api/calculate-salary', async (req, res) => {
   const { month, year } = req.body;
-  
-  // Calculate the start and end dates of the selected month and year
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0);
-  
-  // Query to fetch employees with valid contracts and their gross amounts
-  const query = `
-    SELECT employees.id, employees.name, employees.surname, contracts.gross_amount
-    FROM employees
-    JOIN contracts ON employees.id = contracts.employee_id
-    WHERE contracts.contract_from_date <= $1
-      AND contracts.contract_to_date >= $2
-  `;
-  
-  // Execute the query passing the start and end dates as parameters
-  pool.query(query, [startDate, endDate], (error, result) => {
-    if (error) {
-      console.error('Error fetching employee data:', error);
-      res.status(500).send('Error occurred while fetching employee data.');
+
+  try {
+    // Calculate the start and end dates of the selected month and year
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    // Perform the database query to fetch employees with valid contracts and their gross amounts
+    const { data: employeesData, error: employeesError } = await supabase
+      .from('employees')
+      .select('id, name, surname')
+      .eq('contracts.contract_from_date', startDate) // Assuming contracts have a 'contract_from_date' column
+      .lte('contracts.contract_to_date', endDate) // Assuming contracts have a 'contract_to_date' column
+      .innerJoin('contracts', { 'employees.id': 'contracts.employee_id' });
+
+    if (employeesError) {
+      console.error('Error fetching employee data:', employeesError);
+      res.status(500).json({ error: 'Error occurred while fetching employee data.' });
       return;
     }
+
+    const employees = Array.isArray(employeesData) ? employeesData : [];
     
-    const employees = result.rows;
+    // Calculate salaries for each employee
     const salaries = employees.map(employee => {
-      const { id, name, surname, gross_amount } = employee;
-      // Calculate the salary for each employee based on the gross amount and any additional calculations
-      // Replace the placeholder calculation with your own logic
-      const salary = calculateSalary(gross_amount);
+      const { id, name, surname } = employee;
+      // Replace this placeholder calculation with your own logic based on gross_amount
+      const grossAmount = employee.contracts.gross_amount;
+      const salary = calculateSalary(grossAmount);
       return { id, name, surname, salary };
     });
-    
-    res.send({ salaries });
-  });
+
+    res.status(200).json({ salaries });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
+
+// Replace this placeholder function with your actual salary calculation logic
+function calculateSalary(grossAmount) {
+  // Replace with your salary calculation logic
+  // For example, you can calculate the salary based on the provided gross amount
+  // and any other factors like taxes, deductions, etc.
+  return grossAmount * 0.8; // 80% of the gross amount as a placeholder
+}
 
 
 
 
 // Define the API endpoint to fetch contracts' gross amount
-app.get('/api/contracts/:employee_id/gross_amount', (req, res) => {
+app.get('/api/contracts/:employee_id/gross_amount', async (req, res) => {
   const employee_id = parseInt(req.params.employee_id);
 
-  // Perform the database query
-  const query = `
-    SELECT gross_amount
-    FROM contracts
-    WHERE employee_id = ${employee_id}
-  `;
+  try {
+    // Perform the database query to fetch the contract's gross amount using Supabase
+    const { data: contractData, error: contractError } = await supabase
+      .from('contracts')
+      .select('gross_amount')
+      .eq('employee_id', employee_id)
+      .embed('fk_salaries_employee_id');
 
-  connection.query(query, (error, results) => {
-    if (error) {
-      console.error('Error fetching contracts:', error);
-      res.status(500).json({ error: 'Error fetching contracts' });
+    if (contractError) {
+      console.error('Error fetching contract:', contractError);
+      res.status(500).json({ error: 'Error fetching contract' });
       return;
     }
 
-    if (results.length === 0) {
-      res.status(404).json({ error: 'No contracts found for the employee' });
+    if (!Array.isArray(contractData) || contractData.length === 0) {
+      res.status(404).json({ error: 'No contract found for the employee' });
       return;
     }
 
-    const grossAmount = results[0].gross_amount;
-    console.log('Fetched gross amount:', gross_amount);
-    res.json({ gross_amount });
-  });
+    const grossAmount = contractData[0].gross_amount;
+    console.log('Fetched gross amount:', grossAmount);
+    res.json({ gross_amount: grossAmount });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 
@@ -520,41 +604,37 @@ app.get('/api/contracts/:employee_id/gross_amount', (req, res) => {
 // ...
 
 
-app.get('/loginUser', (req, res) => {
+app.get('/loginUser', async (req, res) => {
   const { usernameOrEmail } = req.query;
 
-  console.log('Received username or email:', usernameOrEmail);
+  try {
+    console.log('Received username or email:', usernameOrEmail);
 
-  // Query the PostgreSQL database to check the user's credentials and fetch the associated companyid
-  const query = `
-    SELECT u.email, u.userid, u.username, c.companyid, c.companyname
-    FROM public.users u
-    LEFT JOIN public.user_companies uc ON u.userid = uc.userid
-    LEFT JOIN public.companies c ON uc.companyid = c.companyid
-    WHERE u.email = $1 OR u.username = $1`;
-  const values = [usernameOrEmail];
+    // Use Supabase to query the user's credentials and fetch additional data
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('email, userid, username')
+      .eq('email', usernameOrEmail)
+      .or('username', 'eq', usernameOrEmail);
 
-  pool.query(query, values, (error, result) => {
     if (error) {
-      console.error('Error executing query:', error);
+      console.error('Error querying user data:', error);
       res.status(500).json({ error: 'Internal server error' });
       return;
     }
 
-    if (result.rows.length === 0) {
+    if (!Array.isArray(users) || users.length === 0) {
       // User not found
       console.log('No user found:', usernameOrEmail);
       res.status(401).json({ error: 'Invalid username or email' });
       return;
     }
 
-    const user = result.rows[0];
+    const user = users[0];
     const storedUsername = user.username;
-    const companyid = user.companyid;
-    const companyname = user.companyname;
     const email = user.email;
 
-    console.log('Retrieved username, companyid, and companyname:', storedUsername, companyid, companyname);
+    console.log('Retrieved username and email:', storedUsername, email);
     console.log('Input username or email:', usernameOrEmail);
 
     // Perform the comparison outside the callback
@@ -562,63 +642,73 @@ app.get('/loginUser', (req, res) => {
       // User authenticated successfully
       console.log('Authentication successful:', usernameOrEmail);
 
-      // Fetch the authenticated user's ID from the database
-      const useridQuery = `SELECT userid FROM public.users WHERE username = $1`;
-      const useridValues = [storedUsername];
+      const userid = user.userid;
 
-      pool.query(useridQuery, useridValues, (useridError, useridResult) => {
-        if (useridError) {
-          console.error('Error executing userid query:', useridError);
+      // Use Supabase to fetch additional user data
+      const { data: userCompanies, error: companyError } = await supabase
+        .from('user_companies')
+        .select('companyid, companyname')
+        .eq('userid', userid);
+
+      if (companyError) {
+        console.error('Error querying user companies:', companyError);
+        res.status(500).json({ error: 'Internal server error' });
+        return;
+      }
+
+      if (!Array.isArray(userCompanies) || userCompanies.length === 0) {
+        // User companies not found
+        console.log('No user companies found for:', usernameOrEmail);
+        res.status(401).json({ error: 'Invalid username or email' });
+        return;
+      }
+
+      const userCompany = userCompanies[0];
+      const companyid = userCompany.companyid;
+      const companyname = userCompany.companyname;
+
+      // Set the `companyid` and `companyname` in the user's session
+      req.session.companyid = companyid;
+      req.session.userid = userid;
+      req.session.companyname = companyname;
+      req.session.email = email;
+      req.session.username = storedUsername;
+
+      console.log('Session data before saving:', req.session);
+
+      // Save the session data
+      req.session.save((saveError) => {
+        if (saveError) {
+          console.error('Error saving session:', saveError);
           res.status(500).json({ error: 'Internal server error' });
           return;
         }
-        console.log('User ID query result:', useridResult.rows); // Log the result to check the returned userid
 
-        if (useridResult.rows.length === 0) {
-          // User ID not found
-          console.log('User ID not found:', storedUsername);
-          res.status(401).json({ error: 'Invalid username or email' });
-          return;
-        }
+        console.log('Session data after saving:', req.session);
+        console.log('Session data after login:', req.session);
 
-        const userid = useridResult.rows[0].userid;
-
-        // Set the `companyid` and `companyname` in the user's session
-        req.session.companyid = companyid;
-        req.session.userid = userid;
-        req.session.companyname = companyname;
-        req.session.email = email;
-        req.session.username = storedUsername; // Change to `username`
-
-        console.log('Session data before saving:', req.session); // Log the session data before saving
-
-        req.session.save((saveError) => {
-          if (saveError) {
-            console.error('Error saving session:', saveError);
-            res.status(500).json({ error: 'Internal server error' });
-            return;
-          }
-
-          console.log('Session data after saving:', req.session);
-          console.log('Session data after login:', req.session); // Log the session data after saving
-
-          // Use the AuthenticatedUserID obtained from the database
-          // For session-based authentication
-          // or
-          // const token = jwt.sign({ userid, companyid, companyname }, 'secretKey'); // For token-based authentication
-
-          res.json({ message: 'Logged in successfully', username: storedUsername, userid, companyid, companyname, email });
-
-        });
+        res.json({ message: 'Logged in successfully', username: storedUsername, userid, companyid, companyname, email });
       });
     } else {
       // Incorrect username or email
       console.log('Invalid username or email:', usernameOrEmail);
       res.status(401).json({ error: 'Invalid username or email' });
     }
-  });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
+
+// Middleware function to check if the user is authenticated
+function isAuthenticated(req, res, next) {
+  if (!req.session.userid) {
+    return res.status(401).json({ error: 'Unauthorized: User not authenticated' });
+  }
+  // Continue with the next middleware if the user is authenticated
+  next();
+}
 
 app.get('/userid', (req, res) => {
   if (req.session && req.session.userid) {
@@ -629,55 +719,51 @@ app.get('/userid', (req, res) => {
   }
 });
 
-function isAuthenticated(req, res, next) {
-  if (!req.session.userid) {
-    return res.status(401).json({ error: 'Unauthorized: User not authenticated' });
-  }
-  // Continue with the next middleware if the user is authenticated
-  next();
-}
-
-
-app.get('/account/:username', isAuthenticated, (req, res) => {
+app.get('/account/:username', isAuthenticated, async (req, res) => {
   const { username } = req.params;
 
   // Ensure that the user making the request is the same as the requested user
-  if (req.session.storedUsername !== username) {
+  if (req.session.username !== username) {
     return res.status(403).json({ error: 'Access forbidden' });
   }
 
-  pool.query(
-    'SELECT username, email FROM public.users WHERE username = $1',
-    [username],
-    (error, result) => {
-      if (error) {
-        console.error('Error executing query:', error);
-        return res.status(500).json({ error: 'Internal server error' });
-      }
+  try {
+    // Use Supabase to fetch the user's account details
+    const { data: userAccountDetails, error } = await supabase
+      .from('users')
+      .select('username, email')
+      .eq('username', username);
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Account not found' });
-      }
-
-      const accountDetails = result.rows[0];
-
-      // Now, you can use this information to render your account details page
-      res.render('account-details', {
-        username: accountDetails.username, // Include username
-        email: accountDetails.email, // Include email
-        userid: req.session.userid, // Include userid from the session
-        companyid: req.session.companyid, // Include companyid from the session
-        companyname: req.session.companyname, // Include companyname from the session
-      });
+    if (error) {
+      console.error('Error fetching user account details:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-  );
+
+    if (!Array.isArray(userAccountDetails) || userAccountDetails.length === 0) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const accountDetails = userAccountDetails[0];
+
+    // Render your account details page or send JSON response with account details
+    res.json({
+      username: accountDetails.username, // Include username
+      email: accountDetails.email, // Include email
+      userid: req.session.userid, // Include userid from the session
+      companyid: req.session.companyid, // Include companyid from the session
+      companyname: req.session.companyname, // Include companyname from the session
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 
 
 
 
-app.post('/company', isAuthenticated, (req, res) => {
+app.post('/company', isAuthenticated, async (req, res) => {
   const { companyname, address, taxid } = req.body;
   const userid = req.session.userid;
 
@@ -686,24 +772,27 @@ app.post('/company', isAuthenticated, (req, res) => {
   console.log('Session Data - User ID:', req.session.userid);
   console.log('Is User Authenticated:', req.isAuthenticated());
 
+  try {
+    // Store the company data in the database, including the authenticated user's userid
+    const { data: newCompany, error } = await supabase
+      .from('companies')
+      .upsert([{ companyname, address, taxid, userid }], { returning: 'minimal' });
 
-  // Store the company data in the database, including the authenticated user's userid
-  const companyQuery = 'INSERT INTO public.companies (companyname, address, taxid, userid) VALUES ($1, $2, $3, $4) RETURNING companyid';
-  const companyValues = [companyname, address, taxid, userid];
-
-  pool.query(companyQuery, companyValues, (error, result) => {
     if (error) {
-      console.error('Error executing company query:', error);
+      console.error('Error creating company:', error);
       return res.status(500).json({ message: 'Failed to create company' });
     }
 
-    const companyid = result.rows[0].companyid;
-    console.log('Newly Created Company ID:', companyid);
+    console.log('Newly Created Company ID:', newCompany[0].id);
 
     // Send a response to indicate success
     res.json({ success: true, message: 'Company created successfully' });
-  });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
+
 
 
 
@@ -736,45 +825,42 @@ app.post('/password-reminder', (req, res) => {
   );
 });
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const { email, password, username, companyid } = req.body;
 
-  // Hash the password
-  bcrypt.hash(password, 10, (error, hashedPassword) => {
-    if (error) {
-      console.error('Error hashing password:', error);
+  try {
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Store the hashed password in the database
+    const { data: newUser, error: registrationError } = await supabase
+      .from('users')
+      .upsert([{ email, password: hashedPassword, username }], { returning: 'minimal' });
+
+    if (registrationError) {
+      console.error('Error registering user:', registrationError);
       return res.status(500).json({ error: 'Internal server error' });
     }
 
-    // Store the hashed password in the database
-    const query = 'INSERT INTO public.users (email, password, username) VALUES ($1, $2, $3) RETURNING userid';
-    const values = [email, hashedPassword, username];
+    const userid = newUser[0].id;
 
-    pool.query(query, values, (error, result) => {
-      if (error) {
-        console.error('Error executing query:', error);
-        return res.status(500).json({ error: 'Internal server error' });
-      }
+    // Insert the user-company association into the user_company table
+    const { error: associationError } = await supabase
+      .from('user_companies')
+      .insert([{ userid, companyid }]);
 
-      const userid = result.rows[0].userid;
+    if (associationError) {
+      console.error('Error creating user-company association:', associationError);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
 
-      // Insert the user-company association into the user_company table
-      const associationQuery = 'INSERT INTO public.user_companies (userid, companyid) VALUES ($1, $2)';
-      const associationValues = [userid, companyid];
-
-      pool.query(associationQuery, associationValues, (error, result) => {
-        if (error) {
-          console.error('Error executing query:', error);
-          return res.status(500).json({ error: 'Internal server error' });
-        }
-
-        // Registration successful
-        return res.json({ message: 'Registration successful' });
-      });
-    });
-  });
-	});
-
+    // Registration successful
+    return res.json({ message: 'Registration successful' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
@@ -791,73 +877,84 @@ app.post('/register', (req, res) => {
     next();
   })
   
-  app.get('/accountById/:userid', isAuthenticated, (req, res) => {
+  app.get('/accountById/:userid', isAuthenticated, async (req, res) => {
     const { userid } = req.params;
   
-    pool.query('SELECT userid FROM public.users WHERE userid = $1', [userid], (error, result) => {
+    try {
+      // Use Supabase to fetch the user's account details
+      const { data: userAccountDetails, error } = await supabase
+        .from('users')
+        .select('userid')
+        .eq('userid', userid);
+  
       if (error) {
-        console.error('Error executing query:', error);
+        console.error('Error fetching user account details:', error);
         return res.status(500).json({ error: 'Internal server error' });
       }
   
-      if (result.rows.length === 0) {
+      if (!Array.isArray(userAccountDetails) || userAccountDetails.length === 0) {
         return res.status(404).json({ error: 'Account not found' });
       }
   
-      const accountDetails = result.rows[0];
+      const accountDetails = userAccountDetails[0];
       console.log('Received userid from the database:', accountDetails.userid); // Log the retrieved userid
       return res.json(accountDetails);
-    });
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
   
   
   
+  
 
 
 
-app.post('/check-registration', (req, res) => {
-  const { email, username } = req.body;
-
-  // Check if email and username are present in the request body
-  if (!email || !username) {
-    return res.status(400).json({ error: 'Email and username are required' });
-  }
-
-  // Check if email exists in the database
-  const queryEmail = 'SELECT COUNT(*) FROM public.users WHERE email = $1';
-  const valuesEmail = [email];
-
-  pool.query(queryEmail, valuesEmail, (errorEmail, resultEmail) => {
-    if (errorEmail) {
-      console.error('Error checking email:', errorEmail);
-           return res.status(500).json({ error: 'An error occurred' });
-    }
-
-    if (resultEmail.rows[0].count > 0) {
-      // Email already exists
-      return res.status(400).json({ error: 'Email already exists' });
-    }
-
-    // Check if username exists in the database
-    const queryUsername = 'SELECT COUNT(*) FROM public.users WHERE username = $1';
-    const valuesUsername = [username];
-
-    pool.query(queryUsername, valuesUsername, (errorUsername, resultUsername) => {
-      if (errorUsername) {
-        console.error('Error checking username:', errorUsername);
+  app.post('/check-registration', async (req, res) => {
+    const { email, username } = req.body;
+  
+    try {
+      // Check if email exists in the database
+      const { data: emailExists, error: emailError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email);
+  
+      if (emailError) {
+        console.error('Error checking email:', emailError);
         return res.status(500).json({ error: 'An error occurred' });
       }
-
-      if (resultUsername.rows[0].count > 0) {
+  
+      if (emailExists.length > 0) {
+        // Email already exists
+        return res.status(400).json({ error: 'Email already exists' });
+      }
+  
+      // Check if username exists in the database
+      const { data: usernameExists, error: usernameError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', username);
+  
+      if (usernameError) {
+        console.error('Error checking username:', usernameError);
+        return res.status(500).json({ error: 'An error occurred' });
+      }
+  
+      if (usernameExists.length > 0) {
         // Username already exists
         return res.status(400).json({ error: 'Username already exists' });
       }
-
+  
       // Email and username are available
       return res.status(200).json({ message: 'Email and username are available' });
-    });
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
-});
+  
 
 
 

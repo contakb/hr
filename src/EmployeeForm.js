@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,11 +9,28 @@ function EmployeeForm() {
   const [number, setNumber] = useState('');
   const [postcode, setPostcode] = useState('');
   const [city, setCity] = useState('');
-  const [taxOffice, setTaxOffice] = useState('');
   const [PESEL, setPESEL] = useState('');
   const [country, setCountry] = useState('');
   const [createdEmployee, setCreatedEmployee] = useState(null); // Track the created employee
   const navigate = useNavigate();  // Import the useNavigate hook
+  const [taxOfficeID, setTaxOfficeID] = useState('');
+const [taxOfficeName, setTaxOfficeName] = useState('');
+const [taxOffices, setTaxOffices] = useState([]);
+const [taxOffice, setTaxOffice] = useState('');
+
+
+
+
+  useEffect(() => {
+    axios.get('http://localhost:3001/tax-offices')
+        .then((response) => {
+            setTaxOffices(response.data);
+        })
+        .catch((error) => {
+            console.error('Error fetching tax offices:', error);
+        });
+}, []); // Empty dependency array ensures this effect runs only once
+
 
   const [validationError, setValidationError] = useState(null);  // Add this line
 
@@ -56,6 +73,15 @@ function EmployeeForm() {
       setValidationError("Invalid postcode format! It should be XX-XXX.");
       return;
     }
+    
+    if (!taxOffice) {
+      setValidationError("Please select a tax office from the dropdown!");
+      return;
+  }
+  
+   
+    
+  
 
     // Perform create employee request to the server
     axios
@@ -67,7 +93,7 @@ function EmployeeForm() {
         postcode,
         city,
 		country,
-        taxOffice,
+        taxOfficeName,
         PESEL
       })
       .then((response) => {
@@ -76,7 +102,7 @@ function EmployeeForm() {
 
 // Use the returned employeeId from the server response
 const createdEmployeeData = {
-  id: response.data.employeeId,
+  employeeId: response.data.employeeId,
   employeeName: response.data.employeeName,
   employeeSurname: response.data.employeeSurname,
   street,
@@ -145,8 +171,17 @@ setCreatedEmployee(createdEmployeeData);
   };
 
   const handleTaxOfficeChange = (event) => {
-    setTaxOffice(event.target.value);
+    const selectedId = event.target.value;
+    setTaxOffice(selectedId); // This is the ID
+    
+    // Find the selected tax office and set its name
+    const selectedOffice = taxOffices.find(office => office.id.toString() === selectedId);
+    if (selectedOffice) {
+      setTaxOfficeName(selectedOffice.tax_office); // This is the NAME
+    }
   };
+  
+
 
   const handlePESELChange = (event) => {
     setPESEL(event.target.value);
@@ -180,7 +215,16 @@ setCreatedEmployee(createdEmployeeData);
         <input type="text" value={country} onChange={handleCountryChange} />
 
         <label>Tax Office:</label>
-        <input type="text" value={taxOffice} onChange={handleTaxOfficeChange} />
+<select value={taxOffice} onChange={handleTaxOfficeChange}>
+<option value="" disabled>Wybierz US</option>
+    {taxOffices.map((office) => (
+      
+        <option key={office.id} value={office.id}>
+            {office.tax_office}
+        </option>
+    ))}
+</select>
+
 
         <label>Pesel:</label>
         <input type="text" value={PESEL} onChange={handlePESELChange} />
