@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+
 function SalaryListPage() {
   const [salaryList, setSalaryList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,8 +146,8 @@ function SalaryListDetails({ salaryList }) {
           {salaryList.map((salary) => (
             <tr key={salary.id}>
               <td>{salary.employee_id}</td>
-              <td>{salary.name}</td> {/* Display employee name */}
-              <td>{salary.surname}</td> {/* Display employee surname */}
+              <td>{salary.employees.name}</td> {/* Display employee name */}
+              <td>{salary.employees.surname}</td> {/* Display employee surname */}
               <td>{salary.salary_month}</td>
               <td>{salary.salary_year}</td>
               <td>{new Date(salary.salary_date).toLocaleDateString()}</td>

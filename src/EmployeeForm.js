@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Select from 'react-select';
 
 function EmployeeForm() {
   const [employeeName, setEmployeeName] = useState('');
@@ -169,17 +170,22 @@ setCreatedEmployee(createdEmployeeData);
   const handleCountryChange = (event) => {
     setCountry(event.target.value);
   };
+  const taxOfficeOptions = taxOffices.map(office => ({
+    value: office.id,
+    label: office.tax_office
+}));
 
-  const handleTaxOfficeChange = (event) => {
-    const selectedId = event.target.value;
-    setTaxOffice(selectedId); // This is the ID
-    
-    // Find the selected tax office and set its name
-    const selectedOffice = taxOffices.find(office => office.id.toString() === selectedId);
-    if (selectedOffice) {
-      setTaxOfficeName(selectedOffice.tax_office); // This is the NAME
-    }
-  };
+const handleTaxOfficeChange = (selectedOption) => {
+  if (selectedOption) {
+      setTaxOffice(selectedOption.value);
+      
+      // This sets the name as well
+      setTaxOfficeName(selectedOption.label);
+  } else {
+      setTaxOffice('');
+      setTaxOfficeName('');
+  }
+};
   
 
 
@@ -215,15 +221,13 @@ setCreatedEmployee(createdEmployeeData);
         <input type="text" value={country} onChange={handleCountryChange} />
 
         <label>Tax Office:</label>
-<select value={taxOffice} onChange={handleTaxOfficeChange}>
-<option value="" disabled>Wybierz US</option>
-    {taxOffices.map((office) => (
-      
-        <option key={office.id} value={office.id}>
-            {office.tax_office}
-        </option>
-    ))}
-</select>
+            <Select 
+                options={taxOfficeOptions} 
+                onChange={handleTaxOfficeChange}
+                isSearchable={true}
+                placeholder="Wybierz US"
+                value={taxOfficeOptions.find(option => option.value === taxOffice)}
+            />
 
 
         <label>Pesel:</label>
