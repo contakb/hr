@@ -17,6 +17,7 @@ import SettingsPage from './SettingsPage';
 import EmployeeContract from './EmployeeContract';
 import EmployeeContractPage from './EmployeeContractPage';
 import ToDo from './ToDo';
+import MedicalExaminationView from './MedicalExaminationView';
 
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
       <Route path="/EmployeeContract" element={<EmployeeContract />} />
       <Route path="/EmployeeContractPage" element={<EmployeeContractPage />} />
       <Route path="/ToDo" element={<ToDo />} />
+      <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
 
        
 

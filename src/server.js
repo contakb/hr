@@ -596,6 +596,29 @@ app.get('/api/contracts/:employee_id/gross_amount', async (req, res) => {
   }
 });
 
+app.get('/api/employees/:employeeId', async (req, res) => {
+  const employeeId = req.params.employeeId;
+
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('id, name, street, pesel')  // Add any other columns you need here
+
+    if (error) {
+      console.error('Error fetching employee details:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else {
+      const employee = data[0]; // Assuming you only expect one result
+      res.send({
+        employee,
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 
 

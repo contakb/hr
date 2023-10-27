@@ -457,7 +457,21 @@ app.post('/api/valid-employees', (req, res) => {
   });
 });
 
+app.get('/api/employees/:id', async (req, res) => {
+    const { id } = req.params;
 
+    const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+});
 
 
 

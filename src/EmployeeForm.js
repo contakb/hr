@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
+import MedicalExaminationView from './MedicalExaminationView';
 
 function EmployeeForm() {
   const [employeeName, setEmployeeName] = useState('');
@@ -114,6 +115,21 @@ const createdEmployeeData = {
   taxOffice,
   PESEL
 };
+
+const handleMedicalExamination = (employeeId) => {
+  navigate(`/medical-examination/${employeeId}`, {
+    state: {
+      employeeData: {
+        name: createdEmployee.employeeName,
+        surname: createdEmployee.employeeSurname,
+        pesel: createdEmployee.PESEL,
+        number: createdEmployee.number
+        // Add other data you want to pass here
+      },
+    },
+  });
+};
+
 
 
   
@@ -235,6 +251,13 @@ const handleTaxOfficeChange = (selectedOption) => {
 
         <button type="submit">Create Employee</button>
       </form>
+      
+      {createdEmployee ? (
+  <button onClick={() => navigate(`/medical-examination/${createdEmployee.employeeId}`)}>Medical</button>
+) : (
+  <button disabled>Add Contract</button>
+)}
+
       {/* Conditionally render the Add Contract button */}
     {createdEmployee ? (
       <button onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}`)}>Add Contract</button>

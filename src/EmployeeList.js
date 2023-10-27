@@ -16,15 +16,26 @@ function Employee({ employee }) {
   const [selectedContract, setSelectedContract] = useState(null);
   const [showPDF, setShowPDF] = useState(false); // Add this line
   const navigate = useNavigate();
+  const [medicalFormVisible, setMedicalFormVisible] = useState(false);
+
 
   const handleAddContract = () => {
     navigate(`/add-contract/${id}`);
   };
 
   const handleGenerateContractPage = () => {
-    navigate('/EmployeeContractPage', { state: { employeeData: employee, contract: selectedContract } });
+    navigate('/EmployeeContractPage', { state: { employeeData: employee, contract: contracts } });
 
   };
+
+  const handleMedicalExamination = () => {
+    navigate(`/medical-examination/${id}`, {
+      state: {
+        employee:employee
+      },
+    });
+  };
+  
 
   const toggleDetails = () => {
     setShowDetails(!showDetails);
@@ -117,6 +128,8 @@ function Employee({ employee }) {
       <button onClick={toggleContracts}>{contractsVisible ? 'Hide Contracts' : 'Show Contracts'}</button>
       <button onClick={handleGenerateContract}>{generateContractVisible ? 'Hide Contract' : 'Show Contract'}</button>
       <button onClick={handleGenerateContractPage}>Generuj</button> {/* Add this button */}
+      <button onClick={handleMedicalExamination}>Medical Examination</button>
+
 
       {showDetails && (
         <div>
