@@ -390,7 +390,7 @@ app.get('/reports', async (req, res) => {
 
 app.post('/employees/:employeeId/add-contract', async (req, res) => {
   const { employeeId } = req.params; // Retrieve the employeeId from the URL parameter
-  const { grossAmount, startDate, endDate } = req.body;
+  const { grossAmount, startDate, endDate, stanowisko, etat, typ_umowy, workstart_date } = req.body;
 
   try {
     // Construct the contract data
@@ -399,12 +399,25 @@ app.post('/employees/:employeeId/add-contract', async (req, res) => {
       contract_from_date: startDate,
       contract_to_date: endDate,
       gross_amount: grossAmount,
+      stanowisko,
+      etat,
+      typ_umowy,
+      workstart_date,
+      period_próbny
+
+      
+
     };
 
     // Insert the contract data into the 'contracts' table using Supabase
     const { data, error } = await supabase
       .from('contracts')
-      .upsert([contractData]);
+      .upsert([contractData])
+    .select();
+
+    const { data: secondData, error: secondError } = await supabase.from('contracts').insert(/*...*/);
+
+    console.log('Supabase Response:', data, error);
 
     if (error) {
       console.error('Error adding contract:', error);
@@ -466,40 +479,66 @@ app.get('/api/contracts/:employeeId', async (req, res) => {
   }
 });
 
+const fetchData = async () => {
+  const { data, error } = await supabase
+      .rpc('fetch_valid_employees', { start_date: '2023-01-01', end_date: '2023-01-31' });
+  
+  if (error) {
+      console.error("Error fetching data:", error);
+  } else {
+      // Use the 'data' however you want in your application
+      console.log(data);
+  }
+}
 
 
 
 app.post('/api/valid-employees', async (req, res) => {
-  const { month, year } = req.body;
+  const { startDate, endDate } = req.body;
 
-  try {
-    // Calculate the start and end dates for the specified month and year
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+  // Step 1: Get list of valid employee IDs
+  const validEmployeeIdsResponse = await supabase
+      .from('contracts')
+      .select('employee_id')
+      .filter('contract_from_date', 'lte', endDate)
+      .filter('contract_to_date', 'gte', startDate);
 
-    // Format the dates in 'YYYY-MM-DD' format
-    const formattedStartDate = startDate.toISOString().split('T')[0];
-    const formattedEndDate = endDate.toISOString().split('T')[0];
+  const validEmployeeIds = validEmployeeIdsResponse.data.map(item => item.employee_id);
 
-    // Perform the database query to fetch valid employees with their contracts
-    const { data, error } = await supabase
-      .from('employees')
-      .select('name, surname, id, contracts(gross_amount, contract_from_date, contract_to_date)')
-      .gt('contracts.contract_to_date', formattedStartDate) // Contract ends after the start of the month
-      .lt('contracts.contract_from_date', formattedEndDate); // Contract starts before the end of the month
+  // Step 2: Use the validEmployeeIds to fetch the required data
+  if (validEmployeeIds.length > 0) {
+      const { data, error } = await supabase
+          .from('employees')
+          .select('id, name, surname, contracts(gross_amount, contract_from_date, contract_to_date)')
+          .in('id', validEmployeeIds);
 
-    if (error) {
-      console.error('Error fetching valid employees:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    } else {
-      const employees = Array.isArray(data) ? data : [];
-      res.status(200).json({ employees });
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+      if (error) {
+          console.error('Error fetching valid employees:', error);
+          res.status(500).json({ error: 'Internal Server Error' });
+      } else {
+          const employees = Array.isArray(data) ? data : [];
+          const transformedEmployees = employees.map(employee => {
+              const grossAmounts = employee.contracts
+                  .filter(contract => contract.contract_from_date <= endDate && contract.contract_to_date >= startDate)
+                  .map(contract => contract.gross_amount.toFixed(2));
+
+              return {
+                  employee_id: employee.id,
+                  name: employee.name,
+                  surname: employee.surname,
+                  gross_amount: grossAmounts
+              };
+          });
+
+          res.status(200).json({ employees: transformedEmployees });
+      }
   }
 });
+
+
+
+
+
 
 
 

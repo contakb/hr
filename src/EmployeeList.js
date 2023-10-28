@@ -24,14 +24,14 @@ function Employee({ employee }) {
   };
 
   const handleGenerateContractPage = () => {
-    navigate('/EmployeeContractPage', { state: { employeeData: employee, contract: contracts } });
+    navigate('/EmployeeContractPage', { state: { employeeData: employee, contract: selectedContract } });
 
   };
 
   const handleMedicalExamination = () => {
     navigate(`/medical-examination/${id}`, {
       state: {
-        employee:employee
+        employee:employee, contract: selectedContract
       },
     });
   };
