@@ -176,6 +176,7 @@ setContract(response.data.contract);
     <p>Etat: {contract.etat}</p>
     <p>Workstart Date: {contract.workstart_date}</p>
     <p>Typ Umowy: {contract.typ_umowy}</p>
+    <p>Dł umowy po okresie próbnym: {contract.period_próbny}</p>
   </div>
 )}
 <p><button onClick={handleBackClick}>Back</button></p>
