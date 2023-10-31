@@ -390,7 +390,7 @@ app.get('/reports', async (req, res) => {
 
 app.post('/employees/:employeeId/add-contract', async (req, res) => {
   const { employeeId } = req.params; // Retrieve the employeeId from the URL parameter
-  const { grossAmount, startDate, endDate, stanowisko, etat, typ_umowy, workstart_date } = req.body;
+  const { grossAmount, startDate, endDate, stanowisko, etat, typ_umowy, workstart_date, period_próbny } = req.body;
 
   try {
     // Construct the contract data

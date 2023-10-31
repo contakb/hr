@@ -43,7 +43,7 @@ function App() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/accountById/:userid" element={<AccountDetails/>} />
       <Route path="/EmployeeContract" element={<EmployeeContract />} />
-      <Route path="/EmployeeContractPage" element={<EmployeeContractPage />} />
+      <Route path="/EmployeeContract/:id" element={<EmployeeContract />} />
       <Route path="/ToDo" element={<ToDo />} />
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
 

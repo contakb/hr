@@ -24,6 +24,13 @@ const handleBackClick = () => {
   // or you can navigate to a specific route, e.g., navigate('/dashboard');
 };
 
+const viewEmployeeContract = () => {
+  // You can navigate to the EmployeeContract page for the specific employee
+  // Assuming your route path is something like /employee-contract/:employeeId
+  navigate(`/EmployeeContract/${employeeId}`);
+};
+
+
   const handleAddContract = () => {
     console.log('Employee ID:', employeeId);
     navigate(`/add-contract/${employeeId}`);
@@ -48,7 +55,7 @@ const handleBackClick = () => {
 setContract(response.data.contract);
 
       // Handle successful contract addition
-      console.log('Contract added:', response.contract);
+      console.log('Contract added:', response.data.contract);
 
       // Clear form fields
       setGrossAmount('');
@@ -153,8 +160,8 @@ setContract(response.data.contract);
 )}
 {['próbny 1 miesiąc', 'próbny 2 miesiące', 'próbny 3 miesiące'].includes(typ_umowy) && (
     <div>
-<label>Wpisz długość okresu umowy po okresie próbnym:</label>
-<input type="text" value={period_próbny} onChange={handleperiod_próbny} />
+<label>Wpisz długość okresu umowy po okresie próbnym (ilość miesięcy):</label> 
+<input type="text" value={period_próbny} onChange={handleperiod_próbny}/>
 </div>
 )}
         
@@ -163,7 +170,9 @@ setContract(response.data.contract);
         <input type="date" value={workstart_date} onChange={handleworkstart_date} />
 
         <button type="submit">Add Contract</button>
+        
       </form>
+      <button onClick={viewEmployeeContract}>View Contract</button>
       {contract && (
   <div>
     <h2>Contract Created Successfully!</h2>
@@ -179,6 +188,7 @@ setContract(response.data.contract);
     <p>Dł umowy po okresie próbnym: {contract.period_próbny}</p>
   </div>
 )}
+<p><button onClick={viewEmployeeContract}>View Contract</button></p>
 <p><button onClick={handleBackClick}>Back</button></p>
     </div>
     

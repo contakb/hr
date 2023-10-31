@@ -23,15 +23,16 @@ function Employee({ employee }) {
     navigate(`/add-contract/${id}`);
   };
 
-  const handleGenerateContractPage = () => {
-    navigate('/EmployeeContractPage', { state: { employeeData: employee, contract: selectedContract } });
+  const handleGenerateContractPage = (id) => {
+    navigate(`/EmployeeContract/${id}`);
+};
 
-  };
+
 
   const handleMedicalExamination = () => {
     navigate(`/medical-examination/${id}`, {
       state: {
-        employee:employee, contract: selectedContract
+        employee:employee, contract:contracts
       },
     });
   };
@@ -127,7 +128,8 @@ function Employee({ employee }) {
       <button onClick={handleAddContract}>Add Contract</button>
       <button onClick={toggleContracts}>{contractsVisible ? 'Hide Contracts' : 'Show Contracts'}</button>
       <button onClick={handleGenerateContract}>{generateContractVisible ? 'Hide Contract' : 'Show Contract'}</button>
-      <button onClick={handleGenerateContractPage}>Generuj</button> {/* Add this button */}
+      <button onClick={() => handleGenerateContractPage(id)}>Generuj</button>
+
       <button onClick={handleMedicalExamination}>Medical Examination</button>
 
 
