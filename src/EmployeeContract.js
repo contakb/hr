@@ -4,7 +4,8 @@ import axios from 'axios';
 
 const EmployeeContract = () => {
   const [employee, setEmployee] = useState({});
-  const [contracts, setContracts] = useState({});
+  const [contracts, setContracts] = useState([]);
+  const [selectedContractId, setSelectedContractId] = useState(null);
   const navigate = useNavigate();
 
   const { employeeId } = useParams(); 
@@ -20,6 +21,7 @@ const EmployeeContract = () => {
 
         setEmployee(employeeResponse.data.employee);
         setContracts(contractResponse.data.contracts);
+        setSelectedContractId(contractResponse.data.contracts[0]?.id || null); // Default to the first contract
 
 
       } catch (error) {
@@ -36,44 +38,61 @@ const handleBackClick = () => {
   // or you can navigate to a specific route, e.g., navigate('/dashboard');
 };
 
-  const contract = contracts && contracts.length > 0 ? contracts[0] : null;
+const handleContractSelection = (e) => {
+  setSelectedContractId(e.target.value);
+};
 
-  return (
-    <div className="contract">
-      <div className="header">Umowa o pracę</div>
-      <div className="employee-info">
-        <p><strong>Name:</strong> {employee.name}</p>
-        <p><strong>Surname:</strong> {employee.surname}</p>
-        {/* Add more employee information here */}
+// Convert selectedContractId to a number for comparison if contract IDs are numbers
+const selectedContract = contracts.find(contract => contract.id === Number(selectedContractId));
+
+
+return (
+  <div className="contract">
+    <div className="header">Umowa o pracę</div>
+    {/* Dropdown for selecting a contract */}
+    <select onChange={handleContractSelection} value={selectedContractId}>
+      {contracts.map((contract) => (
+        <option key={contract.id} value={contract.id}>
+          Contract from {new Date(contract.contract_from_date).toLocaleDateString()} to {new Date(contract.contract_to_date).toLocaleDateString()}
+        </option>
+      ))}
+    </select>
+
+    {/* Contract details */}
+    {selectedContract ? (
+      <div className="contract-details">
+        <div className="employee-info">
+          <p><strong>Name:</strong> {employee.name}</p>
+          <p><strong>Surname:</strong> {employee.surname}</p>
+          {/* Add more employee information here */}
+        </div>
+        <div className="contract-terms">
+          <h2>Warunki umowy</h2>
+          <p>This employment contract ("Contract") is entered into on 
+          {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} 
+          na umowę o pracę na: {selectedContract ? selectedContract.typ_umowy : "N/A"} 
+          od {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} 
+          do {selectedContract && selectedContract.contract_to_date ? new Date(selectedContract.contract_to_date).toLocaleDateString() : "N/A"} 
+          </p>
+          <p><strong>stanowisko: </strong> {selectedContract?.stanowisko}</p>
+          <p><strong>etat: </strong> {selectedContract?.etat}</p>
+          <p><strong>okres, na który strony mają zawrzeć umowę na czas określony po umowie na okres próbny: </strong> {selectedContract?.period_próbny} miesiące</p>
+          <p><strong>Pracodawca:</strong> Your Company Name, located at Your Company Address</p>
+          <p><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.city}</p>
+        </div>
+        <div className="signatures">
+          <p>______________________________</p>
+          <p>Employer's Signature</p>
+          <p>______________________________</p>
+          <p>Employee's Signature</p>
+        </div>
       </div>
-      <div className="contract-terms">
-        <h2>Warunki umowy</h2>
-        <p>This employment contract ("Contract") is entered into on {contract && contract.contract_from_date ? new Date(contract.contract_from_date).toLocaleDateString() : "N/A"} na umowę o pracę na: {contract ? contract.typ_umowy : "N/A"} od {contract && contract.contract_from_date ? new Date(contract.contract_from_date).toLocaleDateString() : "N/A"} do {contract && contract.contract_to_date ? new Date(contract.contract_to_date).toLocaleDateString() : "N/A"} 
-                </p>
-                <p><strong>dzień rozpoczęcia pracy: </strong> 
-    {contract && contract.workstart_date ? new Date(contract.workstart_date).toLocaleDateString() : 'N/A'}</p>
-
-    <p><strong>stanowisko: </strong> {contract?.stanowisko}</p>
-
-
-    <p><strong>etat: </strong> {contract?.etat}</p>
-
-
-    <p><strong>okres, na który strony mają zawrzeć umowę na czas określony po umowie na okres próbny: </strong> {contract?.period_próbny} miesiące</p>
-
-         <p><strong>Pracodawca:</strong> Your Company Name, located at Your Company Address</p>
-         <p><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.city}</p>
-        {/* Add more contract terms here */}
-      </div>
-      <div className="signatures">
-        <p>______________________________</p>
-        <p>Employer's Signature</p>
-        <p>______________________________</p>
-        <p>Employee's Signature</p>
-      </div>
-      <p><button onClick={handleBackClick}>Back</button></p>
-    </div>
-  );
+    ) : (
+      <p>No contract selected.</p>
+    )}
+    <p><button onClick={handleBackClick}>Back</button></p>
+  </div>
+);
 };
 
 export default EmployeeContract;
