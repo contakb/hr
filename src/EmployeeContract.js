@@ -1,36 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 
 const EmployeeContract = () => {
   const [employee, setEmployee] = useState({});
   const [contracts, setContracts] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState(null);
+  
   const navigate = useNavigate();
 
-  const { employeeId } = useParams(); 
+  const { employeeId } = useParams();
+
+  const location = useLocation();
 
   useEffect(() => {
     async function fetchData() {
       try {
         const employeeResponse = await axios.get(`http://localhost:3001/api/employees/${employeeId}`);
         const contractResponse = await axios.get(`http://localhost:3001/api/contracts/${employeeId}`);
-
+  
         console.log("Contracts fetched:", contractResponse.data.contracts);
-
-
+  
         setEmployee(employeeResponse.data.employee);
         setContracts(contractResponse.data.contracts);
-        setSelectedContractId(contractResponse.data.contracts[0]?.id || null); // Default to the first contract
-
-
+  
+        const state = location.state || {};
+        const newContractId = state.newContractId;
+  
+        if (newContractId) {
+          setSelectedContractId(newContractId);
+        } else if (contractResponse.data.contracts.length > 0) {
+          setSelectedContractId(contractResponse.data.contracts[0].id);
+        } else {
+          setSelectedContractId(null);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     }
-
+  
     fetchData();
-  }, [employeeId]);
+  }, [employeeId, location]); // This is where useEffect should e
 
     // Add this function to handle the back button click
 const handleBackClick = () => {

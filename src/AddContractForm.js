@@ -53,6 +53,11 @@ const viewEmployeeContract = () => {
       });
       // Update the contract state with the returned data
 setContract(response.data.contract);
+// Assuming the response includes the newly created contract and its ID
+const newContractId = response.data.newContract.id;
+
+// Redirect to EmployeeContract with the new contract ID
+navigate(`/EmployeeContract/${employeeId}`, { state: { newContractId } });
 
       // Handle successful contract addition
       console.log('Contract added:', response.data.contract);
