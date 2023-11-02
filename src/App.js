@@ -42,8 +42,7 @@ function App() {
 		  <Route path="/Reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/accountById/:userid" element={<AccountDetails/>} />
-      <Route path="/EmployeeContract" element={<EmployeeContract />} />
-      <Route path="/EmployeeContract/:id" element={<EmployeeContract />} />
+      <Route path="/EmployeeContract/:employeeId" element={<EmployeeContract />} />
       <Route path="/ToDo" element={<ToDo />} />
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
 

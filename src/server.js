@@ -641,16 +641,21 @@ app.get('/api/employees/:employeeId', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('employees')
-      .select('id, name, street, pesel')  // Add any other columns you need here
+      .select('id, name, surname, street, city, pesel')  // Add any other columns you need here
+      .eq('id', employeeId);  // Use the provided employeeId to filter the result
 
     if (error) {
       console.error('Error fetching employee details:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     } else {
       const employee = data[0]; // Assuming you only expect one result
-      res.send({
-        employee,
-      });
+      if (employee) {
+        res.send({
+          employee,
+        });
+      } else {
+        res.status(404).json({ error: 'Employee not found' });
+      }
     }
   } catch (error) {
     console.error('Error:', error);

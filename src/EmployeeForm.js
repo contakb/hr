@@ -255,7 +255,7 @@ const handleTaxOfficeChange = (selectedOption) => {
       {createdEmployee ? (
   <button onClick={() => navigate(`/medical-examination/${createdEmployee.employeeId}`)}>Medical</button>
 ) : (
-  <button disabled>Add Contract</button>
+  <button disabled>MedicalExam</button>
 )}
 
       {/* Conditionally render the Add Contract button */}
