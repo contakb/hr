@@ -16,6 +16,10 @@ function EmployeeParam() {
   const [worksOutsideHome, setWorksOutsideHome] = useState(false);
 const [hasPension, setHasPension] = useState(false);
 const [numOfCompanies, setNumOfCompanies] = useState(1);
+const [hasDisability, setHasDisability] = useState('0'); // '0' for none, '1' for 'lekki', '2' for 'umiarkowany', '3' for 'znaczny'
+const [isRetired, setIsRetired] = useState(false); // true if the employee is retired (emerytura)
+const [hasDisabilityBenefit, setHasDisabilityBenefit] = useState(false); // true if the employee has a disability benefit (renta)
+
 
 
 
@@ -51,6 +55,21 @@ const [numOfCompanies, setNumOfCompanies] = useState(1);
     }
   };
   
+  const constructKodUb = (isRetired, hasDisabilityBenefit, hasDisability) => {
+    let kodUb = '0110'; // The fixed part
+    // Determine the second part based on emerytura/renta
+    if (isRetired) {
+      kodUb += '1';
+    } else if (hasDisabilityBenefit) {
+      kodUb += '2';
+    } else {
+      kodUb += '0';
+    }
+    // Add the third part based on the degree of disability
+    kodUb += hasDisability;
+    return kodUb;
+  };
+  
 
   // Add handlers for the new input fields
   const handleKosztyChange = (event) => setKoszty(event.target.value);
@@ -75,31 +94,73 @@ const [numOfCompanies, setNumOfCompanies] = useState(1);
     setNumOfCompanies(count);
     setUlga(calculateUlga(hasPension, count));
   };
+  const handleDisabilityChange = (event) => {
+    const disabilityDegree = event.target.value; // '0', '1', '2', '3'
+    setHasDisability(disabilityDegree);
+    setKodUb(constructKodUb(hasPension, disabilityDegree));
+  };
+  const handleRetirementChange = (event) => {
+    const selectedValue = event.target.value;
+    const isRetirementSelected = selectedValue === 'yes';
+  
+    setIsRetired(isRetirementSelected);
+  
+    // Ensure the other option is set to No if this is Yes
+    if (isRetirementSelected) {
+      setHasDisabilityBenefit(false);
+    }
+  
+    // Update the kod_ub and ulga values
+    setKodUb(constructKodUb(isRetirementSelected, false, hasDisability));
+    setUlga(calculateUlga(isRetirementSelected, false));
+  };
+  
+  const handleDisabilityBenefitChange = (event) => {
+    const selectedValue = event.target.value;
+    const isBenefitSelected = selectedValue === 'yes';
+  
+    setHasDisabilityBenefit(isBenefitSelected);
+  
+    // Ensure the other option is set to No if this is Yes
+    if (isBenefitSelected) {
+      setIsRetired(false);
+    }
+  
+    // Update the kod_ub and ulga values
+    setKodUb(constructKodUb(false, isBenefitSelected, hasDisability));
+    setUlga(calculateUlga(false, isBenefitSelected));
+  };
+  
+  
+  
   
 
-  const calculateUlga = (hasPension, numOfCompanies) => {
-    if (hasPension) {
-      return '0'; // If the employee has a pension, ulga is 0
+  const calculateUlga = (isRetired, hasDisabilityBenefit, numOfCompanies) => {
+    if (isRetired || hasDisabilityBenefit) {
+      return '0'; // If the employee is retired or has a disability benefit, ulga is 0
     } else {
-      // No pension, determine ulga based on the number of companies
+      // No pension or disability benefit, determine ulga based on the number of companies
       switch (numOfCompanies) {
-        case 1:
-          return '300';
-        case 2:
-          return '150';
-        case 3:
-          return '100';
-        default:
-          return '300'; // Default to 300 if something goes wrong
+        case 1: return '300';
+        case 2: return '150';
+        case 3: return '100';
+        default: return '300'; // Default to 300 if something goes wrong
       }
     }
   };
+  
   // Initialize ulga with default value based on conditions
-useEffect(() => {
-    setUlga(calculateUlga(hasPension, numOfCompanies));
-  }, [hasPension, numOfCompanies]); // Recalculate when hasPension or numOfCompanies changes
+  useEffect(() => {
+    setUlga(calculateUlga(isRetired, hasDisabilityBenefit, numOfCompanies));
+  }, [isRetired, hasDisabilityBenefit, numOfCompanies]);
   
   
+ // Call this whenever hasPension or hasDisability changes
+ useEffect(() => {
+    setKodUb(constructKodUb(isRetired, hasDisabilityBenefit, hasDisability));
+  }, [isRetired, hasDisabilityBenefit, hasDisability]);
+  
+   
 
   // Below is the form where you can input the parameters
   return (
@@ -126,23 +187,49 @@ useEffect(() => {
         <label>Koszty uzyskania przychodu:</label>
         <input type="number" value={koszty} onChange={handleKosztyChange} />
 
-        <label>Posiada rentę/emerytrę?</label>
+        {/* Question for pension or retirement */}
+{/* Question for retirement */}
+{/* Question for retirement */}
+{/* Question for retirement */}
+<label>Czy pracownik jest emerytem?</label>
 <div>
   <input
     type="radio"
-    name="hasPension"
+    name="retirementStatus"
     value="yes"
-    checked={hasPension === true}
-    onChange={handleHasPensionChange}
+    checked={isRetired}
+    onChange={handleRetirementChange}
   /> Tak
   <input
     type="radio"
-    name="hasPension"
+    name="retirementStatus"
     value="no"
-    checked={hasPension === false}
-    onChange={handleHasPensionChange}
+    checked={!isRetired}
+    onChange={handleRetirementChange}
   /> Nie
 </div>
+
+{/* Question for disability benefit */}
+<label>Czy pracownik otrzymuje rentę?</label>
+<div>
+  <input
+    type="radio"
+    name="benefitStatus"
+    value="yes"
+    checked={hasDisabilityBenefit}
+    onChange={handleDisabilityBenefitChange}
+  /> Tak
+  <input
+    type="radio"
+    name="benefitStatus"
+    value="no"
+    checked={!hasDisabilityBenefit}
+    onChange={handleDisabilityBenefitChange}
+  /> Nie
+</div>
+
+
+
 {/* Question for the number of companies */}
 <label>Ilość firm, w których pracuje:</label>
 <select value={numOfCompanies} onChange={handleNumOfCompaniesChange}>
@@ -155,6 +242,16 @@ useEffect(() => {
 
         <label>Ulga podatkowa:</label>
         <input type="number" value={ulga} onChange={handleUlgaChange} />
+
+        {/* Question for the degree of disability */}
+<label>Stopień niepełnosprawności:</label>
+<select value={hasDisability} onChange={handleDisabilityChange}>
+  <option value="0">Brak</option>
+  <option value="1">Lekki</option>
+  <option value="2">Umiarkowany</option>
+  <option value="3">Znaczny</option>
+</select>
+
 
         <label>Kod ubezpieczenia:</label>
         <input type="text" value={kodUb} onChange={handleKodUbChange} />
