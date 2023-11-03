@@ -437,6 +437,44 @@ app.post('/employees/:employeeId/add-contract', async (req, res) => {
   }
 });
 
+app.post('/employees/:employeeId/add-params', async (req, res) => {
+  const { employeeId } = req.params; // Retrieve the employeeId from the URL parameter
+  const { koszty, ulga, kodUb, validFrom } = req.body;
+
+  try {
+    // Construct the employee parameter data
+    const employeeParamData = {
+      employee_id: employeeId,
+      koszty,
+      ulga,
+      kod_ub: kodUb,
+      valid_from: validFrom
+    };
+
+    // Insert the employee parameter data into your 'emp_var' table using Supabase
+    const { data, error } = await supabase
+      .from('emp_var')
+      .upsert([employeeParamData]);
+
+    console.log('Supabase Response:', data, error);
+
+    if (error) {
+      console.error('Error adding employee parameters:', error);
+      res.status(500).send('Error occurred while adding employee parameters.');
+      return;
+    }
+
+    // Assuming you want to return the first item of the inserted data
+    const employeeParams = data[0];
+    res.send({
+      message: 'Employee parameters added successfully',
+      employeeParams,
+    });
+  } catch (error) {
+    console.error('Server Error:', error);
+    res.status(500).send('Error occurred while adding employee parameters.');
+  }
+});
 
 
 app.get('/api/contracts/:employeeId', async (req, res) => {

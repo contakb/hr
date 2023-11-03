@@ -18,6 +18,7 @@ import EmployeeContract from './EmployeeContract';
 import EmployeeContractPage from './EmployeeContractPage';
 import ToDo from './ToDo';
 import MedicalExaminationView from './MedicalExaminationView';
+import EmployeeParam from './EmployeeParam';
 
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
       <Route path="/EmployeeContract/:employeeId" element={<EmployeeContract />} />
       <Route path="/ToDo" element={<ToDo />} />
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
+      <Route path="/add-employee-params/:employeeId" element={<EmployeeParam />} />
 
        
 
