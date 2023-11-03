@@ -46,7 +46,7 @@ function App() {
       <Route path="/EmployeeContract/:employeeId" element={<EmployeeContract />} />
       <Route path="/ToDo" element={<ToDo />} />
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
-      <Route path="/add-employee-params/:employeeId" element={<EmployeeParam />} />
+      <Route path="/employee-param/:employeeId" element={<EmployeeParam />} />
 
        
 

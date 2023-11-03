@@ -16,29 +16,36 @@ function EmployeeParam() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+  
     try {
-      const response = await axios.post(`http://localhost:3001/employee-params/${employeeId}`, {
+      // Adjust the URL and payload to match your new API endpoint for adding employee parameters
+      const response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-params`, {
         koszty,
         ulga,
         kodUb,
         validFrom
       });
-
+  
       // Set the response data to paramData to show the notification
-      setParamData(response.data);
-
+      setParamData({
+        ...response.data.employeeParams,
+        // Ensure kod_ub is a string with leading zeros
+        kod_ub: String(response.data.employeeParams.kod_ub).padStart(6, '0')
+      }); // Adjust according to your actual response structure
+  
       // Clear form fields or navigate to a confirmation page
       setKoszty('');
       setUlga('');
       setKodUb('');
       setValidFrom('');
-
+  
+      // Optionally navigate to a confirmation page or show a success message
     } catch (error) {
       // Handle errors here
       console.error('Error adding employee parameters:', error);
     }
   };
+  
 
   // Add handlers for the new input fields
   const handleKosztyChange = (event) => setKoszty(event.target.value);
@@ -51,7 +58,18 @@ function EmployeeParam() {
     <div>
       <h2>Add Employee Parameters</h2>
       <form onSubmit={handleSubmit}>
-        {/* ... all the form fields ... */}
+        <label>Koszty uzyskania przychodu:</label>
+        <input type="number" value={koszty} onChange={handleKosztyChange} />
+
+        <label>Ulga podatkowa:</label>
+        <input type="number" value={ulga} onChange={handleUlgaChange} />
+
+        <label>Kod ubezpieczenia:</label>
+        <input type="text" value={kodUb} onChange={handleKodUbChange} />
+
+        <label>Valid From:</label>
+        <input type="date" value={validFrom} onChange={handleValidFromChange} />
+
         <button type="submit">Add Parameters</button>
       </form>
       
@@ -62,8 +80,8 @@ function EmployeeParam() {
                Make sure these fields match the response data structure from your API. */}
           <p>Koszty: {paramData.koszty}</p>
           <p>Ulga: {paramData.ulga}</p>
-          <p>Kod UB: {paramData.kodUb}</p>
-          <p>Valid From: {paramData.validFrom}</p>
+          <p>Kod UB: {paramData.kod_ub}</p> {/* Make sure the property name matches */}
+    <p>Valid From: {paramData.valid_from}</p> {/* Make sure the property name matches */}
           {/* ... more fields as needed ... */}
         </div>
       )}

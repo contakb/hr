@@ -454,9 +454,14 @@ app.post('/employees/:employeeId/add-params', async (req, res) => {
     // Insert the employee parameter data into your 'emp_var' table using Supabase
     const { data, error } = await supabase
       .from('emp_var')
-      .upsert([employeeParamData]);
+      .upsert([employeeParamData])
+      .select();
+
+    const { data: secondData, error: secondError } = await supabase.from('emp_var').insert(/*...*/);
 
     console.log('Supabase Response:', data, error);
+
+
 
     if (error) {
       console.error('Error adding employee parameters:', error);
@@ -466,6 +471,7 @@ app.post('/employees/:employeeId/add-params', async (req, res) => {
 
     // Assuming you want to return the first item of the inserted data
     const employeeParams = data[0];
+    employeeParams.kod_ub = String(employeeParams.kod_ub).padStart(6, '0');
     res.send({
       message: 'Employee parameters added successfully',
       employeeParams,
