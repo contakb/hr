@@ -17,6 +17,9 @@ function Employee({ employee }) {
   const [showPDF, setShowPDF] = useState(false); // Add this line
   const navigate = useNavigate();
   const [medicalFormVisible, setMedicalFormVisible] = useState(false);
+  const [parametersVisible, setParametersVisible] = useState(false);
+const [parameters, setParameters] = useState(null);
+
 
 
   const handleAddContract = () => {
@@ -36,6 +39,10 @@ function Employee({ employee }) {
       },
     });
   };
+  const handleAddParameters = () => {
+    navigate(`/employee-param/${id}`); // Replace with your actual path to the add parameters page
+  };
+  
   
 
   const toggleDetails = () => {
@@ -59,6 +66,22 @@ function Employee({ employee }) {
 
     setContractsVisible(!contractsVisible);
   };
+  const toggleParameters = async () => {
+    if (!parametersVisible) {
+      try {
+        const response = await axios.get(`http://localhost:3001/api/employee-params/${id}`);
+        // If there are parameters returned, set the first one, otherwise set to null
+        setParameters(response.data.parameters.length > 0 ? response.data.parameters[0] : null);
+      } catch (error) {
+        console.error('Error fetching parameters:', error);
+        setParameters(null); // Ensure to set to null if there's an error
+      }
+    }
+    setParametersVisible(!parametersVisible);
+  };
+  
+  
+  
 
   const handleGenerateContract = async () => {
     try {
@@ -141,8 +164,28 @@ function Employee({ employee }) {
           <p>Country: {country}</p>
           <p>Tax Office: {tax_office}</p>
           <p>PESEL: {pesel}</p>
+          <button onClick={toggleParameters}>{parametersVisible ? 'Hide Parameters' : 'Show Parameters'}</button>
+          {parametersVisible && (
+  <div>
+    <h3>Parameters:</h3>
+    {parameters ? (
+      <div>
+        <p>Koszty: {parameters.koszty}</p>
+        <p>Ulga: {parameters.ulga}</p>
+        <p>Kod UB: {parameters.kod_ub}</p>
+        <p>Valid From: {parameters.valid_from && new Date(parameters.valid_from).toLocaleDateString()}</p>
+      </div>
+    ) : (
+      <div>
+        <p>No parameters, please add them.</p>
+        <button onClick={handleAddParameters}>Add Parameters</button>
         </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
 
       {contractsVisible && (
         <div>
@@ -179,7 +222,7 @@ function Employee({ employee }) {
         </div>
       )}
     </div>
-  );
+      );
 }
 
 // EmployeeList component

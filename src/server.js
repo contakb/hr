@@ -482,6 +482,35 @@ app.post('/employees/:employeeId/add-params', async (req, res) => {
   }
 });
 
+app.get('/api/employee-params/:employeeId', async (req, res) => {
+  const employeeId = req.params.employeeId;
+
+  try {
+    const { data, error } = await supabase
+      .from('emp_var')  // Target the emp_var table
+      .select('*')  // Select all columns or specify like 'id, koszty, ulga, kod_ub, valid_from'
+      .eq('employee_id', employeeId);  // Use the employee_id column to filter
+
+    if (error) {
+      console.error('Error fetching employee parameters:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else {
+      const parameters = data; // You may receive an array of records
+      if (parameters.length > 0) {
+        res.json({
+          parameters,
+        });
+      } else {
+        res.status(404).json({ error: 'Parameters not found for the given employee' });
+      }
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 
 app.get('/api/contracts/:employeeId', async (req, res) => {
   const employeeId = req.params.employeeId;
