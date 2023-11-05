@@ -45,7 +45,7 @@ console.log('Location:', location);
             <p>Pana/Panią {employeeData.name} {employeeData.surname},</p>
             <p>nr PESEL: {employeeData.pesel},</p>
             <p>zamieszkałego: {employeeData.street },{employeeData.number}, {employeeData.city}</p>
-            <p>zatrudnionego na stanowisku lub stanowiskach pracy: {employeeData.jobTitle},</p>
+            <p>zatrudnionego na stanowisku lub stanowiskach pracy: {employeeData.stanowisko},</p>
             <p>określenie stanowiska pracy ***:  : {employeeData.jobTitle},</p>
             <p>Opis  warunków  pracy  uwzględniający  informacje  o  występowaniu  na  stanowisku  lub  stanowiskach  pracy, czynników  niebezpiecznych,  szkodliwych  dla  zdrowia  lub  czynników  uciążliwych  i  innych  wynikających  ze  sposobu  wykonywania  pracy,  z  podaniem  wielkości  narażenia  oraz  aktualnych  wyników badań  i  pomiarów czynników  szkodliwych  dla  zdrowia,  wykonanych  na  tym  stanowisku/stanowiskach – należy  wpisać  nazwę czynnika/czynników  i  wielkość/wielkości  narażenia **** :,</p>
             <p>   I.  Czynniki fizyczne: :  {employeeData.jobTitle},</p>

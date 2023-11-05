@@ -35,7 +35,7 @@ const [parameters, setParameters] = useState(null);
   const handleMedicalExamination = () => {
     navigate(`/medical-examination/${id}`, {
       state: {
-        employee:employee, contract:contracts
+        employee:employee, contracts:contracts
       },
     });
   };

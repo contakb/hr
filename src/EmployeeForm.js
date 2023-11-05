@@ -33,6 +33,13 @@ const [taxOffice, setTaxOffice] = useState('');
         });
 }, []); // Empty dependency array ensures this effect runs only once
 
+// This useEffect is for persisting created employee data
+useEffect(() => {
+  const savedEmployee = localStorage.getItem('createdEmployee');
+  if (savedEmployee) {
+    setCreatedEmployee(JSON.parse(savedEmployee));
+  }
+}, []); // Will also trigger only on the initial mount of the component
 
   const [validationError, setValidationError] = useState(null);  // Add this line
 
@@ -116,6 +123,8 @@ const createdEmployeeData = {
   PESEL
 };
 
+
+
 const handleMedicalExamination = (employeeId) => {
   navigate(`/medical-examination/${employeeId}`, {
     state: {
@@ -138,7 +147,13 @@ const handleMedicalExamination = (employeeId) => {
     navigate(`/add-contract/${employeeId}`);
   }
 
+  // This function will redirect to the AddContractForm for the specific employee
+  const goToAddParameters = (employeeId) => {
+    navigate(`/employee-param/${employeeId}`);
+  }
+
 // Set the created employee data in the state
+localStorage.setItem('createdEmployee', JSON.stringify(createdEmployeeData));
 setCreatedEmployee(createdEmployeeData);
 
 
@@ -263,6 +278,12 @@ const handleTaxOfficeChange = (selectedOption) => {
       <button onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}`)}>Add Contract</button>
     ) : (
       <button disabled>Add Contract</button>
+    )}
+     {/* Conditionally render the Add Contract button */}
+     {createdEmployee ? (
+      <button onClick={() => navigate(`/employee-param/${createdEmployee.employeeId}`)}>Add Params</button>
+    ) : (
+      <button disabled>Add Params</button>
     )}
 	  {createdEmployee && (
         <div>
