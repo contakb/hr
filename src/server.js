@@ -638,11 +638,11 @@ app.post('/api/valid-employees', async (req, res) => {
   }
 });
 
+// Fetch working hours
 app.get('/api/getWorkingHours', async (req, res) => {
   const { year, month } = req.query;
   
   try {
-    // Fetch the number of work hours from the 'working_days' table for the given year and month
     const { data, error } = await supabase
       .from('working_days')
       .select('work_hours')
@@ -652,12 +652,39 @@ app.get('/api/getWorkingHours', async (req, res) => {
 
     if (error) throw error;
     
-    // Return the working hours for the given month
     res.json({ work_hours: data.work_hours });
+  } catch (error) {
+    console.error('Error fetching working hours:', error);
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/api/getHolidays', async (req, res) => {
+  const { year, month } = req.query; // Assuming year and month are passed as query params
+  
+  if (!year || !month) {
+    return res.status(400).json({ error: 'Year and month parameters are required' });
+  }
+  // Calculate the last day of the month
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+
+  try {
+    const { data, error } = await supabase
+      .from('holidays')
+      .select('*')
+      .gte('date', `${year}-${String(month).padStart(2, '0')}-01`) // Greater than or equal to the first of the month
+      .lte('date', `${year}-${String(month).padStart(2, '0')}-${lastDayOfMonth}`); // Less than or equal to the last day of the month
+
+    if (error) {
+      throw error;
+    }
+
+    res.json(data);
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
+
 
 
 

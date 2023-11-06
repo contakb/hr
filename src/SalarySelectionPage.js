@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import DatePicker from 'react-datepicker'; // Import DatePicker
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
@@ -19,6 +19,77 @@ const [additionalBreakType, setAdditionalBreakType] = useState('');
 const [calculatedContracts, setCalculatedContracts] = useState([]);
 const [healthBreaksByEmployee, setHealthBreaksByEmployee] = useState({});
 const [additionalBreaksByEmployee, setAdditionalBreaksByEmployee] = useState({});
+const [workingHours, setWorkingHours] = useState(null);
+const [holidays, setHolidays] = useState([]);
+
+const fetchAllData = async () => {
+  if (!year || !month) {
+    console.error('Year and month must be defined.');
+    return;
+  }
+  console.log(`Fetching data for year: ${year}, month: ${month}`); // Debugging line
+
+  try {
+    const workingHoursResponse = await axios.get(`http://localhost:3001/api/getWorkingHours?year=${year}&month=${month}`);
+    setWorkingHours(workingHoursResponse.data.work_hours);
+
+    const holidaysResponse = await axios.get(`http://localhost:3001/api/getHolidays?year=${year}&month=${month}`);
+    // Make sure the holidaysResponse.data is an array
+    const holidaysData = Array.isArray(holidaysResponse.data) ? holidaysResponse.data : [];
+    const filteredHolidays = holidaysData.filter(holiday => {
+      const holidayDate = new Date(holiday.date);
+      return holidayDate.getFullYear() === parseInt(year, 10) && holidayDate.getMonth() === parseInt(month, 10) - 1;
+    });
+
+    setHolidays(filteredHolidays);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    // Handle errors appropriately
+  }
+};
+
+useEffect(() => {
+  fetchAllData();
+}, [year, month]);
+
+
+
+
+
+const didEmployeeWorkWholeMonth = (contractFromDate, contractToDate, year, month) => {
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0); // This will get the last day of the month.
+  const contractStart = new Date(contractFromDate);
+  const contractEnd = contractToDate ? new Date(contractToDate) : new Date();
+
+  return contractStart <= monthStart && contractEnd >= monthEnd;
+};
+
+
+const calculateProRatedGrossAmount = (contract, workingHours) => {
+  const { gross_amount, contract_from_date, contract_to_date } = contract;
+
+  // Parse the contract dates.
+  const contractStart = new Date(contract_from_date);
+  const contractEnd = contract_to_date ? new Date(contract_to_date) : new Date();
+
+  // Calculate the start and end of the relevant month.
+  const monthStart = new Date(year, month - 1, 1); // Note: Months are zero-indexed in JavaScript Dates
+  const monthEnd = new Date(year, month, 0); // This will get the last day of the month.
+
+  // Calculate the number of days not worked in the month if the employee starts mid-month or ends before the month's last day.
+  const daysNotWorkedAtStart = contractStart > monthStart ? (contractStart - monthStart) / (1000 * 3600 * 24) : 0;
+  const daysNotWorkedAtEnd = contractEnd < monthEnd ? (monthEnd - contractEnd) / (1000 * 3600 * 24) : 0;
+  const totalDaysNotWorked = daysNotWorkedAtStart + daysNotWorkedAtEnd;
+
+  // Calculate the daily wage based on the total working hours for the month.
+  const dailyWage = gross_amount / workingHours * 8; // 8 is the number of work hours per day.
+
+  // Pro-rate the gross amount by subtracting the salary for the days not worked.
+  let customGrossAmount = gross_amount - (dailyWage * totalDaysNotWorked);
+
+  return customGrossAmount.toFixed(2); // Round to two decimal places for currency.
+};
 
 
 
@@ -268,74 +339,56 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray) => {
-  // Check if the additionalDaysArray is an array, if not, log an error and return
-  if (!Array.isArray(additionalDaysArray)) {
-      console.error("additionalDaysArray must be an array.");
-      return;  // You might want to handle this more gracefully or return default values.
-  }
-
-  // Check if the additionalBreakTypesArray is an array, if not, log an error and return
-  if (!Array.isArray(additionalBreakTypesArray)) {
-      console.error("additionalBreakTypesArray must be an array.");
-      return;  // You might want to handle this more gracefully or return default values.
+const calculateSalary = (
+  grossAmountValue,
+  daysOfBreak,
+  breakType,
+  additionalDaysArray,
+  additionalBreakTypesArray,
+  workingHours
+) => {
+  if (!Array.isArray(additionalDaysArray) || !Array.isArray(additionalBreakTypesArray)) {
+    console.error("One of the arrays is not valid.");
+    return; // Handle this error as you see fit
   }
 
   let customGrossAmount = parseFloat(grossAmountValue);
-let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
-let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
-let wynChorobowe = 0;
+  let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
+  let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
+  let wynChorobowe = 0;
 
+  // Combine additional break days into the total count
+  additionalDaysArray.forEach((days, index) => {
+    if (additionalBreakTypesArray[index] === 'zwolnienie') {
+      totalDaysZwolnienie += days;
+    } else if (additionalBreakTypesArray[index] === 'bezpłatny') {
+      totalDaysBezplatny += days;
+    }
+  });
 
-  // Summing up additional days for each break type
-  for(let i = 0; i < additionalDaysArray.length; i++) {
-      if(additionalBreakTypesArray[i] === 'zwolnienie') {
-          totalDaysZwolnienie += additionalDaysArray[i];
-      } else if(additionalBreakTypesArray[i] === 'bezpłatny') {
-          totalDaysBezplatny += additionalDaysArray[i];
-      }
-  }
-  // Logging the total number of days for 'bezpłatny' break
-console.log('Total Days Bezplatny:', totalDaysBezplatny);
-
-  const allBreakTypes = [breakType, ...additionalBreakTypesArray];
-  const allBreakDays = [daysOfBreak, ...additionalDaysArray];
-
-  const hasZwolnienie = allBreakTypes.includes('zwolnienie');
-  const hasBezplatny = allBreakTypes.includes('bezpłatny');
+  const hasZwolnienie = totalDaysZwolnienie > 0;
+  const hasBezplatny = totalDaysBezplatny > 0;
 
   // Logging the presence of the break types
-console.log('Has Bezplatny:', hasBezplatny);
-console.log('Has Zwolnienie:', hasZwolnienie);
-
+  console.log('Has Bezplatny:', hasBezplatny);
+  console.log('Has Zwolnienie:', hasZwolnienie);
 
   // Special handling for combined 'bezpłatny' and 'zwolnienie':
-  // Logging the gross amount before reduction
-console.log('Custom Gross Amount before reduction:', customGrossAmount);
-  if (hasBezplatny && !hasZwolnienie) {
-      const reduction = (grossAmountValue / 168 * totalDaysBezplatny * 8);
-      customGrossAmount -= reduction;
-  }
-// Logging the gross amount after reduction
-console.log('Custom Gross Amount after reduction:', customGrossAmount);
-  // Process other breaks in order:
-  for (let i = 0; i < allBreakTypes.length; i++) {
-      const currentBreakType = allBreakTypes[i];
-      const currentBreakDays = allBreakDays[i];
-
-      
-      if (currentBreakType === 'zwolnienie') {
-        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / 30 * currentBreakDays)).toFixed(2));
-
-        wynChorobowe = parseFloat((wynChorobowe + ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays * 0.8)).toFixed(2));
-
-      } else if (currentBreakType === 'bezpłatny' && hasZwolnienie) {
-        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / 168 * currentBreakDays * 8)).toFixed(2));
-
-      }
+  if (hasBezplatny && hasZwolnienie) {
+    // Apply a different calculation if both breaks are present
+    customGrossAmount -= (customGrossAmount / workingHours * totalDaysBezplatny * 8);
+    wynChorobowe += (grossAmountValue - (grossAmountValue * 0.1371) / 30 * totalDaysZwolnienie * 0.8);
+  } else {
+    // If there's only bezpłatny, reduce the gross amount accordingly
+    if (hasBezplatny) {
+      customGrossAmount -= (customGrossAmount / workingHours * totalDaysBezplatny * 8);
+    }
+    // If there's only zwolnienie, adjust the wynChorobowe accordingly
+    if (hasZwolnienie) {
+      wynChorobowe += (grossAmountValue - (grossAmountValue * 0.1371) / 30 * totalDaysZwolnienie * 0.8);
+    }
   }
 
-  customGrossAmount = parseFloat(customGrossAmount.toFixed(2)); // To ensure it's 2 decimal places after all calculations
 
   // The rest of your logic remains unchanged
   let podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
@@ -348,7 +401,8 @@ console.log('Custom Gross Amount after reduction:', customGrossAmount);
   let netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
 
   const calculatedValues = {
-      grossAmount: grossAmountValue,
+    grossAmount: customGrossAmount.toFixed(2), // Keep two decimals for currency
+    wynChorobowe: wynChorobowe.toFixed(2),
       netAmount,
       emeryt_pr: (customGrossAmount * 0.0976).toFixed(2),
       emeryt_ub: (customGrossAmount * 0.0976).toFixed(2),
@@ -378,46 +432,48 @@ console.log('Custom Gross Amount after reduction:', customGrossAmount);
 const handleCalculateSalary = () => {
   console.log("Calculating salary...");
 
+  if (!workingHours) {
+    console.error('Working hours are not set.');
+    return; // Exit the function if working hours are not available
+  }
+
   const updatedContracts = validContracts.map((employee, index) => {
-      const normalizedGrossAmount = Array.isArray(employee.gross_amount) 
-          ? employee.gross_amount.map(gross => parseFloat(gross))
-          : [parseFloat(employee.gross_amount)];
+    // Here you're assuming employee.gross_amount is an array or a single value.
+    // You might want to handle this outside of map if every employee has only one contract
+    const normalizedGrossAmount = Array.isArray(employee.gross_amount) 
+      ? employee.gross_amount.map(gross => parseFloat(gross))
+      : [parseFloat(employee.gross_amount)];
 
-      const updatedEmployeeContracts = normalizedGrossAmount.map((grossAmount, index) => {
-          const daysOfBreak = parseInt(healthBreaks[index]?.days, 10) || 0;
-          const breakType = healthBreaks[index]?.type || '';
-          const additionalDays = [parseInt(additionalBreaks[index]?.additionalDays, 10) || 0];
+    const updatedEmployeeContracts = normalizedGrossAmount.map((grossAmount, grossIndex) => {
+      const daysOfBreak = parseInt(healthBreaks[grossIndex]?.days, 10) || 0;
+      const breakType = healthBreaks[grossIndex]?.type || '';
+      const additionalDays = [parseInt(additionalBreaks[grossIndex]?.additionalDays, 10) || 0];
+      const additionalBreakType = [additionalBreaks[grossIndex]?.type || ''];
 
+      console.log("Inside handleCalculateSalary. Type of additionalDays:", typeof additionalDays, "Value:", additionalDays);
 
+      const calculatedValues = calculateSalary(
+        grossAmount, 
+        daysOfBreak, 
+        breakType, 
+        additionalDays, 
+        additionalBreakType,
+        workingHours // Pass the working hours to the calculateSalary function
+      );
 
-          const additionalBreakType = [additionalBreaks[index]?.type || ''];
+      console.log("Calculate Salary Result for Employee:", employee.id, "is:", calculatedValues);
 
+      return { ...employee, ...calculatedValues }; // Combine the employee data with the calculated values
+    });
 
-          console.log("Inside handleCalculateSalary. Type of additionalDays:", typeof additionalDays, "Value:", additionalDays);
-
-          const calculatedValues = calculateSalary(
-              grossAmount, 
-              daysOfBreak, 
-              breakType, 
-              additionalDays, 
-              additionalBreakType
-          );
-          console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
-
-          return { ...employee, contracts: calculatedValues };
-      });
-
-      return updatedEmployeeContracts;
+    // Since updatedEmployeeContracts is an array (from the map above), you need to handle how you want to merge these if needed
+    // For simplicity, assuming only one contract per employee, you could simply return the first one
+    return updatedEmployeeContracts[0];
   });
 
   console.log(updatedContracts);
-  setCalculatedContracts(updatedContracts);
+  setCalculatedContracts(updatedContracts); // Assuming this sets the state with the updated contracts
 };
-
-
-
-
-
 
 
 const renderEmployeeTable = () => {
@@ -595,30 +651,36 @@ const renderEmployeeTable = () => {
 
             <tr>
             <button onClick={() => {
-    const daysOfBreak = healthBreak.days;
-    const breakType = healthBreak.type;
-    const grossAmountValue = employee.gross_amount;
-    
-    // Construct the arrays here, based on the additionalBreaks structure.
-     // Extract the arrays for the specific employee from the additionalBreaksByEmployee structure.
-     const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
-     const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
-     const additionalBreakTypesArray = breaksForEmployee.map(breakItem => breakItem.type || '');
+  const daysOfBreak = healthBreak.days;
+  const breakType = healthBreak.type;
+  const grossAmountValue = employee.gross_amount;
+  
+  // Extract the arrays for the specific employee from the additionalBreaksByEmployee structure.
+  const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
+  const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
+  const additionalBreakTypesArray = breaksForEmployee.map(breakItem => breakItem.type || '');
 
-    const calculatedValues = calculateSalary(
-      grossAmountValue, 
-      daysOfBreak, 
-      breakType, 
-      additionalDaysArray,  // pass the entire array
-      additionalBreakTypesArray  // pass the entire array
-    );
-    
-    // Update this specific employee's data in the state:
-    const updatedEmployees = [...calculatedContracts];
-    updatedEmployees[index] = { ...employee, contracts: [calculatedValues] };
-    setCalculatedContracts(updatedEmployees);
+  // Ensure that workingHours is defined and available in the scope of this function.
+  if (!workingHours) {
+    alert('Working hours data is not available yet.');
+    return;
+  }
+
+  const calculatedValues = calculateSalary(
+    grossAmountValue,
+    daysOfBreak,
+    breakType,
+    additionalDaysArray,
+    additionalBreakTypesArray,
+    workingHours // Pass the workingHours here
+  );
+  
+  // Update this specific employee's data in the state:
+  const updatedEmployees = [...calculatedContracts];
+  updatedEmployees[index] = { ...employee, contracts: calculatedValues };
+  setCalculatedContracts(updatedEmployees);
 }}>
-    Calculate
+  Calculate
 </button>
 
 
