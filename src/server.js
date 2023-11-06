@@ -606,24 +606,58 @@ app.post('/api/valid-employees', async (req, res) => {
       } else {
           const employees = Array.isArray(data) ? data : [];
           const transformedEmployees = employees.map(employee => {
-              const grossAmounts = employee.contracts
-                  .filter(contract => contract.contract_from_date <= endDate && contract.contract_to_date >= startDate)
-                  .map(contract => contract.gross_amount.toFixed(2));
-
-              return {
-                  employee_id: employee.id,
-                  name: employee.name,
-                  surname: employee.surname,
-                  gross_amount: grossAmounts
-              };
+            // Map through the contracts to find those valid in the selected time frame
+            const contracts = employee.contracts
+              .filter(contract => contract.contract_from_date <= endDate && contract.contract_to_date >= startDate)
+              .map(contract => ({
+                gross_amount: contract.gross_amount.toFixed(2),
+                contract_from_date: contract.contract_from_date,
+                contract_to_date: contract.contract_to_date
+              }));
+          
+            // Merge the contract details with the gross amount
+            const grossAmounts = contracts.map(contract => contract.gross_amount);
+          
+            // Assuming an employee can have more than one contract in the period,
+            // you might want to handle how to combine these gross amounts
+            // For simplicity, here we just take the first contract's amount
+            const combinedGrossAmount = grossAmounts.length > 0 ? grossAmounts[0] : '0.00';
+          
+            return {
+              employee_id: employee.id,
+              name: employee.name,
+              surname: employee.surname,
+              gross_amount: combinedGrossAmount, // Keep the gross amount format
+              contract_details: contracts // Include all the contract details
+            };
           });
-
+          
           res.status(200).json({ employees: transformedEmployees });
+          
       }
   }
 });
 
+app.get('/api/getWorkingHours', async (req, res) => {
+  const { year, month } = req.query;
+  
+  try {
+    // Fetch the number of work hours from the 'working_days' table for the given year and month
+    const { data, error } = await supabase
+      .from('working_days')
+      .select('work_hours')
+      .eq('year', year)
+      .eq('month', month)
+      .single();
 
+    if (error) throw error;
+    
+    // Return the working hours for the given month
+    res.json({ work_hours: data.work_hours });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
 
 
 
