@@ -576,6 +576,21 @@ app.post('/api/valid-employees', async (req, res) => {
       .filter('contract_from_date', 'lte', endDate)
       .filter('contract_to_date', 'gte', startDate);
 
+  const { data, error } = validEmployeeIdsResponse;
+
+      if (error) {
+        // Handle error appropriately
+        console.error('Error fetching valid employee IDs:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+        return;
+      }
+      
+      if (!data) {
+        // No valid contracts were found for the given period
+        res.status(200).json({ employees: [] });
+        return;
+      }
+          
   const validEmployeeIds = validEmployeeIdsResponse.data.map(item => item.employee_id);
 
   // Step 2: Use the validEmployeeIds to fetch the required data

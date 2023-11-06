@@ -68,35 +68,40 @@ const defaultHealthBreak = {
 
   
 
-  const fetchValidContracts = async () => {
+const fetchValidContracts = async () => {
     console.log("Fetching valid contracts...");
-  
+
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
-  
+    
+    // Create a date object pointing to the first day of the following month, then subtract one day to get the last day of the selected month
+    const endOfMonth = new Date(year, month, 0); // Month is 0-indexed in JS Date, so month 2 is March, hence month 0 is January
+
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${endOfMonth.getDate()}`;
+
     console.log("Dates:", startDate, endDate);
-  
+
     try {
-      console.log("About to make axios request...");
-  
-      const response = await axios.post('http://localhost:3001/api/valid-employees', {
-        startDate,
-        endDate,
-      });
-  
-      console.log("Response received:", response.data);
-      
-      const employeesData = response.data.employees;
-      setValidContracts(employeesData);
-      setCalculatedContracts(employeesData); // Set the same fetched data to calculatedContracts
+        console.log("About to make axios request...");
+
+        const response = await axios.post('http://localhost:3001/api/valid-employees', {
+            startDate,
+            endDate,
+        });
+
+        console.log("Response received:", response.data);
+        
+        const employeesData = response.data.employees;
+        setValidContracts(employeesData);
+        setCalculatedContracts(employeesData); // Set the same fetched data to calculatedContracts
 
     } catch (error) {
-      console.error('Error fetching valid contracts:', error);
-      setValidContracts([]);
-      setCalculatedContracts([]); // Resetting calculatedContracts too
-      setLoading(false);
+        console.error('Error fetching valid contracts:', error);
+        setValidContracts([]);
+        setCalculatedContracts([]); // Resetting calculatedContracts too
+        setLoading(false);
     }
 };
+
 
   
   
