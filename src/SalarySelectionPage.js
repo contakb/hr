@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import DatePicker from 'react-datepicker'; // Import DatePicker
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
@@ -19,7 +19,77 @@ const [additionalBreakType, setAdditionalBreakType] = useState('');
 const [calculatedContracts, setCalculatedContracts] = useState([]);
 const [healthBreaksByEmployee, setHealthBreaksByEmployee] = useState({});
 const [additionalBreaksByEmployee, setAdditionalBreaksByEmployee] = useState({});
+const [workingHours, setWorkingHours] = useState(null);
+const [holidays, setHolidays] = useState([]);
 
+const fetchAllData = async () => {
+  if (!year || !month) {
+    console.error('Year and month must be defined.');
+    return;
+  }
+  console.log(`Fetching data for year: ${year}, month: ${month}`); // Debugging line
+
+  try {
+    const workingHoursResponse = await axios.get(`http://localhost:3001/api/getWorkingHours?year=${year}&month=${month}`);
+    setWorkingHours(workingHoursResponse.data.work_hours);
+
+    const holidaysResponse = await axios.get(`http://localhost:3001/api/getHolidays?year=${year}&month=${month}`);
+    // Make sure the holidaysResponse.data is an array
+    const holidaysData = Array.isArray(holidaysResponse.data) ? holidaysResponse.data : [];
+    const filteredHolidays = holidaysData.filter(holiday => {
+      const holidayDate = new Date(holiday.date);
+      return holidayDate.getFullYear() === parseInt(year, 10) && holidayDate.getMonth() === parseInt(month, 10) - 1;
+    });
+
+    setHolidays(filteredHolidays);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    // Handle errors appropriately
+  }
+};
+
+useEffect(() => {
+  fetchAllData();
+}, [year, month]);
+
+
+
+
+
+const didEmployeeWorkWholeMonth = (contractFromDate, contractToDate, year, month) => {
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0); // This will get the last day of the month.
+  const contractStart = new Date(contractFromDate);
+  const contractEnd = contractToDate ? new Date(contractToDate) : new Date();
+
+  return contractStart <= monthStart && contractEnd >= monthEnd;
+};
+
+
+const calculateProRatedGrossAmount = (contract, workingHours) => {
+  const { gross_amount, contract_from_date, contract_to_date } = contract;
+
+  // Parse the contract dates.
+  const contractStart = new Date(contract_from_date);
+  const contractEnd = contract_to_date ? new Date(contract_to_date) : new Date();
+
+  // Calculate the start and end of the relevant month.
+  const monthStart = new Date(year, month - 1, 1); // Note: Months are zero-indexed in JavaScript Dates
+  const monthEnd = new Date(year, month, 0); // This will get the last day of the month.
+
+  // Calculate the number of days not worked in the month if the employee starts mid-month or ends before the month's last day.
+  const daysNotWorkedAtStart = contractStart > monthStart ? (contractStart - monthStart) / (1000 * 3600 * 24) : 0;
+  const daysNotWorkedAtEnd = contractEnd < monthEnd ? (monthEnd - contractEnd) / (1000 * 3600 * 24) : 0;
+  const totalDaysNotWorked = daysNotWorkedAtStart + daysNotWorkedAtEnd;
+
+  // Calculate the daily wage based on the total working hours for the month.
+  const dailyWage = gross_amount / workingHours * 8; // 8 is the number of work hours per day.
+
+  // Pro-rate the gross amount by subtracting the salary for the days not worked.
+  let customGrossAmount = gross_amount - (dailyWage * totalDaysNotWorked);
+
+  return customGrossAmount.toFixed(2); // Round to two decimal places for currency.
+};
 
 
 
@@ -268,7 +338,7 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray,workingHours) => {
   // Check if the additionalDaysArray is an array, if not, log an error and return
   if (!Array.isArray(additionalDaysArray)) {
       console.error("additionalDaysArray must be an array.");
@@ -313,7 +383,8 @@ console.log('Has Zwolnienie:', hasZwolnienie);
   // Logging the gross amount before reduction
 console.log('Custom Gross Amount before reduction:', customGrossAmount);
   if (hasBezplatny && !hasZwolnienie) {
-      const reduction = (grossAmountValue / 168 * totalDaysBezplatny * 8);
+    const dailyRate = grossAmountValue / workingHours; // This will give you the gross amount per hour
+      const reduction = (dailyRate * totalDaysBezplatny * 8);
       customGrossAmount -= reduction;
   }
 // Logging the gross amount after reduction
@@ -330,7 +401,7 @@ console.log('Custom Gross Amount after reduction:', customGrossAmount);
         wynChorobowe = parseFloat((wynChorobowe + ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays * 0.8)).toFixed(2));
 
       } else if (currentBreakType === 'bezpłatny' && hasZwolnienie) {
-        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / 168 * currentBreakDays * 8)).toFixed(2));
+        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / workingHours * currentBreakDays * 8)).toFixed(2));
 
       }
   }
@@ -400,7 +471,8 @@ const handleCalculateSalary = () => {
               daysOfBreak, 
               breakType, 
               additionalDays, 
-              additionalBreakType
+              additionalBreakType,
+              workingHours
           );
           console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
 
@@ -610,7 +682,8 @@ const renderEmployeeTable = () => {
       daysOfBreak, 
       breakType, 
       additionalDaysArray,  // pass the entire array
-      additionalBreakTypesArray  // pass the entire array
+      additionalBreakTypesArray,
+      workingHours  // pass the entire array
     );
     
     // Update this specific employee's data in the state:
