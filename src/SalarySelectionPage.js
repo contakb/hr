@@ -3,6 +3,10 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker'; // Import DatePicker
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
 
+function calculateDaysNotWorked(workingDayCount, totalWorkingDaysInMonth) {
+  return Math.max(0, totalWorkingDaysInMonth - workingDayCount);
+}
+
 function SalarySelectionPage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +25,8 @@ const [healthBreaksByEmployee, setHealthBreaksByEmployee] = useState({});
 const [additionalBreaksByEmployee, setAdditionalBreaksByEmployee] = useState({});
 const [workingHours, setWorkingHours] = useState(null);
 const [holidays, setHolidays] = useState([]);
+const [daysNotWorkedSummary, setDaysNotWorkedSummary] = useState({});
+
 
 const fetchAllData = async () => {
   if (!year || !month) {
@@ -138,8 +144,21 @@ const fetchValidContracts = async () => {
     }
 };
 
+// Place these functions outside of your component
+function isWeekend(date) {
+  return date.getDay() === 0 || date.getDay() === 6;
+}
+
+function isHolidayOnDate(holidays, date) {
+  return holidays.some(holiday => {
+    const holidayDate = new Date(holiday.date);
+    return holidayDate.toDateString() === date.toDateString();
+  });
+}
+
 function countWorkingDays(employee, workingHours, holidays, year, month) {
-  employee.contract_details.forEach(contract => {
+  // Map over employee.contract_details
+  const employeeDaysNotWorked = employee.contract_details.map(contract => {
     const startDate = new Date(contract.contract_from_date);
     const endDate = contract.contract_to_date ? new Date(contract.contract_to_date) : new Date();
     const monthStart = new Date(year, month - 1, 1);
@@ -150,9 +169,10 @@ function countWorkingDays(employee, workingHours, holidays, year, month) {
       const holidayDate = new Date(holiday.date);
       return holidayDate.getDay() === 6 && holidayDate.getMonth() === month - 1 && holidayDate.getFullYear() === year;
     });
-    
+
     // Calculate the total expected working days in the month
     let totalWorkingDaysInMonth = Math.floor(workingHours / 8); 
+
     // Adjust for the extra day off if there's a holiday on a Saturday
     if (saturdayHolidays.length > 0) {
       totalWorkingDaysInMonth -= 1;
@@ -175,33 +195,45 @@ function countWorkingDays(employee, workingHours, holidays, year, month) {
 
       currentDay.setDate(currentDay.getDate() + 1);
     }
+    
+    // Use the utility function to calculate days not worked
+    const daysNotWorked = calculateDaysNotWorked(workingDayCount, totalWorkingDaysInMonth);
+    console.log(`Employee ID: ${employee.employee_id} - Actual Working Days: ${workingDayCount}, Adjusted Working Days: ${totalWorkingDaysInMonth}, Days Not Worked: ${daysNotWorked}`);
 
-    console.log(`Employee ID: ${employee.employee_id} - Actual Working Days: ${workingDayCount}, Adjusted Working Days: ${totalWorkingDaysInMonth}`);
+
+    return {
+      contract_from_date: contract.contract_from_date,
+      contract_to_date: contract.contract_to_date,
+      daysNotWorked // Add the days not worked to the result
+    };
   });
+
+  return {
+    employeeId: employee.employee_id,
+    details: employeeDaysNotWorked
+  };
 }
 
-// Helper functions
-function isWeekend(date) {
-  return date.getDay() === 0 || date.getDay() === 6;
-}
-
-function isHolidayOnDate(holidays, date) {
-  return holidays.some(holiday => {
-    const holidayDate = new Date(holiday.date);
-    return holidayDate.toDateString() === date.toDateString();
-  });
-}
 
 
 useEffect(() => {
   if (validContracts.length > 0 && workingHours && holidays.length >= 0 && year && month) {
-    validContracts.forEach(employee => {
-      countWorkingDays(employee, workingHours, holidays, year, month);
-    });
+    const summary = validContracts.map(employee => countWorkingDays(employee, workingHours, holidays, year, month));
+
+    const summaryObj = summary.reduce((acc, curr) => {
+      acc[curr.employeeId] = curr.details;
+      return acc;
+    }, {});
+
+    setDaysNotWorkedSummary(summaryObj); // Update state with the summary object
   }
 }, [validContracts, workingHours, holidays, year, month]);
 
 
+// Utility function to calculate days not worked
+function calculateDaysNotWorked(workingDayCount, totalWorkingDaysInMonth) {
+  return Math.max(0, totalWorkingDaysInMonth - workingDayCount);
+}
 
 
 
