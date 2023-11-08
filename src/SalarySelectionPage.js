@@ -26,6 +26,8 @@ const [additionalBreaksByEmployee, setAdditionalBreaksByEmployee] = useState({})
 const [workingHours, setWorkingHours] = useState(null);
 const [holidays, setHolidays] = useState([]);
 const [daysNotWorkedSummary, setDaysNotWorkedSummary] = useState({});
+const [daysNotWorked, setDaysNotWorked] = useState([]);
+const [employeeDaysNotWorked, setemployeeDaysNotWorked] = useState({});
 
 
 const fetchAllData = async () => {
@@ -225,15 +227,11 @@ useEffect(() => {
       return acc;
     }, {});
 
-    setDaysNotWorkedSummary(summaryObj); // Update state with the summary object
+    setDaysNotWorkedSummary({daysNotWorked}); // Update state with the summary object
   }
 }, [validContracts, workingHours, holidays, year, month]);
 
 
-// Utility function to calculate days not worked
-function calculateDaysNotWorked(workingDayCount, totalWorkingDaysInMonth) {
-  return Math.max(0, totalWorkingDaysInMonth - workingDayCount);
-}
 
 
 
@@ -409,7 +407,7 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray,workingHours) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, daysNotWorked, employeeDaysNotWorked) => {
   // Check if the additionalDaysArray is an array, if not, log an error and return
   if (!Array.isArray(additionalDaysArray)) {
       console.error("additionalDaysArray must be an array.");
@@ -456,10 +454,13 @@ console.log('Custom Gross Amount before reduction:', customGrossAmount);
   if (hasBezplatny && !hasZwolnienie) {
     const dailyRate = grossAmountValue / workingHours; // This will give you the gross amount per hour
       const reduction = (dailyRate * totalDaysBezplatny * 8);
-      customGrossAmount -= reduction;
+      const notWorkedDaysDeduction = daysNotWorked > 0 ? dailyRate * daysNotWorked * 8 : 0;
+      customGrossAmount -= (reduction + notWorkedDaysDeduction) ;
   }
 // Logging the gross amount after reduction
 console.log('Custom Gross Amount after reduction:', customGrossAmount);
+console.log('Days not worked:', daysNotWorked);
+console.log('Days not worked:', employeeDaysNotWorked);
   // Process other breaks in order:
   for (let i = 0; i < allBreakTypes.length; i++) {
       const currentBreakType = allBreakTypes[i];
@@ -543,7 +544,9 @@ const handleCalculateSalary = () => {
               breakType, 
               additionalDays, 
               additionalBreakType,
-              workingHours
+              workingHours,
+              daysNotWorked,
+              employeeDaysNotWorked
           );
           console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
 
@@ -754,7 +757,9 @@ const renderEmployeeTable = () => {
       breakType, 
       additionalDaysArray,  // pass the entire array
       additionalBreakTypesArray,
-      workingHours  // pass the entire array
+      workingHours,  // pass the entire array
+      daysNotWorked, 
+      employeeDaysNotWorked
     );
     
     // Update this specific employee's data in the state:
