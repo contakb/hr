@@ -56,40 +56,6 @@ useEffect(() => {
 
 
 
-const didEmployeeWorkWholeMonth = (contractFromDate, contractToDate, year, month) => {
-  const monthStart = new Date(year, month - 1, 1);
-  const monthEnd = new Date(year, month, 0); // This will get the last day of the month.
-  const contractStart = new Date(contractFromDate);
-  const contractEnd = contractToDate ? new Date(contractToDate) : new Date();
-
-  return contractStart <= monthStart && contractEnd >= monthEnd;
-};
-
-
-const calculateProRatedGrossAmount = (contract, workingHours) => {
-  const { gross_amount, contract_from_date, contract_to_date } = contract;
-
-  // Parse the contract dates.
-  const contractStart = new Date(contract_from_date);
-  const contractEnd = contract_to_date ? new Date(contract_to_date) : new Date();
-
-  // Calculate the start and end of the relevant month.
-  const monthStart = new Date(year, month - 1, 1); // Note: Months are zero-indexed in JavaScript Dates
-  const monthEnd = new Date(year, month, 0); // This will get the last day of the month.
-
-  // Calculate the number of days not worked in the month if the employee starts mid-month or ends before the month's last day.
-  const daysNotWorkedAtStart = contractStart > monthStart ? (contractStart - monthStart) / (1000 * 3600 * 24) : 0;
-  const daysNotWorkedAtEnd = contractEnd < monthEnd ? (monthEnd - contractEnd) / (1000 * 3600 * 24) : 0;
-  const totalDaysNotWorked = daysNotWorkedAtStart + daysNotWorkedAtEnd;
-
-  // Calculate the daily wage based on the total working hours for the month.
-  const dailyWage = gross_amount / workingHours * 8; // 8 is the number of work hours per day.
-
-  // Pro-rate the gross amount by subtracting the salary for the days not worked.
-  let customGrossAmount = gross_amount - (dailyWage * totalDaysNotWorked);
-
-  return customGrossAmount.toFixed(2); // Round to two decimal places for currency.
-};
 
 
 
@@ -171,6 +137,79 @@ const fetchValidContracts = async () => {
         setLoading(false);
     }
 };
+
+function countWorkingDays(employee, workingHours, holidays, year, month) {
+  employee.contract_details.forEach(contract => {
+    const startDate = new Date(contract.contract_from_date);
+    const endDate = contract.contract_to_date ? new Date(contract.contract_to_date) : new Date();
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+
+    // Identify holidays that fall on Saturdays
+    const saturdayHolidays = holidays.filter(holiday => {
+      const holidayDate = new Date(holiday.date);
+      return holidayDate.getDay() === 6 && holidayDate.getMonth() === month - 1 && holidayDate.getFullYear() === year;
+    });
+    
+    // Calculate the total expected working days in the month
+    let totalWorkingDaysInMonth = Math.floor(workingHours / 8); 
+    // Adjust for the extra day off if there's a holiday on a Saturday
+    if (saturdayHolidays.length > 0) {
+      totalWorkingDaysInMonth -= 1;
+    }
+
+    const adjustedStartDate = startDate < monthStart ? monthStart : startDate;
+    const adjustedEndDate = new Date(endDate > monthEnd ? monthEnd : endDate);
+    adjustedEndDate.setDate(adjustedEndDate.getDate() + 1); 
+
+    let workingDayCount = 0;
+    let currentDay = new Date(adjustedStartDate);
+
+    while (currentDay < adjustedEndDate) {
+      const isWeekday = !isWeekend(currentDay);
+      const isNotHoliday = !isHolidayOnDate(holidays, currentDay);
+
+      if (isWeekday && isNotHoliday) {
+        workingDayCount++;
+      }
+
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+
+    console.log(`Employee ID: ${employee.employee_id} - Actual Working Days: ${workingDayCount}, Adjusted Working Days: ${totalWorkingDaysInMonth}`);
+  });
+}
+
+// Helper functions
+function isWeekend(date) {
+  return date.getDay() === 0 || date.getDay() === 6;
+}
+
+function isHolidayOnDate(holidays, date) {
+  return holidays.some(holiday => {
+    const holidayDate = new Date(holiday.date);
+    return holidayDate.toDateString() === date.toDateString();
+  });
+}
+
+
+useEffect(() => {
+  if (validContracts.length > 0 && workingHours && holidays.length >= 0 && year && month) {
+    validContracts.forEach(employee => {
+      countWorkingDays(employee, workingHours, holidays, year, month);
+    });
+  }
+}, [validContracts, workingHours, holidays, year, month]);
+
+
+
+
+
+
+
+
+
+
 
 
   
