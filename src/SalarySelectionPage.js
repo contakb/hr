@@ -459,43 +459,38 @@ console.log('Has Zwolnienie:', hasZwolnienie);
   // Logging the gross amount before reduction
 console.log('Custom Gross Amount before reduction:', customGrossAmount);
 
-const dailyRate = grossAmountValue / workingHours; // This will give you the gross amount per hour
+  // Determine the daily rate based on working hours
+  const dailyRate = grossAmountValue / workingHours;
+  console.log("Daily Rate:", dailyRate);
+
+  // Calculate deduction for not worked days
   const notWorkedDaysDeduction = totalDaysNotWorked > 0 ? dailyRate * totalDaysNotWorked * 8 : 0;
+  console.log("Not Worked Days Deduction:", notWorkedDaysDeduction);
 
+  // Special handling for combined 'bezpłatny' and 'zwolnienie':
   if (hasBezplatny && !hasZwolnienie) {
-    
-
-     // This will give you the gross amount per hour
-    console.log("Daily Rate:", dailyRate);
-      const reduction = (dailyRate * totalDaysBezplatny * 8);
-      console.log("Not Worked Days Deduction:", totalDaysNotWorked);       
-      customGrossAmount -= (reduction + notWorkedDaysDeduction) ;
-      // Logging the gross amount after reduction
-console.log('Custom Gross Amount after reduction:', customGrossAmount);
+      const reductionBezplatny = (dailyRate * totalDaysBezplatny * 8);
+      customGrossAmount -= reductionBezplatny;
   }
 
-
- 
-
-  // Process other breaks in order:
+  // Process other breaks in order
   for (let i = 0; i < allBreakTypes.length; i++) {
       const currentBreakType = allBreakTypes[i];
       const currentBreakDays = allBreakDays[i];
 
-      
       if (currentBreakType === 'zwolnienie') {
-        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / 30 * currentBreakDays)).toFixed(2));
-
-        wynChorobowe = parseFloat((wynChorobowe + ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays * 0.8)).toFixed(2));
-
+          customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
+          wynChorobowe += ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays * 0.8);
       } else if (currentBreakType === 'bezpłatny' && hasZwolnienie) {
-        customGrossAmount = parseFloat((customGrossAmount - (grossAmountValue / workingHours * currentBreakDays * 8)).toFixed(2));
-
+          customGrossAmount -= (dailyRate * currentBreakDays * 8);
       }
   }
+
   // Apply the not worked days deduction
   customGrossAmount -= notWorkedDaysDeduction;
-  customGrossAmount = parseFloat(customGrossAmount.toFixed(2)); // To ensure it's 2 decimal places after all calculations
+
+  // Ensure customGrossAmount has two decimal places
+  customGrossAmount = parseFloat(customGrossAmount.toFixed(2));
 
   // The rest of your logic remains unchanged
   let podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
@@ -518,7 +513,7 @@ console.log('Custom Gross Amount after reduction:', customGrossAmount);
       wypadkowe: (customGrossAmount * 0.0167).toFixed(2),
       FP: roundUpToCent(customGrossAmount * 0.0245).toFixed(2),
       FGSP: roundUpToCent(customGrossAmount * 0.001).toFixed(2),
-      wyn_chorobowe: wynChorobowe,
+      wyn_chorobowe: wynChorobowe.toFixed(2),
       podstawa_zdrow: podstawa_zdrow,
       podstawa_zaliczki: pod_zal,
       zaliczka,
