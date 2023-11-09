@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DatePicker from 'react-datepicker'; // Import DatePicker
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
@@ -227,7 +227,9 @@ useEffect(() => {
       return acc;
     }, {});
 
-    setDaysNotWorkedSummary({daysNotWorked}); // Update state with the summary object
+    setDaysNotWorkedSummary(summaryObj);
+    console.log("Days Not Worked Summary:", summaryObj);
+
   }
 }, [validContracts, workingHours, holidays, year, month]);
 
@@ -407,7 +409,12 @@ function roundUpToCent(value) {
 }
 // Define a function to calculate salary
 // Define a function to calculate salary
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, daysNotWorked, employeeDaysNotWorked) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked) => {
+  // Log to check the received value of daysNotWorked
+  console.log("Days Not Worked Received:", totalDaysNotWorked);
+  console.log(`Days Not Worked Received for Employee:`, totalDaysNotWorked);
+
+
   // Check if the additionalDaysArray is an array, if not, log an error and return
   if (!Array.isArray(additionalDaysArray)) {
       console.error("additionalDaysArray must be an array.");
@@ -451,16 +458,25 @@ console.log('Has Zwolnienie:', hasZwolnienie);
   // Special handling for combined 'bezpłatny' and 'zwolnienie':
   // Logging the gross amount before reduction
 console.log('Custom Gross Amount before reduction:', customGrossAmount);
+
+const dailyRate = grossAmountValue / workingHours; // This will give you the gross amount per hour
+  const notWorkedDaysDeduction = totalDaysNotWorked > 0 ? dailyRate * totalDaysNotWorked * 8 : 0;
+
   if (hasBezplatny && !hasZwolnienie) {
-    const dailyRate = grossAmountValue / workingHours; // This will give you the gross amount per hour
+    
+
+     // This will give you the gross amount per hour
+    console.log("Daily Rate:", dailyRate);
       const reduction = (dailyRate * totalDaysBezplatny * 8);
-      const notWorkedDaysDeduction = daysNotWorked > 0 ? dailyRate * daysNotWorked * 8 : 0;
+      console.log("Not Worked Days Deduction:", totalDaysNotWorked);       
       customGrossAmount -= (reduction + notWorkedDaysDeduction) ;
-  }
-// Logging the gross amount after reduction
+      // Logging the gross amount after reduction
 console.log('Custom Gross Amount after reduction:', customGrossAmount);
-console.log('Days not worked:', daysNotWorked);
-console.log('Days not worked:', employeeDaysNotWorked);
+  }
+
+
+ 
+
   // Process other breaks in order:
   for (let i = 0; i < allBreakTypes.length; i++) {
       const currentBreakType = allBreakTypes[i];
@@ -477,7 +493,8 @@ console.log('Days not worked:', employeeDaysNotWorked);
 
       }
   }
-
+  // Apply the not worked days deduction
+  customGrossAmount -= notWorkedDaysDeduction;
   customGrossAmount = parseFloat(customGrossAmount.toFixed(2)); // To ensure it's 2 decimal places after all calculations
 
   // The rest of your logic remains unchanged
@@ -520,6 +537,7 @@ console.log('Days not worked:', employeeDaysNotWorked);
 
 const handleCalculateSalary = () => {
   console.log("Calculating salary...");
+  console.log("handleCalculateSalary triggered"); // Add this line
 
   const updatedContracts = validContracts.map((employee, index) => {
       const normalizedGrossAmount = Array.isArray(employee.gross_amount) 
@@ -530,23 +548,21 @@ const handleCalculateSalary = () => {
           const daysOfBreak = parseInt(healthBreaks[index]?.days, 10) || 0;
           const breakType = healthBreaks[index]?.type || '';
           const additionalDays = [parseInt(additionalBreaks[index]?.additionalDays, 10) || 0];
-
-
-
           const additionalBreakType = [additionalBreaks[index]?.type || ''];
-
-
+          const totalDaysNotWorked = daysNotWorkedSummary[employee.employee_id] || 0;
+          console.log("Days Not Worked Summary State:", daysNotWorkedSummary);
+          console.log(`Total Days Not Worked for Employee ID ${employee.employee_id}:`, totalDaysNotWorked);
           console.log("Inside handleCalculateSalary. Type of additionalDays:", typeof additionalDays, "Value:", additionalDays);
 
           const calculatedValues = calculateSalary(
-              grossAmount, 
-              daysOfBreak, 
-              breakType, 
-              additionalDays, 
-              additionalBreakType,
-              workingHours,
-              daysNotWorked,
-              employeeDaysNotWorked
+            employee.employee_id,
+            grossAmount, 
+            daysOfBreak, 
+            breakType, 
+            additionalDays, 
+            additionalBreakType,
+            workingHours,
+            totalDaysNotWorked
           );
           console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
 
@@ -559,12 +575,6 @@ const handleCalculateSalary = () => {
   console.log(updatedContracts);
   setCalculatedContracts(updatedContracts);
 };
-
-
-
-
-
-
 
 const renderEmployeeTable = () => {
   if (loading) return <div>Loading...</div>;
@@ -750,6 +760,12 @@ const renderEmployeeTable = () => {
      const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
      const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
      const additionalBreakTypesArray = breaksForEmployee.map(breakItem => breakItem.type || '');
+     // Extract total days not worked for this employee
+  const employeeNotWorkedDetails = daysNotWorkedSummary[employee.employee_id] || [];
+  const totalDaysNotWorked = employeeNotWorkedDetails.reduce((total, detail) => total + detail.daysNotWorked, 0);
+
+  console.log(`Days Not Worked for Employee (from button click) ${employee.employee_id}:`, totalDaysNotWorked);
+
 
     const calculatedValues = calculateSalary(
       grossAmountValue, 
@@ -758,8 +774,7 @@ const renderEmployeeTable = () => {
       additionalDaysArray,  // pass the entire array
       additionalBreakTypesArray,
       workingHours,  // pass the entire array
-      daysNotWorked, 
-      employeeDaysNotWorked
+      totalDaysNotWorked // pass the total days not worked for this specific employee
     );
     
     // Update this specific employee's data in the state:
