@@ -481,9 +481,16 @@ console.log('Custom Gross Amount before reduction:', customGrossAmount);
       if (currentBreakType === 'zwolnienie') {
           customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
           wynChorobowe += ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays * 0.8);
-      } else if (currentBreakType === 'bezpłatny' && hasZwolnienie) {
+      } else if (currentBreakType === 'bezpłatny' && hasZwolnienie || currentBreakType === 'nieobecność'|| currentBreakType === 'wychowawczy') {
           customGrossAmount -= (dailyRate * currentBreakDays * 8);
-      }
+      } else if (currentBreakType === 'ciąża') {
+        customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
+          wynChorobowe += ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays);
+      } else if (currentBreakType === 'rodzicielski') {
+        // For 'rodzicielski', apply the same deduction as 'zwolnienie' but set wyn_chorobowe to 0
+        customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
+        wynChorobowe = 0; // This leave is covered by ZUS, not included in the salary calculation
+    }
   }
 
   // Apply the not worked days deduction
@@ -494,10 +501,12 @@ console.log('Custom Gross Amount before reduction:', customGrossAmount);
 
   // The rest of your logic remains unchanged
   let podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
-  let pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250).toFixed(0);
+  let pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - 250);
+pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
 
   let zaliczka = (parseFloat(pod_zal) * 0.12 - 300) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - 300).toFixed(0);
   let zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
+  zal_2021 = zal_2021 > 0 ? zal_2021 : '0';
   let zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09 ? parseFloat(zal_2021) : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
   
   let netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
@@ -667,8 +676,11 @@ const renderEmployeeTable = () => {
                    
                     <option value="brak">Brak</option>
                     <option value="zwolnienie">Zwolnienie</option>
+                    <option value="ciąża">Zwolnienie 100% ciąża</option>
                     <option value="bezpłatny">Bezpłatny</option>
                     <option value="nieobecność">Nieobecność</option>
+                    <option value="wychowawczy">wychowawczy</option>
+                    <option value="rodzicielski">rodzicielski</option>
                 </select>
                 
                 <button onClick={() => addAdditionalBreak(employee.employee_id)}>Add Przerwa</button>
@@ -732,8 +744,11 @@ const renderEmployeeTable = () => {
                                 >
                                     <option value="">Choose break type</option>
                                     <option value="zwolnienie">Zwolnienie</option>
+                                    <option value="ciąża">Zwolnienie 100% ciąża</option>
                                     <option value="bezpłatny">Bezpłatny</option>
                                     <option value="nieobecność">Nieobecność</option>
+                                    <option value="wychowawczy">wychowawczy</option>
+                                    <option value="rodzicielski">rodzicielski</option>
                                 </select>
                                 <button onClick={() => deleteAdditionalBreak(employee.employee_id, breakIndex)}>Remove</button>
 
