@@ -240,13 +240,14 @@ function countWorkingDays(employee, workingHours, holidays, year, month) {
 
 
 
-function getWorkingDayCountForContract(employeeId, fromDate, toDate) {
-  const employeeDetails = daysNotWorkedSummary[employeeId] || [];
+function getWorkingDayCountForContract(employeeId, fromDate, toDate, workingDaysSummaryObj) {
+  const employeeDetails = workingDaysSummaryObj[employeeId] || [];
   const contractDetail = employeeDetails.find(detail => 
     detail.contract_from_date === fromDate && detail.contract_to_date === toDate
   );
   return contractDetail ? contractDetail.workingDayCount : 0;
 }
+
 
 
 useEffect(() => {
@@ -304,13 +305,24 @@ function calculateProRatedGross(employee, workingHours, year, month) {
 
 useEffect(() => {
   if (validContracts.length > 0 && workingHours && holidays.length >= 0 && year && month) {
+    // First, calculate working days for each contract
+    const workingDaysSummary = validContracts.map(employee => countWorkingDays(employee, workingHours, holidays, year, month));
+    console.log("Processed Contracts:", workingDaysSummary);
+
+    const workingDaysSummaryObj = workingDaysSummary.reduce((acc, curr) => {
+      acc[curr.employeeId] = curr.details;
+      return acc;
+    }, {});
+    setDaysNotWorkedSummary(workingDaysSummaryObj);
+
+    // Then, calculate pro-rated gross based on the working days
     const newProRatedGrossSummary = validContracts.reduce((acc, employee) => {
       if (employee.contract_details && employee.contract_details.length > 1) {
         const transformedEmployee = {
           ...employee,
           details: employee.contract_details.map(contract => ({
             ...contract,
-            workingDayCount: getWorkingDayCountForContract(employee.employee_id, contract.contract_from_date, contract.contract_to_date)
+            workingDayCount: getWorkingDayCountForContract(employee.employee_id, contract.contract_from_date, contract.contract_to_date, workingDaysSummaryObj)
           }))
         };
         acc[employee.employee_id] = calculateProRatedGross(transformedEmployee, workingHours, year, month);
@@ -323,9 +335,6 @@ useEffect(() => {
   }
 }, [validContracts, workingHours, holidays, year, month]);
 
-useEffect(() => {
-  console.log("Pro Rated Gross Summary:", proRatedGrossSummary);
-}, [proRatedGrossSummary]);
 
 
 
