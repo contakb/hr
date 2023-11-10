@@ -29,6 +29,8 @@ const [daysNotWorkedSummary, setDaysNotWorkedSummary] = useState({});
 const [daysNotWorked, setDaysNotWorked] = useState([]);
 const [employeeDaysNotWorked, setemployeeDaysNotWorked] = useState({});
 const [proRatedEmployees, setProRatedEmployees] = useState([]);
+const [proRatedGrossSummary, setProRatedGrossSummary] = useState({});
+
 
 
 const fetchAllData = async () => {
@@ -264,6 +266,12 @@ useEffect(() => {
   }
 }, [validContracts, workingHours, holidays, year, month]);
 
+useEffect(() => {
+  console.log("Days Not Worked Summary:", daysNotWorkedSummary);
+}, [daysNotWorkedSummary]);
+
+
+
 console.log("Details before calculating Pro-Rated Gross:", calculatedContracts);
 // then call calculateProRatedGross
 
@@ -296,12 +304,8 @@ function calculateProRatedGross(employee, workingHours, year, month) {
 
 useEffect(() => {
   if (validContracts.length > 0 && workingHours && holidays.length >= 0 && year && month) {
-    const salarySummary = validContracts.map(employee => {
-      console.log("Employee Details for ProRatedGross:", employee); // Log the employee details
-
-      // Check if the employee has more than one contract in the selected month
+    const newProRatedGrossSummary = validContracts.reduce((acc, employee) => {
       if (employee.contract_details && employee.contract_details.length > 1) {
-        // Transform the structure to include 'details' array
         const transformedEmployee = {
           ...employee,
           details: employee.contract_details.map(contract => ({
@@ -309,24 +313,19 @@ useEffect(() => {
             workingDayCount: getWorkingDayCountForContract(employee.employee_id, contract.contract_from_date, contract.contract_to_date)
           }))
         };
-
-        const proRatedGross = calculateProRatedGross(transformedEmployee, workingHours, year, month);
-        return {
-          ...employee,
-          proRatedGross
-        };
+        acc[employee.employee_id] = calculateProRatedGross(transformedEmployee, workingHours, year, month);
       } else {
-        // For employees with a single contract, use the standard gross amount
-        return {
-          ...employee,
-          proRatedGross: parseFloat(employee.gross_amount)
-        };
+        acc[employee.employee_id] = parseFloat(employee.gross_amount);
       }
-    });
-    setProRatedEmployees(salarySummary);
-    console.log("Salary Summary:", salarySummary);
+      return acc;
+    }, {});
+    setProRatedGrossSummary(newProRatedGrossSummary);
   }
 }, [validContracts, workingHours, holidays, year, month]);
+
+useEffect(() => {
+  console.log("Pro Rated Gross Summary:", proRatedGrossSummary);
+}, [proRatedGrossSummary]);
 
 
 
@@ -537,7 +536,7 @@ const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDay
   }
 
   // Use proRatedGross if available, otherwise use grossAmountValue
-  let customGrossAmount = parseFloat(proRatedGross || grossAmountValue);
+  let customGrossAmount = proRatedGross ? parseFloat(proRatedGross) : parseFloat(grossAmountValue);
 let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
 let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
 let wynChorobowe = 0;
@@ -873,12 +872,12 @@ const renderEmployeeTable = () => {
 
             <tr>
             <button onClick={() => {
-              const employeeData = proRatedEmployees.find(e => e.employee_id === employee.employee_id) || employee;
+        
               
     const daysOfBreak = healthBreak.days;
     const breakType = healthBreak.type;
-    const grossAmountValue = employee.gross_amount;
-    const proRatedGross = employee.proRatedGros;
+    const employeeProRatedGross = proRatedGrossSummary[employee.employee_id]; // Retrieve pro-rated gross for the employee
+  const grossAmountValue = employeeProRatedGross ? employeeProRatedGross : employee.gross_amount; // Use pro-rated gross if available, otherwise use standard gross amount
     
     // Construct the arrays here, based on the additionalBreaks structure.
      // Extract the arrays for the specific employee from the additionalBreaksByEmployee structure.
@@ -891,7 +890,8 @@ const renderEmployeeTable = () => {
   
 
   console.log(`Days Not Worked for Employee (from button click) ${employee.employee_id}:`, totalDaysNotWorked);
-  console.log(`proRatedGross (from button click) ${employee.employee_id}:`, employee.proRatedGros);
+  console.log(`proRatedGross (from button click) ${employee.employee_id}:`,employeeProRatedGross);
+  console.log(`proRatedGross for Employee ID (click) ${employee.employee_id}:`, employeeProRatedGross);
   // Check if the employee has a proRatedGross value
   
 
@@ -903,8 +903,8 @@ const renderEmployeeTable = () => {
       additionalDaysArray,  // pass the entire array
       additionalBreakTypesArray,
       workingHours,  // pass the entire array
-      totalDaysNotWorked,
-      proRatedGross // Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
+      totalDaysNotWorked
+       // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
     );
     
     // Update this specific employee's data in the state:
