@@ -137,9 +137,28 @@
 }
 
 /* CSS */
+
+/* Base table styles */
+.table-responsive {
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  
+}
+
+@media screen and (max-width: 768px) {
+  .table-responsive {
+    /* Styles for screens less than 768px wide */
+  }
+}
+
+
+table {
+  overflow-x: auto;
+  
+}
 table {
   border-collapse: collapse;
-  width: 100%;
+  width: 80%;
 }
 
 td, th {
@@ -154,6 +173,7 @@ tbody tr {
 tbody tr:last-child {
   border-bottom: none;
 }
+
 .nestedTable {
   width: 100%;
   border-collapse: collapse;
@@ -165,7 +185,7 @@ tbody tr:last-child {
   padding: 2px;
 }
 .indented {
-  margin-left: 500px; /* Adjust this value as needed */
+  margin-left: 100px; /* Adjust this value as needed */
 }
 
 .ToDo {

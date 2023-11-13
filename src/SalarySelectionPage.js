@@ -795,7 +795,7 @@ const renderEmployeeTable = () => {
   }
   
   return (
-    <div>
+    <div className="table-responsive">
        <h2>Lista płac za {month} {year}</h2>
        
       <label htmlFor="salaryDate">Salary Date:</label>
@@ -808,6 +808,7 @@ const renderEmployeeTable = () => {
       <button onClick={calculateSalaryForAll}>Calculate Salary for All</button>
             
 
+      <div className="table-responsive">
     <table>
       <thead>
         <tr>
@@ -817,7 +818,7 @@ const renderEmployeeTable = () => {
           <th>Wyn.zasadnicze</th>
           <th>Netto</th>
           <th>Start Date</th>
-          <th>End Date</th>
+          
           <th>Days</th>
           <th>Health Break Type</th>
           <th>Pods_społ</th>
@@ -831,7 +832,21 @@ const renderEmployeeTable = () => {
             <th>wypadkowe</th>
             <th>FP</th>
             <th>FGSP</th>
+            </tr>
+            <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th>End Date</th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
             <th>Pods_zdrow</th>
+            
             <th>zdrow</th>
 			<th>koszty</th>
             <th>podstawa_zaliczki</th>
@@ -865,16 +880,7 @@ const renderEmployeeTable = () => {
                 />
             </td>
 
-            <td>
-                <DatePicker
-                    selected={healthBreak.endDate || null}
-                    selectsEnd
-                    startDate={healthBreak.startDate}
-                    endDate={healthBreak.endDate}
-                    onChange={(date) => handleHealthBreakEndDateChange(date, index)}
-                    dateFormat="dd/MM/yyyy"
-                />
-            </td>
+           
 
             <td>{healthBreak.days}</td>
 
@@ -911,10 +917,34 @@ const renderEmployeeTable = () => {
     <td>{employee.contracts?.[0]?.emeryt_ub}</td>
     <td>{employee.contracts?.[0]?.rent_pr}</td>
     <td>{employee.contracts?.[0]?.rent_ub}</td>
+    
     <td>{employee.contracts?.[0]?.chorobowe}</td>
     <td>{employee.contracts?.[0]?.wypadkowe}</td>
     <td>{employee.contracts?.[0]?.FP}</td>
     <td>{employee.contracts?.[0]?.FGSP}</td>
+    </tr>
+    <tr>
+    <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>
+                <DatePicker
+                    selected={healthBreak.endDate || null}
+                    selectsEnd
+                    startDate={healthBreak.startDate}
+                    endDate={healthBreak.endDate}
+                    onChange={(date) => handleHealthBreakEndDateChange(date, index)}
+                    dateFormat="dd/MM/yyyy"
+                />
+              </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              
     <td>{employee.contracts?.[0]?.podstawa_zdrow}</td>
     <td>{employee.contracts?.[0]?.zdrowotne}</td>
     <td>{employee.contracts?.[0]?.koszty}</td>
@@ -1040,7 +1070,7 @@ const renderEmployeeTable = () => {
 })}
       </tbody>
     </table>
-    
+    </div>
 
 
 
