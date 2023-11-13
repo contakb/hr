@@ -5,6 +5,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import EmployeeContract from './EmployeeContract';
 import html2pdf from 'html2pdf.js';
+import { useLocation } from 'react-router-dom';
 
 // Employee component
 function Employee({ employee }) {
@@ -19,6 +20,10 @@ function Employee({ employee }) {
   const [medicalFormVisible, setMedicalFormVisible] = useState(false);
   const [parametersVisible, setParametersVisible] = useState(false);
 const [parameters, setParameters] = useState(null);
+const [editMode, setEditMode] = useState(false);
+const [updateMessage, setUpdateMessage] = useState('');
+const location = useLocation(); // Correct usage of useLocation
+
 
 
 
@@ -42,12 +47,23 @@ const [parameters, setParameters] = useState(null);
   const handleAddParameters = () => {
     navigate(`/employee-param/${id}`); // Replace with your actual path to the add parameters page
   };
+
+  const handleEditParameters = () => {
+    navigate(`/employee-param/${id}`, { state: { hasParams: !!parameters } });
+  };
+  
+  
   
   
 
   const toggleDetails = () => {
     setShowDetails(!showDetails);
   };
+
+  const toggleEditMode = () => {
+    setEditMode(!editMode);
+  };
+  
 
   const toggleGenerateContract = () => {
     setGenerateContractVisible(!generateContractVisible);
@@ -70,11 +86,19 @@ const [parameters, setParameters] = useState(null);
     if (!parametersVisible) {
       try {
         const response = await axios.get(`http://localhost:3001/api/employee-params/${id}`);
-        // If there are parameters returned, set the first one, otherwise set to null
-        setParameters(response.data.parameters.length > 0 ? response.data.parameters[0] : null);
+        const hasParameters = response.data.parameters.length > 0;
+        setParameters(hasParameters ? response.data.parameters[0] : null);
+  
+        // Use hasParameters to decide which button to show
+        if (hasParameters) {
+          // Logic for when parameters exist
+        } else {
+          // Logic for when parameters don't exist
+        }
+  
       } catch (error) {
         console.error('Error fetching parameters:', error);
-        setParameters(null); // Ensure to set to null if there's an error
+        setParameters(null);
       }
     }
     setParametersVisible(!parametersVisible);
@@ -108,6 +132,31 @@ const [parameters, setParameters] = useState(null);
     }
   };
   
+  const handleUpdateParameters = async (e) => {
+    e.preventDefault();
+  
+    const updatedParameters = {
+      koszty: e.target.koszty.value,
+      ulga: e.target.ulga.value,
+      kod_ub: e.target.kod_ub.value,
+      valid_from: e.target.valid_from.value,
+    };
+  
+    try {
+      const response = await axios.put(`http://localhost:3001/api/employee-params/${id}`, updatedParameters);
+      if (response.data.updatedParameters.length > 0) {
+        setParameters(response.data.updatedParameters[0]);
+        setEditMode(false);
+        setUpdateMessage('Parameters updated successfully!');
+        console.log('Message set:', updateMessage);
+        setTimeout(() => setUpdateMessage(''), 3000); // Message disappears after 3 seconds
+      }
+    } catch (error) {
+      console.error('Error updating parameters:', error);
+      setUpdateMessage('Failed to update parameters.');
+      setTimeout(() => setUpdateMessage(''), 3000);
+    }
+  };
   
   
 
@@ -135,6 +184,7 @@ const [parameters, setParameters] = useState(null);
       pdfButton.addEventListener('click', generatePDF);
     }
 
+
     // Cleanup: remove the event listener when the component unmounts
     return () => {
       if (pdfButton) {
@@ -142,6 +192,15 @@ const [parameters, setParameters] = useState(null);
       }
     };
   }, []); // Empty dependency array to run this effect once after component
+
+  useEffect(() => {
+    if (updateMessage) {
+      console.log('Update message:', updateMessage);
+    }
+  }, [updateMessage]);
+
+  
+ 
 
   return (
     <div>
@@ -158,6 +217,7 @@ const [parameters, setParameters] = useState(null);
 
       {showDetails && (
         <div>
+          
           <p>Street: {street} {number}</p>
           <p>Postcode: {postcode}</p>
           <p>City: {city}</p>
@@ -167,20 +227,41 @@ const [parameters, setParameters] = useState(null);
           <button onClick={toggleParameters}>{parametersVisible ? 'Hide Parameters' : 'Show Parameters'}</button>
           {parametersVisible && (
   <div>
+    
     <h3>Parameters:</h3>
-    {parameters ? (
+    {updateMessage && <div className="update-message">{updateMessage}</div>}
+    {editMode ? (
+      <form onSubmit={handleUpdateParameters}>
+        
+        <input type="text" name="koszty" defaultValue={parameters.koszty} />
+        <input type="text" name="ulga" defaultValue={parameters.ulga} />
+        <input type="text" name="kod_ub" defaultValue={parameters.kod_ub} />
+        <input type="date" name="valid_from" defaultValue={parameters.valid_from} />
+        <button type="submit">Save Changes</button>
+        <button onClick={toggleEditMode}>Cancel</button>
+      </form>
+    ) : parameters ? (
       <div>
         <p>Koszty: {parameters.koszty}</p>
         <p>Ulga: {parameters.ulga}</p>
         <p>Kod UB: {parameters.kod_ub}</p>
         <p>Valid From: {parameters.valid_from && new Date(parameters.valid_from).toLocaleDateString()}</p>
+        <button onClick={toggleEditMode}>Edit Parameters</button>
+        <button onClick={handleEditParameters}>
+  {parameters ? 'Edit Parameters' : 'Add Parameters'}
+</button>
+
+<button onClick={toggleParameters}>
+      {parameters ? 'Edit Parameters' : 'Add Parameters'}
+    </button>
+
       </div>
     ) : (
       <div>
         <p>No parameters, please add them.</p>
         <button onClick={handleAddParameters}>Add Parameters</button>
-        </div>
-            )}
+      </div>
+    )}
           </div>
         )}
       </div>
@@ -239,7 +320,12 @@ function EmployeeList() {
   const fetchEmployees = async () => {
     try {
       const response = await axios.get('http://localhost:3001/employees');
-      setEmployees(response.data.employees);
+      const updatedEmployees = response.data.employees.map(employee => {
+        // Assuming the API returns a flag 'hasParams'
+        // Or you can determine it here based on some logic
+        return { ...employee, hasParams: employee.hasParams };
+      });
+      setEmployees(updatedEmployees);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching employees:', error);

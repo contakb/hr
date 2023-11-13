@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 function EmployeeParam() {
   const { employeeId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const hasParams = location.state?.hasParams; // This will be undefined if no state is passed
 
   // New state variables for the employee parameters
   const [koszty, setKoszty] = useState('250');
@@ -21,39 +24,69 @@ const [isRetired, setIsRetired] = useState(false); // true if the employee is re
 const [hasDisabilityBenefit, setHasDisabilityBenefit] = useState(false); // true if the employee has a disability benefit (renta)
 
 
-
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-  
+useEffect(() => {
+  // Function to fetch existing parameters
+  const fetchParams = async () => {
     try {
-      // Adjust the URL and payload to match your new API endpoint for adding employee parameters
-      const response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-params`, {
+      const response = await axios.get(`http://localhost:3001/api/employee-params/${employeeId}`);
+      if (response.data && response.data.parameters.length > 0) {
+        const fetchedParams = response.data.parameters[0];
+        setKoszty(fetchedParams.koszty);
+        setUlga(fetchedParams.ulga);
+        setKodUb(fetchedParams.kod_ub);
+        setValidFrom(fetchedParams.valid_from);
+        // ... set other fields similarly
+      }
+    } catch (error) {
+      console.error('Error fetching parameters:', error);
+    }
+  };  
+
+  fetchParams();
+}, [employeeId]); // employeeId as a dependency
+
+const handleSubmit = async (event) => {
+  event.preventDefault();
+  
+  try {
+    let response;
+    if (paramData) {
+      // If paramData exists, update existing parameters
+      response = await axios.put(`http://localhost:3001/employees/${employeeId}/update-params`, {
         koszty,
         ulga,
         kodUb,
         validFrom
       });
-  
-      // Set the response data to paramData to show the notification
+      // Update paramData with the response data
       setParamData({
         ...response.data.employeeParams,
-        // Ensure kod_ub is a string with leading zeros
         kod_ub: String(response.data.employeeParams.kod_ub).padStart(6, '0')
-      }); // Adjust according to your actual response structure
-  
-      // Clear form fields or navigate to a confirmation page
+      });
+    } else {
+      // If paramData does not exist, add new parameters
+      response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-params`, {
+        koszty,
+        ulga,
+        kodUb,
+        validFrom
+      });
+      setParamData({
+        ...response.data.employeeParams,
+        kod_ub: String(response.data.employeeParams.kod_ub).padStart(6, '0')
+      });
+      // Clear form fields
       setKoszty('');
       setUlga('');
       setKodUb('');
       setValidFrom('');
-  
-      // Optionally navigate to a confirmation page or show a success message
-    } catch (error) {
-      // Handle errors here
-      console.error('Error adding employee parameters:', error);
     }
-  };
+  } catch (error) {
+    console.error('Error updating/adding parameters:', error);
+    // Handle errors for both updating and adding
+  }
+};
+
   
   const constructKodUb = (isRetired, hasDisabilityBenefit, hasDisability) => {
     let kodUb = '0110'; // The fixed part
@@ -165,7 +198,7 @@ const [hasDisabilityBenefit, setHasDisabilityBenefit] = useState(false); // true
   // Below is the form where you can input the parameters
   return (
     <div>
-      <h2>Add Employee Parameters</h2>
+      <h2>{hasParams ? 'Update Employee Parameters' : 'Add Employee Parameters'}</h2>
       <form onSubmit={handleSubmit}>
       <label>Czy pracownik pracuje poza miejscem zamieszkania?</label>
 <div>
@@ -259,7 +292,8 @@ const [hasDisabilityBenefit, setHasDisabilityBenefit] = useState(false); // true
         <label>Valid From:</label>
         <input type="date" value={validFrom} onChange={handleValidFromChange} />
 
-        <button type="submit">Add Parameters</button>
+        <button type="submit">{hasParams ? 'Update Parameters' : 'Add Parameters'}</button>
+
       </form>
       
       {paramData && (

@@ -214,3 +214,11 @@ tbody tr:last-child {
   font-size: 1rem;
   cursor: pointer;
 }
+.update-message {
+  color: green;
+  margin-top: 10px;
+}
+
+.update-message.error {
+  color: red;
+}

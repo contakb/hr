@@ -510,6 +510,33 @@ app.get('/api/employee-params/:employeeId', async (req, res) => {
   }
 });
 
+app.put('/api/employee-params/:employeeId', async (req, res) => {
+  const employeeId = req.params.employeeId;
+  const { koszty, ulga, kod_ub, valid_from } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('emp_var')
+      .update({ koszty, ulga, kod_ub, valid_from })
+      .eq('employee_id', employeeId)
+      .select(); // Chain a select() after update()
+
+    if (error) {
+      console.error('Error updating employee parameters:', error);
+      res.status(500).json({ error: error.message }); // Provide more specific error message
+    } else {
+      res.json({
+        message: 'Parameters updated successfully',
+        updatedParameters: data
+      });
+    }
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 
 
 app.get('/api/contracts/:employeeId', async (req, res) => {
