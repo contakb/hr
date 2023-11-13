@@ -30,6 +30,8 @@ const [daysNotWorked, setDaysNotWorked] = useState([]);
 const [employeeDaysNotWorked, setemployeeDaysNotWorked] = useState({});
 const [proRatedEmployees, setProRatedEmployees] = useState([]);
 const [proRatedGrossSummary, setProRatedGrossSummary] = useState({});
+const [employeeBonuses, setEmployeeBonuses] = useState({});
+
 
 
 
@@ -515,6 +517,22 @@ const zwolnienieDays = calculateDaysForBreakType("zwolnienie");
 const bezplatnyDays = calculateDaysForBreakType("bezpłatny");
 const nieobecnoscDays = calculateDaysForBreakType("nieobecność");
 
+// Reset function for health breaks
+const resetBreakFields = () => {
+  // Resetting the healthBreaks for each employee to a default state
+  const resetHealthBreaks = calculatedContracts.map(() => defaultHealthBreak);
+  setHealthBreaks(resetHealthBreaks);
+
+  // Resetting additional breaks for each employee
+  const resetAdditionalBreaks = Object.keys(additionalBreaksByEmployee).reduce((acc, key) => {
+    acc[key] = []; // Assuming an empty array represents no additional breaks
+    return acc;
+  }, {});
+  setAdditionalBreaksByEmployee(resetAdditionalBreaks);
+
+  // Any other break related states can be reset here
+};
+
 function roundUpToCent(value) {
   return Math.ceil(value * 100) / 100;
 }
@@ -522,14 +540,28 @@ function roundUpToCent(value) {
 // Define a function to calculate salary
 console.log("Current employee object:", employees);
 
+const handleBonusChange = (value, employeeId) => {
+  console.log(`Bonus input change for employee ${employeeId}:`, value); // Log the value being inputted
+
+  const updatedBonuses = {...employeeBonuses, [employeeId]: value};
+  setEmployeeBonuses(updatedBonuses);
+
+  console.log("Updated Bonuses after change:", updatedBonuses); // Log the updated bonuses state
+};
 
 
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross) => {
+
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus) => {
   // Log to check the received value of daysNotWorked
   console.log("Days Not Worked Received:", totalDaysNotWorked);
   console.log(`Days Not Worked Received for Employee:`, totalDaysNotWorked);
   console.log(`proRatedGross:`, proRatedGross);
   console.log(`proRatedGross:`, totalProRatedGross);
+  console.log("Received bonus in calculateSalary:", bonus);  // This log should show the bonus value
+  // Calling calculateSalary for an individual employee
+console.log("State before individual calculation:", employeeBonuses);
+
+
 
 
   // Check if the additionalDaysArray is an array, if not, log an error and return
@@ -546,9 +578,13 @@ const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDay
 
   // Use proRatedGross if available, otherwise use grossAmountValue
   let customGrossAmount = proRatedGross ? parseFloat(proRatedGross) : parseFloat(grossAmountValue);
+
+  // Debug log
+  
 let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
 let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
 let wynChorobowe = 0;
+
 
 
   // Summing up additional days for each break type
@@ -611,12 +647,19 @@ console.log('Custom Gross Amount before reduction:', customGrossAmount);
         wynChorobowe = 0; // This leave is covered by ZUS, not included in the salary calculation
     }
   }
-
+  
   // Apply the not worked days deduction
   customGrossAmount -= notWorkedDaysDeduction;
 
   // Ensure customGrossAmount has two decimal places
   customGrossAmount = parseFloat(customGrossAmount.toFixed(2));
+  console.log("customGrossAmount before adding bonus:", customGrossAmount);
+
+   // Add the bonus after all other adjustments to customGrossAmount
+  customGrossAmount += parseFloat(bonus || 0);
+
+  console.log("customGrossAmount after adding bonus:", customGrossAmount);
+ 
 
   // The rest of your logic remains unchanged
   let podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
@@ -649,11 +692,52 @@ pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
       zdrowotne,
       ulga: '300.00',
       koszty: '250.00',
-      social_base: customGrossAmount,
+      social_base: customGrossAmount,  // This now includes the bonus
       additionalDays: additionalDaysArray.reduce((acc, val) => acc + val, 0)  // Sum of all additional days
   };
 
   return calculatedValues;
+};
+
+const calculateSalaryForAll = () => {
+  const updatedContracts = calculatedContracts.map((employee, index) => {
+    const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
+    const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
+    const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
+    const additionalBreakTypesArray = breaksForEmployee.map(breakItem => breakItem.type || '');
+
+    const employeeProRatedGross = proRatedGrossSummary[employee.employee_id]; 
+    const grossAmountValue = employeeProRatedGross ? employeeProRatedGross : employee.gross_amount;
+    const employeeNotWorkedDetails = daysNotWorkedSummary[employee.employee_id] || [];
+    const totalDaysNotWorked = employeeNotWorkedDetails.reduce((total, detail) => total + detail.daysNotWorked, 0);
+    const bonus = employeeBonuses[employee.employee_id] || 0;
+    const bonusValue = employeeBonuses[employee.employee_id] || 0;
+
+    console.log("Current state of employeeBonuses:", employeeBonuses);
+    console.log(`Bulk calculation - Bonus for employee ${employee.employee_id}:`, bonus);
+    console.log(`Bulk calculation - BonusValue for employee ${employee.employee_id}:`, bonusValue);
+    console.log("Current state of employeeBonuses:", employeeBonuses);
+
+
+    // Call calculateSalary function with the appropriate arguments
+    const calculatedValues = calculateSalary(
+      grossAmountValue, 
+      healthBreak.days, 
+      healthBreak.type, 
+      additionalDaysArray, 
+      additionalBreakTypesArray,
+      workingHours,  // This needs to be defined or retrieved similarly
+      totalDaysNotWorked,
+      employeeProRatedGross,
+      bonus, 
+      bonusValue // Ensure this is correctly positioned in the parameter list
+    );
+
+    // Update the employee's contract data with calculated values
+    return { ...employee, contracts: [calculatedValues] };
+  });
+
+  setCalculatedContracts(updatedContracts); // Update the state with new values
 };
 
 const handleCalculateSalary = () => {
@@ -672,6 +756,8 @@ const handleCalculateSalary = () => {
           const additionalBreakType = [additionalBreaks[index]?.type || ''];
           const totalDaysNotWorked = daysNotWorkedSummary[employee.employee_id] || 0;
           const proRatedGross = employee.proRatedGross;
+          const bonus = employeeBonuses[employee.employee_id] || 0;
+          
           
           console.log("Days Not Worked Summary State:", daysNotWorkedSummary);
           console.log(`Total Days Not Worked for Employee ID ${employee.employee_id}:`, totalDaysNotWorked);
@@ -686,7 +772,8 @@ const handleCalculateSalary = () => {
             additionalBreakType,
             workingHours,
             totalDaysNotWorked,
-            proRatedGross // Pass the proRatedGross value here
+            proRatedGross,
+            bonus // Pass the proRatedGross value here
           );
           console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
 
@@ -710,6 +797,7 @@ const renderEmployeeTable = () => {
   return (
     <div>
        <h2>Lista płac za {month} {year}</h2>
+       
       <label htmlFor="salaryDate">Salary Date:</label>
       <input
         type="date"
@@ -717,6 +805,7 @@ const renderEmployeeTable = () => {
         value={salaryDate}
         onChange={(e) => setSalaryDate(e.target.value)}
       />
+      <button onClick={calculateSalaryForAll}>Calculate Salary for All</button>
             
 
     <table>
@@ -732,6 +821,7 @@ const renderEmployeeTable = () => {
           <th>Days</th>
           <th>Health Break Type</th>
           <th>Pods_społ</th>
+          <th>Dodatek ZUS</th>
 			<th>wyn.chorobowe</th>
             <th>em.pr</th>
             <th>em.ub</th>
@@ -804,11 +894,18 @@ const renderEmployeeTable = () => {
                 </select>
                 
                 <button onClick={() => addAdditionalBreak(employee.employee_id)}>Add Przerwa</button>
+                <button onClick={resetBreakFields}>Clear Break Fields</button>
 
                 
             </td>
 
-        <td>{employee.contracts?.[0]?.social_base}</td>                       
+        <td>{employee.contracts?.[0]?.social_base}</td> 
+        <td><input
+  type="number"
+  value={employeeBonuses[employee.employee_id] || 0}
+  onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
+/></td>
+                      
         <td>{employee.contracts?.[0]?.wyn_chorobowe}</td>                        
         <td>{employee.contracts?.[0]?.emeryt_pr}</td>
     <td>{employee.contracts?.[0]?.emeryt_ub}</td>
@@ -896,6 +993,13 @@ const renderEmployeeTable = () => {
      // Extract total days not worked for this employee
   const employeeNotWorkedDetails = daysNotWorkedSummary[employee.employee_id] || [];
   const totalDaysNotWorked = employeeNotWorkedDetails.reduce((total, detail) => total + detail.daysNotWorked, 0);
+  const bonus = employeeBonuses[employee.employee_id] || 0;
+
+  const bonusValue = employeeBonuses[employee.employee_id] || 0;
+
+  console.log("Individual Current state of employeeBonuses:", employeeBonuses);
+  console.log(`Individual calculation - Bonus for employee ${employee.employee_id}:`, bonusValue);
+  console.log(`Bonus for individual calculation for employee ${employee.employee_id}:`, bonus);
   
 
   console.log(`Days Not Worked for Employee (from button click) ${employee.employee_id}:`, totalDaysNotWorked);
@@ -912,7 +1016,11 @@ const renderEmployeeTable = () => {
       additionalDaysArray,  // pass the entire array
       additionalBreakTypesArray,
       workingHours,  // pass the entire array
-      totalDaysNotWorked
+      totalDaysNotWorked,
+      employeeProRatedGross,
+      bonus,
+      bonusValue,
+      employeeBonuses[employee.employee_id] || 0
        // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
     );
     
