@@ -20,11 +20,11 @@ function Employee({ employee, updateEmployeeInList }) {
   const navigate = useNavigate();
   const [medicalFormVisible, setMedicalFormVisible] = useState(false);
   const [parametersVisible, setParametersVisible] = useState(false);
-const [parameters, setParameters] = useState(null);
-const [editMode, setEditMode] = useState(false);
-const [editingEmployeeId, setEditingEmployeeId] = useState(null);
-const [updateMessage, setUpdateMessage] = useState('');
-const [filter, setFilter] = useState('');
+  const [parameters, setParameters] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState(null);
+  const [updateMessage, setUpdateMessage] = useState('');
+  
 
 const location = useLocation(); // Correct usage of useLocation
 
@@ -386,7 +386,9 @@ function EmployeeList() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortOrder, setSortOrder] = useState('asc'); // State for sorting order
   const navigate = useNavigate();
+  const [filter, setFilter] = useState('');
 
   const updateEmployeeInList = (employeeId, newDetails) => {
     setEmployees(currentEmployees => {
@@ -401,6 +403,21 @@ function EmployeeList() {
   useEffect(() => {
     fetchEmployees();
   }, []);
+
+  const handleSortChange = (e) => {
+    setSortOrder(e.target.value);
+  };
+
+  // Sorting and filtering logic combined
+  const filteredAndSortedEmployees = employees
+    .filter(employee => employee.surname.toLowerCase().includes(filter.toLowerCase()))
+    .sort((a, b) => {
+      if (sortOrder === 'asc') {
+        return a.surname.localeCompare(b.surname);
+      } else {
+        return b.surname.localeCompare(a.surname);
+      }
+    });
 
   const fetchEmployees = async () => {
     try {
@@ -431,14 +448,30 @@ function EmployeeList() {
     <div className="employee-list-container">
       <div className="employee-list-title">
         <h1>Employee List</h1>
+        <input
+          type="text"
+          placeholder="Filter by surname..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        <select onChange={handleSortChange}>
+          <option value="asc">Sort A-Z</option>
+          <option value="desc">Sort Z-A</option>
+        </select>
         <button className="create-employee-button" onClick={() => navigate('/createEmployee')}>
           Create Employee
         </button>
       </div>
       <div className="employee-list">
-        {employees.map((employee) => (
-          <Employee key={employee.id} employee={employee}  updateEmployeeInList={updateEmployeeInList} />
-        ))}
+        {loading ? (
+          <div>Loading...</div>
+        ) : error ? (
+          <div>{error}</div>
+        ) : (
+          filteredAndSortedEmployees.map((employee) => (
+            <Employee key={employee.id} employee={employee} updateEmployeeInList={updateEmployeeInList} />
+          ))
+        )}
       </div>
     </div>
   );
