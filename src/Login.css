@@ -222,3 +222,14 @@ tbody tr:last-child {
 .update-message.error {
   color: red;
 }
+
+.form-label {
+  display: block; /* Makes the label a block element */
+  margin-top: 5px; /* Adds some space above each label */
+}
+
+.form-input {
+  width: 100%; /* Makes input take full width of its container */
+  padding: 0px; /* Adds some padding inside the input fields */
+  margin-bottom: 0px; /* Adds some space below each input field */
+}

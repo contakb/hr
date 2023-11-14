@@ -145,6 +145,47 @@ app.get('/employees', async (req, res) => {
   }
 });
 
+app.put('/update-employee/:employeeId', async (req, res) => {
+  const employeeId = req.params.employeeId;
+  const { name, surname, street, number, postcode, city, country, tax_office, pesel } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .update({
+        name: name,
+        surname: surname,
+        street: street,
+        number: number,
+        postcode: postcode,
+        city: city,
+        country: country,
+        tax_office: tax_office,
+        pesel: pesel
+      })
+      .eq('id', employeeId)
+      .select(); // Chain a select() after update()
+
+    if (error) {
+      console.error('Error updating employee data', error);
+      res.status(500).send('Error occurred while updating data.');
+      return;
+    }
+
+    if (data && data.length > 0) {
+      // Successfully updated
+      res.send({ message: 'Employee updated successfully', updatedEmployee: data[0] });
+    } else {
+      // No rows updated, which means no employee was found with that ID
+      res.status(404).send('Employee not found.');
+    }
+  } catch (error) {
+    console.error('Server Error:', error);
+    res.status(500).send('Error occurred while updating employee data.');
+  }
+});
+
+
 // Define the function to get the current date in the format: YYYY-MM-DD
 // Define the function to get the current date in the format: YYYY-MM-DD HH:mm:ss
 function getCurrentDate() {

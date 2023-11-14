@@ -6,9 +6,10 @@ import html2canvas from 'html2canvas';
 import EmployeeContract from './EmployeeContract';
 import html2pdf from 'html2pdf.js';
 import { useLocation } from 'react-router-dom';
+import './Login.css';
 
 // Employee component
-function Employee({ employee }) {
+function Employee({ employee, updateEmployeeInList }) {
   const { id, name, surname, street, number, postcode, city, country, tax_office, pesel } = employee;
   const [showDetails, setShowDetails] = useState(false);
   const [contractsVisible, setContractsVisible] = useState(false);
@@ -21,7 +22,10 @@ function Employee({ employee }) {
   const [parametersVisible, setParametersVisible] = useState(false);
 const [parameters, setParameters] = useState(null);
 const [editMode, setEditMode] = useState(false);
+const [editingEmployeeId, setEditingEmployeeId] = useState(null);
 const [updateMessage, setUpdateMessage] = useState('');
+const [filter, setFilter] = useState('');
+
 const location = useLocation(); // Correct usage of useLocation
 
 
@@ -104,7 +108,10 @@ const location = useLocation(); // Correct usage of useLocation
     setParametersVisible(!parametersVisible);
   };
   
-  
+  // Toggle detail editor for an employee
+  const toggleDetailEditor = (employeeId) => {
+    setEditingEmployeeId(editingEmployeeId === employeeId ? null : employeeId);
+  };
   
 
   const handleGenerateContract = async () => {
@@ -157,6 +164,41 @@ const location = useLocation(); // Correct usage of useLocation
       setTimeout(() => setUpdateMessage(''), 3000);
     }
   };
+
+
+
+  const handleUpdateDetails = async (e) => {
+    e.preventDefault();
+  
+    const updatedDetails = {
+      name: e.target.name.value,
+      surname: e.target.surname.value,
+      pesel: e.target.pesel.value,
+      street: e.target.street.value,
+      number: e.target.number.value,
+      postcode: e.target.postcode.value,
+      city: e.target.city.value,
+      country: e.target.country.value,
+      tax_office: e.target.tax_office.value
+    };
+  
+    try {
+      const response = await axios.put(`http://localhost:3001/update-employee/${id}`, updatedDetails);
+      if (response.data.updatedEmployee) {
+        updateEmployeeInList(id, response.data.updatedEmployee);
+        setEditMode(false);
+        setUpdateMessage('Employee data updated successfully!');
+        console.log('Message set:', updateMessage);
+        setTimeout(() => setUpdateMessage(''), 3000); // Message disappears after 3 seconds
+      }
+    } catch (error) {
+      console.error('Error updating details:', error);
+      setUpdateMessage('Failed to update employee data.');
+      setTimeout(() => setUpdateMessage(''), 3000);
+      // Handle error appropriately
+    }
+  };
+  
   
   
 
@@ -216,15 +258,53 @@ const location = useLocation(); // Correct usage of useLocation
 
 
       {showDetails && (
-        <div>
-          
-          <p>Street: {street} {number}</p>
-          <p>Postcode: {postcode}</p>
-          <p>City: {city}</p>
-          <p>Country: {country}</p>
-          <p>Tax Office: {tax_office}</p>
-          <p>PESEL: {pesel}</p>
-          <button onClick={toggleParameters}>{parametersVisible ? 'Hide Parameters' : 'Show Parameters'}</button>
+  <div>
+    {editMode ? (
+      <form onSubmit={handleUpdateDetails}>
+      <label htmlFor="name">Name:</label>
+      <input type="text" name="name" id="name" defaultValue={name} placeholder="Name" className="form-input" />
+  
+      <label htmlFor="surname">Surname:</label>
+      <input type="text" name="surname" id="surname" defaultValue={surname} placeholder="Surname"className="form-input" />
+  
+      <label htmlFor="street">Street:</label>
+      <input type="text" name="street" id="street" defaultValue={street} placeholder="Street"className="form-input" />
+  
+      <label htmlFor="number">Number:</label>
+      <input type="text" name="number" id="number" defaultValue={number} placeholder="Number"className="form-input" />
+  
+      <label htmlFor="postcode">Postcode:</label>
+      <input type="text" name="postcode" id="postcode" defaultValue={postcode} placeholder="Postcode"className="form-input" />
+  
+      <label htmlFor="city">City:</label>
+      <input type="text" name="city" id="city" defaultValue={city} placeholder="City" className="form-input"/>
+  
+      <label htmlFor="country">Country:</label>
+      <input type="text" name="country" id="country" defaultValue={country} placeholder="Country"className="form-input" />
+  
+      <label htmlFor="tax_office">Tax Office:</label>
+      <input type="text" name="tax_office" id="tax_office" defaultValue={tax_office} placeholder="Tax Office"className="form-input" />
+  
+      <label htmlFor="pesel">PESEL:</label>
+      <input type="text" name="pesel" id="pesel" defaultValue={pesel} placeholder="PESEL"className="form-input" />
+  
+      <button type="submit">Save Changes</button>
+      <button onClick={toggleEditMode}>Cancel</button>
+      </form>
+    ) : (
+      <div>
+        {updateMessage && <div className="update-message">{updateMessage}</div>}
+        <p>Name: {name}</p>
+        <p>Surname: {surname}</p>
+        <p>Street: {street} {number}</p>
+        <p>Postcode: {postcode}</p>
+        <p>City: {city}</p>
+        <p>Country: {country}</p>
+        <p>Tax Office: {tax_office}</p>
+        <p>PESEL: {pesel}</p>
+        <button onClick={toggleParameters}>{parametersVisible ? 'Hide Parameters' : 'Show Parameters'}</button>
+        <button onClick={toggleEditMode}>Quick Edit</button>
+        </div>)}
           {parametersVisible && (
   <div>
     
@@ -246,15 +326,10 @@ const location = useLocation(); // Correct usage of useLocation
         <p>Ulga: {parameters.ulga}</p>
         <p>Kod UB: {parameters.kod_ub}</p>
         <p>Valid From: {parameters.valid_from && new Date(parameters.valid_from).toLocaleDateString()}</p>
-        <button onClick={toggleEditMode}>Edit Parameters</button>
+        <button onClick={toggleEditMode}>Quick edit</button>
         <button onClick={handleEditParameters}>
   {parameters ? 'Edit Parameters' : 'Add Parameters'}
 </button>
-
-<button onClick={toggleParameters}>
-      {parameters ? 'Edit Parameters' : 'Add Parameters'}
-    </button>
-
       </div>
     ) : (
       <div>
@@ -303,7 +378,7 @@ const location = useLocation(); // Correct usage of useLocation
         </div>
       )}
     </div>
-      );
+      )
 }
 
 // EmployeeList component
@@ -312,6 +387,16 @@ function EmployeeList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  const updateEmployeeInList = (employeeId, newDetails) => {
+    setEmployees(currentEmployees => {
+      const updated = currentEmployees.map(employee => 
+        employee.id === employeeId ? { ...employee, ...newDetails } : employee
+      );
+      console.log("Updated Employees Order: ", updated);
+      return updated;
+    });
+  };
 
   useEffect(() => {
     fetchEmployees();
@@ -325,7 +410,7 @@ function EmployeeList() {
         // Or you can determine it here based on some logic
         return { ...employee, hasParams: employee.hasParams };
       });
-      setEmployees(updatedEmployees);
+      setEmployees(response.data.employees);  
       setLoading(false);
     } catch (error) {
       console.error('Error fetching employees:', error);
@@ -352,7 +437,7 @@ function EmployeeList() {
       </div>
       <div className="employee-list">
         {employees.map((employee) => (
-          <Employee key={employee.id} employee={employee} />
+          <Employee key={employee.id} employee={employee}  updateEmployeeInList={updateEmployeeInList} />
         ))}
       </div>
     </div>
