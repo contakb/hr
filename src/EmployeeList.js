@@ -7,9 +7,10 @@ import EmployeeContract from './EmployeeContract';
 import html2pdf from 'html2pdf.js';
 import { useLocation } from 'react-router-dom';
 import './Login.css';
+import Select from 'react-select';
 
 // Employee component
-function Employee({ employee, updateEmployeeInList }) {
+function Employee({ employee, updateEmployeeInList, taxOffices }) {
   const { id, name, surname, street, number, postcode, city, country, tax_office, pesel } = employee;
   const [showDetails, setShowDetails] = useState(false);
   const [contractsVisible, setContractsVisible] = useState(false);
@@ -24,6 +25,8 @@ function Employee({ employee, updateEmployeeInList }) {
   const [editMode, setEditMode] = useState(false);
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [updateMessage, setUpdateMessage] = useState('');
+  const [taxOffice, setTaxOffice] = useState(employee.tax_office); // Assuming 'tax_office' is the property
+  const [taxOfficeName, setTaxOfficeName] = useState(''); // You might need to adjust this based on how you handle tax office names
   
 
 const location = useLocation(); // Correct usage of useLocation
@@ -179,7 +182,7 @@ const location = useLocation(); // Correct usage of useLocation
       postcode: e.target.postcode.value,
       city: e.target.city.value,
       country: e.target.country.value,
-      tax_office: e.target.tax_office.value
+      tax_office: taxOffice,
     };
   
     try {
@@ -241,7 +244,23 @@ const location = useLocation(); // Correct usage of useLocation
     }
   }, [updateMessage]);
 
-  
+  // Check if taxOffices is available and not undefined
+  const taxOfficeOptions = taxOffices ? taxOffices.map(office => ({
+  value: office.tax_office,
+  label: office.tax_office
+  })) : [];
+
+  const handleTaxOfficeChange = (selectedOption) => {
+    if (selectedOption) {
+        setTaxOffice(selectedOption.value);
+        
+        // This sets the name as well
+        setTaxOfficeName(selectedOption.label);
+    } else {
+        setTaxOffice('');
+        setTaxOfficeName('');
+    }
+  };
  
 
   return (
@@ -282,9 +301,14 @@ const location = useLocation(); // Correct usage of useLocation
       <label htmlFor="country">Country:</label>
       <input type="text" name="country" id="country" defaultValue={country} placeholder="Country"className="form-input" />
   
-      <label htmlFor="tax_office">Tax Office:</label>
-      <input type="text" name="tax_office" id="tax_office" defaultValue={tax_office} placeholder="Tax Office"className="form-input" />
-  
+      <label>Tax Office:</label>
+          <Select 
+            options={taxOfficeOptions} 
+            onChange={handleTaxOfficeChange}
+            isSearchable={true}
+            placeholder="Wybierz US"
+            value={taxOfficeOptions.find(option => option.value === employee.tax_office)} // Make sure this matches the current tax office of the employee
+          />
       <label htmlFor="pesel">PESEL:</label>
       <input type="text" name="pesel" id="pesel" defaultValue={pesel} placeholder="PESEL"className="form-input" />
   
@@ -389,6 +413,7 @@ function EmployeeList() {
   const [sortOrder, setSortOrder] = useState('asc'); // State for sorting order
   const navigate = useNavigate();
   const [filter, setFilter] = useState('');
+  const [taxOffices, setTaxOffices] = useState([]); // New state for tax offices
 
   const updateEmployeeInList = (employeeId, newDetails) => {
     setEmployees(currentEmployees => {
@@ -402,6 +427,14 @@ function EmployeeList() {
 
   useEffect(() => {
     fetchEmployees();
+    // New logic to fetch tax offices
+    axios.get('http://localhost:3001/tax-offices')
+      .then((response) => {
+        setTaxOffices(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching tax offices:', error);
+      });
   }, []);
 
   const handleSortChange = (e) => {
@@ -469,7 +502,7 @@ function EmployeeList() {
           <div>{error}</div>
         ) : (
           filteredAndSortedEmployees.map((employee) => (
-            <Employee key={employee.id} employee={employee} updateEmployeeInList={updateEmployeeInList} />
+            <Employee key={employee.id} employee={employee} updateEmployeeInList={updateEmployeeInList} taxOffices={taxOffices} />
           ))
         )}
       </div>
