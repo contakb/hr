@@ -61,6 +61,9 @@ const location = useLocation(); // Correct usage of useLocation
     navigate(`/employee-param/${id}`, { state: { hasParams: !!parameters } });
   };
   
+  const handleTerminateContractPage = (id) => {
+    navigate(`/TerminateContract/${id}`);
+  };
   
   
   
@@ -291,6 +294,7 @@ const location = useLocation(); // Correct usage of useLocation
       <button onClick={() => handleGenerateContractPage(id)}>Generuj</button>
 
       <button onClick={handleMedicalExamination}>Medical Examination</button>
+      <button onClick={() => handleTerminateContractPage(id)}>Terminate Contract</button>
 
 
       {showDetails && (
