@@ -23,6 +23,8 @@ function Employee({ employee, updateEmployeeInList, taxOffices }) {
   const [parametersVisible, setParametersVisible] = useState(false);
   const [parameters, setParameters] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [editEmployeeDetailsMode, setEditEmployeeDetailsMode] = useState(false);
+  const [editParametersMode, setEditParametersMode] = useState(false);
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [updateMessage, setUpdateMessage] = useState('');
   const [taxOffice, setTaxOffice] = useState(employee.tax_office); // Assuming 'tax_office' is the property
@@ -115,6 +117,19 @@ const location = useLocation(); // Correct usage of useLocation
   const toggleDetailEditor = (employeeId) => {
     setEditingEmployeeId(editingEmployeeId === employeeId ? null : employeeId);
   };
+
+  // Toggle function for employee details edit mode
+  const toggleEditEmployeeDetailsMode = () => {
+    setEditEmployeeDetailsMode(!editEmployeeDetailsMode);
+    // Ensure that editing parameters is turned off when editing employee details
+    setEditParametersMode(false);
+  };
+   // Toggle function for parameters edit mode
+   const toggleEditParametersMode = () => {
+    setEditParametersMode(!editParametersMode);
+    // Ensure that editing employee details is turned off when editing parameters
+    setEditEmployeeDetailsMode(false);
+  };
   
 
   const handleGenerateContract = async () => {
@@ -157,6 +172,7 @@ const location = useLocation(); // Correct usage of useLocation
       if (response.data.updatedParameters.length > 0) {
         setParameters(response.data.updatedParameters[0]);
         setEditMode(false);
+        setEditParametersMode(false); // Set the specific edit mode to false
         setUpdateMessage('Parameters updated successfully!');
         console.log('Message set:', updateMessage);
         setTimeout(() => setUpdateMessage(''), 3000); // Message disappears after 3 seconds
@@ -190,6 +206,7 @@ const location = useLocation(); // Correct usage of useLocation
       if (response.data.updatedEmployee) {
         updateEmployeeInList(id, response.data.updatedEmployee);
         setEditMode(false);
+        setEditEmployeeDetailsMode(false); // Set the specific edit mode to false
         setUpdateMessage('Employee data updated successfully!');
         console.log('Message set:', updateMessage);
         setTimeout(() => setUpdateMessage(''), 3000); // Message disappears after 3 seconds
@@ -278,7 +295,7 @@ const location = useLocation(); // Correct usage of useLocation
 
       {showDetails && (
   <div>
-    {editMode ? (
+    {editEmployeeDetailsMode ? (
       <form onSubmit={handleUpdateDetails}>
       <label htmlFor="name">Name:</label>
       <input type="text" name="name" id="name" defaultValue={name} placeholder="Name" className="form-input" />
@@ -327,14 +344,14 @@ const location = useLocation(); // Correct usage of useLocation
         <p>Tax Office: {tax_office}</p>
         <p>PESEL: {pesel}</p>
         <button onClick={toggleParameters}>{parametersVisible ? 'Hide Parameters' : 'Show Parameters'}</button>
-        <button onClick={toggleEditMode}>Quick Edit</button>
+        <button onClick={toggleEditEmployeeDetailsMode}>Quick edit</button>
         </div>)}
           {parametersVisible && (
   <div>
     
     <h3>Parameters:</h3>
     {updateMessage && <div className="update-message">{updateMessage}</div>}
-    {editMode ? (
+    {editParametersMode ? (
       <form onSubmit={handleUpdateParameters}>
         
         <input type="text" name="koszty" defaultValue={parameters.koszty} />
@@ -350,7 +367,7 @@ const location = useLocation(); // Correct usage of useLocation
         <p>Ulga: {parameters.ulga}</p>
         <p>Kod UB: {parameters.kod_ub}</p>
         <p>Valid From: {parameters.valid_from && new Date(parameters.valid_from).toLocaleDateString()}</p>
-        <button onClick={toggleEditMode}>Quick edit</button>
+        <button onClick={toggleEditParametersMode}>Quick edit</button>
         <button onClick={handleEditParameters}>
   {parameters ? 'Edit Parameters' : 'Add Parameters'}
 </button>
