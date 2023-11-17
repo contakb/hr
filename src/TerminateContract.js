@@ -18,6 +18,8 @@ const TerminateContract = () => {
   const [terminationEndDate, setTerminationEndDate] = useState('');
   const [terminationPeriod, setTerminationPeriod] = useState('');
   const [totalDuration, setTotalDuration] = useState(0);
+  const [manualEndDate, setManualEndDate] = useState(false);
+  const [initialTerminationEndDate, setInitialTerminationEndDate] = useState('');
 
 
 
@@ -90,10 +92,23 @@ const toggleDocumentVisibility = () => {
   
   
 
-  const handleTerminationTypeChange = (e) => {
+const handleTerminationTypeChange = (e) => {
     setTerminationType(e.target.value);
-    console.log("Termination Type Changed:", e.target.value);
+
+    // Reset terminationDate if termination type is 'za wypowiedzeniem'
+    if (e.target.value === 'za wypowiedzeniem') {
+        setTerminationDate(terminationEndDate);
+    } else {
+        setTerminationDate(''); // Clear the termination date for other types
+    }
 };
+
+useEffect(() => {
+    if (terminationType === 'with_notice') {
+        setTerminationDate(terminationEndDate);
+    }
+}, [terminationEndDate, terminationType]);
+
 
 // Function to render the appropriate document based on the termination type
 const renderTerminationDocument = () => {
@@ -183,10 +198,13 @@ const handleSubmitTermination = async (e) => {
       return; // Exit the function if no contract is selected
     }
     
+
+    
+
     // Construct the payload with the updated data
     const updatedContractData = {
       termination_type: terminationType || null, // Use null as fallback if empty
-      termination_date: terminationDate || null,
+      termination_date: terminationDate, // Directly use terminationDate
       deregistration_code: deregistrationCode || null,
       initiated_by_employee: initiatedByEmployee || null,
     };
@@ -294,13 +312,14 @@ const getTerminationPeriod = (totalDurationMonths) => {
 
 
 // useEffect to calculate terminationEndDate
+// useEffect to calculate and store initial terminationEndDate
 useEffect(() => {
-    // Calculate termination end date when dataWypowiedzenia or terminationPeriod changes
     if (dataWypowiedzenia && terminationPeriod) {
         const endDate = calculateTerminationEndDate(dataWypowiedzenia, terminationPeriod);
         setTerminationEndDate(endDate);
+        setInitialTerminationEndDate(endDate); // Store the initially calculated date
     }
-}, [dataWypowiedzenia, terminationPeriod]); // Calculate end date only when these dependencies change
+}, [dataWypowiedzenia, terminationPeriod]);
 
 
 // Helper function to calculate termination end date based on start date and period
@@ -404,29 +423,57 @@ return (
 />
  </label>
 
-  <select 
+ <select 
     name="terminationType" 
     value={terminationType} 
     onChange={handleTerminationTypeChange}
-  >
+>
     <option value="" disabled selected>Select Termination Type</option>
     <option value="mutual_agreement">Porozumienie stron</option>
     <option value="contract_expiry">Z upływem czasu na jaki została zawarta</option>
     <option value="with_notice">Za wypowiedzeniem</option>
     <option value="without_notice">Bez okresu wypowiedzenia</option>
-  </select>
+</select>
 
-  {/* Termination Date Input */}
-  <input 
-    type="date" 
-    name="terminationDate" 
-    value={terminationDate} 
-    onChange={handleTerminationDateChange}
-  />
+{terminationType === 'with_notice' && (
+    <>
+        {!manualEndDate ? (
+            <p><strong>Zakończenie okresu wypowiedzenia: {terminationEndDate}</strong></p>
+        ) : (
+            <input 
+                type="date" 
+                name="manualTerminationDate" 
+                value={terminationEndDate} 
+                onChange={(e) => setTerminationEndDate(e.target.value)}
+            />
+        )}
 
-{terminationEndDate && (
-    <p>Termination End Date: {terminationEndDate}</p>
+        <label>
+            Ręczne dostosowanie daty zakończenia umowy:
+            <input 
+                type="checkbox" 
+                checked={manualEndDate} 
+                onChange={() => {
+                    setManualEndDate(!manualEndDate);
+                    if (manualEndDate) {
+                        // Revert to the initial terminationEndDate when checkbox is unchecked
+                        setTerminationEndDate(initialTerminationEndDate);
+                    }
+                }}
+            />
+        </label>
+    </>
 )}
+
+{terminationType !== 'with_notice' && (
+    <input 
+        type="date" 
+        name="terminationDate" 
+        value={terminationDate} 
+        onChange={handleTerminationDateChange}
+    />
+)}
+
 
 
   {/* Deregistration Code Selection */}
