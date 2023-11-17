@@ -620,6 +620,45 @@ app.get('/api/contracts/:employeeId', async (req, res) => {
   }
 });
 
+// ... (other imports and setup)
+
+app.put('/api/contracts/:contractId/terminate', async (req, res) => {
+  const contractId = req.params.contractId;
+  const { termination_type, termination_date, deregistration_code, initiated_by_employee } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .update({
+        contract_to_date: termination_date,
+        termination_type: termination_type,
+        deregistration_code: deregistration_code,
+        initiated_by_employee: initiated_by_employee
+      })
+      .eq('id', contractId)
+      .select(); // Chain a select() after update()
+
+    if (error) {
+      console.error('Error updating contract:', error);
+      res.status(500).json({ error: error.message });
+    } else if (data && data.length > 0) {
+      res.json({
+        message: 'Contract terminated successfully',
+        updatedContract: data[0]
+      });
+    } else {
+      // No rows updated, which means no contract was found with that ID
+      res.status(404).send('Contract not found or no updates made.');
+    }
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).send('Error occurred while terminating contract.');
+  }
+});
+
+
+
+
 const fetchData = async () => {
   const { data, error } = await supabase
       .rpc('fetch_valid_employees', { start_date: '2023-01-01', end_date: '2023-01-31' });
