@@ -218,18 +218,44 @@ const handleBackToEmployeeList = () => {
     navigate('/employeelist'); // Navigate back to EmployeeList
 };
 
+// First useEffect Hook
 useEffect(() => {
-    // Calculate total duration when contracts data changes
-    const duration = getTotalDuration(contracts);
-    setTotalDuration(duration);
-}, [contracts]); // Recalculate only when contracts change
+    const currentContract = contracts[contracts.length - 1]; // Get the most recent contract
+    const isTrialPeriod = currentContract && currentContract.typ_umowy && currentContract.typ_umowy.includes('próbny');
+
+    if (isTrialPeriod) {
+        switch (currentContract.typ_umowy) {
+            case 'próbny 1 miesiąc':
+                setTerminationPeriod('3 days');
+                break;
+            case 'próbny 2 miesiące':
+                setTerminationPeriod('1 week');
+                break;
+            case 'próbny 3 miesiące':
+                setTerminationPeriod('2 weeks');
+                break;
+            default:
+                // Handle other trial period types if any
+                break;
+        }
+    } else {
+        const duration = getTotalDuration(contracts);
+        setTotalDuration(duration);
+    }
+}, [contracts]);
+
+
 
 // useEffect to update terminationPeriod when contracts change
+// Second useEffect Hook
 useEffect(() => {
-    // Set termination period when total duration changes
-    const period = getTerminationPeriod(totalDuration);
-    setTerminationPeriod(period);
-}, [totalDuration]); // Update termination period only when total duration changes
+    // This useEffect is now only responsible for setting the termination period
+    // for regular contracts based on the total duration
+    if (totalDuration > 0) {
+        const period = getTerminationPeriod(totalDuration);
+        setTerminationPeriod(period);
+    }
+}, [totalDuration]);
 
 
 
@@ -256,14 +282,14 @@ const getTotalDuration = (contracts) => {
 
 
 // Helper function to determine termination period based on total duration
-const getTerminationPeriod = (totalDurationMonths) => {
-    if (totalDurationMonths <= 1) return '3 days';
-    else if (totalDurationMonths > 1 && totalDurationMonths < 3) return '1 week';
-    else if (totalDurationMonths >= 3 && totalDurationMonths < 6) return '2 weeks';
-    else if (totalDurationMonths >= 6 && totalDurationMonths < 36) return '1 month';
-    return '3 months';
-};
+// Helper function for trial period termination period
 
+// Helper function to determine termination period based on total duration
+const getTerminationPeriod = (totalDurationMonths) => {
+    if (totalDurationMonths < 6) return '2 weeks';
+    else if (totalDurationMonths < 36) return '1 month';
+    return '3 months';
+}
 
 
 
