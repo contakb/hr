@@ -20,6 +20,7 @@ const TerminateContract = () => {
   const [totalDuration, setTotalDuration] = useState(0);
   const [manualEndDate, setManualEndDate] = useState(false);
   const [initialTerminationEndDate, setInitialTerminationEndDate] = useState('');
+  const [currentContractEndDate, setCurrentContractEndDate] = useState('');
 
 
 
@@ -41,6 +42,9 @@ const TerminateContract = () => {
 
             setEmployee(employeeResponse.data.employee);
             setContracts(contractResponse.data.contracts);
+
+          
+        
 
             const state = location.state || {};
             const newContractId = state.newContractId;
@@ -198,13 +202,19 @@ const handleSubmitTermination = async (e) => {
       return; // Exit the function if no contract is selected
     }
     
-
-    
+    let finalTerminationDate = terminationDate;
+    if (terminationType === 'with_notice') {
+        finalTerminationDate = terminationEndDate;
+        if (new Date(finalTerminationDate) > new Date(currentContractEndDate)) {
+            // Alert or adjust the date
+            finalTerminationDate = currentContractEndDate;
+        }
+    }
 
     // Construct the payload with the updated data
     const updatedContractData = {
       termination_type: terminationType || null, // Use null as fallback if empty
-      termination_date: terminationDate, // Directly use terminationDate
+      termination_date: finalTerminationDate, // Directly use terminationDate
       deregistration_code: deregistrationCode || null,
       initiated_by_employee: initiatedByEmployee || null,
     };
@@ -261,6 +271,15 @@ useEffect(() => {
         setTotalDuration(duration);
     }
 }, [contracts]);
+
+useEffect(() => {
+  // Find the selected contract and update its end date
+  const selectedContract = contracts.find(contract => contract.id === selectedContractId);
+  if (selectedContract) {
+      setCurrentContractEndDate(selectedContract.contract_to_date);
+  }
+}, [contracts, selectedContractId]); // Depend on contracts and selectedContractId
+
 
 
 
@@ -428,17 +447,26 @@ return (
     value={terminationType} 
     onChange={handleTerminationTypeChange}
 >
-    <option value="" disabled selected>Select Termination Type</option>
+    <option value="" disabled>Select Termination Type</option>
     <option value="mutual_agreement">Porozumienie stron</option>
     <option value="contract_expiry">Z upływem czasu na jaki została zawarta</option>
     <option value="with_notice">Za wypowiedzeniem</option>
     <option value="without_notice">Bez okresu wypowiedzenia</option>
 </select>
 
+
+
 {terminationType === 'with_notice' && (
     <>
         {!manualEndDate ? (
-            <p><strong>Zakończenie okresu wypowiedzenia: {terminationEndDate}</strong></p>
+            <>
+                <p><strong>Zakończenie okresu wypowiedzenia: {terminationEndDate}</strong></p>
+                {new Date(terminationEndDate) > new Date(currentContractEndDate) && (
+                    <p style={{ color: 'red' }}>
+                        Note: Termination date adjusted to match contract end date: {currentContractEndDate}
+                    </p>
+                )}
+            </>
         ) : (
             <input 
                 type="date" 
@@ -455,9 +483,10 @@ return (
                 checked={manualEndDate} 
                 onChange={() => {
                     setManualEndDate(!manualEndDate);
-                    if (manualEndDate) {
-                        // Revert to the initial terminationEndDate when checkbox is unchecked
-                        setTerminationEndDate(initialTerminationEndDate);
+                    if (!manualEndDate) {
+                        // Adjust to the initial terminationEndDate or contract end date when checkbox is unchecked
+                        const adjustedDate = new Date(initialTerminationEndDate) > new Date(currentContractEndDate) ? currentContractEndDate : initialTerminationEndDate;
+                        setTerminationEndDate(adjustedDate);
                     }
                 }}
             />
