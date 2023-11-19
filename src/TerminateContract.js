@@ -202,13 +202,10 @@ const handleSubmitTermination = async (e) => {
       return; // Exit the function if no contract is selected
     }
     
-    let finalTerminationDate = terminationDate;
-    if (terminationType === 'with_notice') {
-        finalTerminationDate = terminationEndDate;
-        if (new Date(finalTerminationDate) > new Date(currentContractEndDate)) {
-            // Alert or adjust the date
-            finalTerminationDate = currentContractEndDate;
-        }
+    let finalTerminationDate = terminationType === 'with_notice' ? terminationEndDate : terminationDate;
+    if (new Date(finalTerminationDate) > new Date(currentContractEndDate)) {
+        alert("Termination date cannot extend beyond the current contract end date.");
+        return;
     }
 
     // Construct the payload with the updated data
@@ -281,64 +278,83 @@ useEffect(() => {
 }, [contracts, selectedContractId]); // Depend on contracts and selectedContractId
 
 
-
-
-// useEffect to update terminationPeriod when contracts change
-// Second useEffect Hook
-useEffect(() => {
-    // This useEffect is now only responsible for setting the termination period
-    // for regular contracts based on the total duration
-    if (totalDuration > 0) {
-        const period = getTerminationPeriod(totalDuration);
-        setTerminationPeriod(period);
-    }
-}, [totalDuration]);
-
-
-
 // Helper function to calculate total duration from the earliest contract
 const getTotalDuration = (contracts) => {
-    if (contracts.length === 0) return 0;
+  if (contracts.length === 0) return 0;
 
-    // Find the earliest contract start date
-    const startDates = contracts.map(contract => new Date(contract.contract_from_date));
-    const earliestStartDate = new Date(Math.min(...startDates));
-    const today = new Date();
+  // Find the earliest contract start date
+  const startDates = contracts.map(contract => new Date(contract.contract_from_date));
+  const earliestStartDate = new Date(Math.min(...startDates));
+  const today = new Date();
 
-    // Calculate total duration in months
-    let months;
-    months = (today.getFullYear() - earliestStartDate.getFullYear()) * 12;
-    months -= earliestStartDate.getMonth();
-    months += today.getMonth();
+  // Calculate total duration in months
+  let months = today.getMonth() - earliestStartDate.getMonth() 
+               + (12 * (today.getFullYear() - earliestStartDate.getFullYear()));
 
-    console.log("Total Duration in Months:", months); // Log to check the calculated months
-
-
-    return months <= 0 ? 0 : months;
+               console.log("Total Duration in Months:", months); // Log to check the calculated months
+  // Ensure the duration is not negative
+  return months >= 0 ? months : 0;
 };
+
+
 
 
 // Helper function to determine termination period based on total duration
 // Helper function for trial period termination period
 
 // Helper function to determine termination period based on total duration
-const getTerminationPeriod = (totalDurationMonths) => {
-    if (totalDurationMonths < 6) return '2 weeks';
-    else if (totalDurationMonths < 36) return '1 month';
-    return '3 months';
-}
-
-
-
-// useEffect to calculate terminationEndDate
-// useEffect to calculate and store initial terminationEndDate
+// Inside the useEffect for setting terminationPeriod
 useEffect(() => {
-    if (dataWypowiedzenia && terminationPeriod) {
-        const endDate = calculateTerminationEndDate(dataWypowiedzenia, terminationPeriod);
-        setTerminationEndDate(endDate);
-        setInitialTerminationEndDate(endDate); // Store the initially calculated date
-    }
+  const getTerminationPeriod = (totalDurationMonths, contracts) => {
+      const mostRecentContract = contracts[contracts.length - 1];
+      const isTrialPeriod = mostRecentContract && mostRecentContract.typ_umowy && mostRecentContract.typ_umowy.includes('próbny');
+
+      let period = '';
+      if (isTrialPeriod) {
+          switch (mostRecentContract.typ_umowy) {
+              case 'próbny 1 miesiąc':
+                  period = '3 days';
+                  break;
+              case 'próbny 2 miesiące':
+                  period = '1 week';
+                  break;
+              case 'próbny 3 miesiące':
+                  period = '2 weeks';
+                  break;
+              default:
+                  break; // Default case for trial period contracts
+          }
+      } else {
+          if (totalDurationMonths === 0 || totalDurationMonths < 6) {
+              period = '2 weeks'; // This should cover contracts shorter than 6 months
+          } else if (totalDurationMonths < 36) {
+              period = '1 month';
+          } else {
+              period = '3 months';
+          }
+      }
+      console.log("Determined Termination Period:", period);
+      return period;
+  };
+
+  if (totalDuration >= 0) {
+      const period = getTerminationPeriod(totalDuration, contracts);
+      setTerminationPeriod(period);
+  }
+}, [totalDuration, contracts]);
+
+// Inside the useEffect for calculating terminationEndDate
+useEffect(() => {
+  if (dataWypowiedzenia && terminationPeriod) {
+      const endDate = calculateTerminationEndDate(dataWypowiedzenia, terminationPeriod);
+      setTerminationEndDate(endDate);
+      console.log("Data Wypowiedzenia:", dataWypowiedzenia, "Termination Period:", terminationPeriod, "Calculated End Date:", endDate);
+  }
 }, [dataWypowiedzenia, terminationPeriod]);
+
+
+
+
 
 
 // Helper function to calculate termination end date based on start date and period
@@ -399,11 +415,12 @@ const calculateTerminationEndDate = (startDate, period) => {
         default:
             // Default logic if needed
     }
-
+    console.log("Start Date:", startDate, "Period:", period, "End Date:", endDate.toISOString().split('T')[0]);
     return endDate.toISOString().split('T')[0]; // Return the date in YYYY-MM-DD format
 };
 
 // ... rest of your code
+console.log("Current Termination End Date:", terminationEndDate);
 
   
 return (
@@ -460,7 +477,7 @@ return (
     <>
         {!manualEndDate ? (
             <>
-                <p><strong>Zakończenie okresu wypowiedzenia: {terminationEndDate}</strong></p>
+                 <p><strong>Zakończenie okresu wypowiedzenia: {terminationEndDate || 'Not available'}</strong></p>
                 {new Date(terminationEndDate) > new Date(currentContractEndDate) && (
                     <p style={{ color: 'red' }}>
                         Note: Termination date adjusted to match contract end date: {currentContractEndDate}
