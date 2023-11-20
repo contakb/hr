@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
+import { useReactToPrint } from 'react-to-print';
 
 const TerminateContract = () => {
   const [employee, setEmployee] = useState({});
@@ -21,11 +22,16 @@ const TerminateContract = () => {
   const [manualEndDate, setManualEndDate] = useState(false);
   const [initialTerminationEndDate, setInitialTerminationEndDate] = useState('');
   const [currentContractEndDate, setCurrentContractEndDate] = useState('');
+  const componentRef = useRef();
+
+   
 
 
 
     
-  
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+  });
   const navigate = useNavigate();
 
   const { employeeId } = useParams();
@@ -96,32 +102,32 @@ const toggleDocumentVisibility = () => {
   
   
 
-const handleTerminationTypeChange = (e) => {
-    setTerminationType(e.target.value);
+  const handleTerminationTypeChange = (e) => {
+    const selectedTerminationType = e.target.value;
+    setTerminationType(selectedTerminationType);
 
-    // Reset terminationDate if termination type is 'za wypowiedzeniem'
-    if (e.target.value === 'za wypowiedzeniem') {
+    if (selectedTerminationType === 'with_notice') {
+        // If termination type is 'za wypowiedzeniem', set terminationDate to terminationEndDate
         setTerminationDate(terminationEndDate);
+    } else if (selectedTerminationType === 'contract_expiry' && currentContractEndDate) {
+        // If termination type is 'z upływem czasu na jaki została zawarta', set terminationDate to contract's end date
+        setTerminationDate(currentContractEndDate);
     } else {
-        setTerminationDate(''); // Clear the termination date for other types
+        // For other termination types, clear the termination date
+        setTerminationDate('');
     }
 };
 
-useEffect(() => {
-    if (terminationType === 'with_notice') {
-        setTerminationDate(terminationEndDate);
-    }
-}, [terminationEndDate, terminationType]);
 
 
 // Function to render the appropriate document based on the termination type
 const renderTerminationDocument = () => {
     switch(terminationType) {
       case 'mutual_agreement':
-        return renderMutualAgreementDocument();
+        return <RenderMutualAgreementDocument ref={componentRef} />;
       case 'with_notice':
         // Add more cases as needed
-        return renderNoticeOfTerminationDocument();
+        return <RenderNoticeOfTerminationDocument ref={componentRef}/>;
       // ... other cases ...
       default:
         return <p>Select a termination type to view the document.</p>;
@@ -129,9 +135,9 @@ const renderTerminationDocument = () => {
   };
 
 // Function to render the Mutual Agreement Document
-const renderMutualAgreementDocument = () => {
-    return (
-      <div>
+const RenderMutualAgreementDocument = React.forwardRef((props, ref) => {
+  return (
+  <div ref={ref}>
         <h2>Porozumienie Stron</h2>
           <p>Data: {dataWypowiedzenia}</p>
           <p>This employment contract ("Contract") is entered into on 
@@ -160,18 +166,18 @@ const renderMutualAgreementDocument = () => {
         </div>
         </section>
         </div>
-    );
-  };
+      );
+  });
   
   // Function to render the Notice of Termination Document
-  const renderNoticeOfTerminationDocument = () => {
+  const RenderNoticeOfTerminationDocument = React.forwardRef((props, ref) => {
+    // Your JSX here
     return (
-      <div>
-        <h2>Wypowiedzenie Umowy o Pracę</h2>
-        {/* ... rest of the document with employee and contract data ... */}
+      <div ref={ref}>
+        Za wypowiedzeniem
       </div>
     );
-  };  
+  });  
 
 const handleDeregistrationCodeChange = (e) => {
     setDeregistrationCode(e.target.value);
@@ -348,6 +354,7 @@ useEffect(() => {
   if (dataWypowiedzenia && terminationPeriod) {
       const endDate = calculateTerminationEndDate(dataWypowiedzenia, terminationPeriod);
       setTerminationEndDate(endDate);
+      setInitialTerminationEndDate(endDate); // Store the initially calculated termination end date
       console.log("Data Wypowiedzenia:", dataWypowiedzenia, "Termination Period:", terminationPeriod, "Calculated End Date:", endDate);
   }
 }, [dataWypowiedzenia, terminationPeriod]);
@@ -431,7 +438,7 @@ return (
   <option value="" disabled={selectedContractId !== ''}>Select a contract</option>
   {contracts.map((contract) => (
     <option key={contract.id} value={contract.id}>
-      Contract from {new Date(contract.contract_from_date).toLocaleDateString()} to {new Date(contract.contract_to_date).toLocaleDateString()}
+      Na {contract.typ_umowy} from {new Date(contract.contract_from_date).toLocaleDateString()} to {new Date(contract.contract_to_date).toLocaleDateString()}
     </option>
   ))}
 </select>
@@ -551,6 +558,12 @@ return (
       {showDocument ? 'Hide Document' : 'Create Document'}
     </button>
     {showDocument && renderTerminationDocument()}
+
+     
+    
+        {showDocument && (
+            <button onClick={handlePrint}>Save as PDF</button>
+        )}
 
 {updateMessage && <div>{updateMessage}</div>}
             <button onClick={handleBackToEmployeeList}>Back to EmployeeList</button>
