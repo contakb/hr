@@ -577,6 +577,31 @@ app.put('/api/employee-params/:employeeId', async (req, res) => {
   }
 });
 
+app.put('/api/contracts/:contractId', async (req, res) => {
+  const contractId = req.params.contractId;
+  const { gross_amount, contract_from_date, contract_to_date, typ_umowy, stanowisko, etat, workstart_date } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('contracts') // Replace 'emp_var' with your contracts table name
+      .update({ gross_amount, contract_from_date, contract_to_date, typ_umowy, stanowisko, etat, workstart_date })
+      .eq('id', contractId) // Ensure you're updating the correct contract
+      .select(); // Chain a select() after update() to get the updated data
+
+    if (error) {
+      console.error('Error updating contract:', error);
+      res.status(500).json({ error: error.message }); // Provide more specific error message
+    } else {
+      res.json({
+        message: 'Contract updated successfully',
+        updatedContract: data
+      });
+    }
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 

@@ -438,7 +438,7 @@ return (
   <option value="" disabled={selectedContractId !== ''}>Select a contract</option>
   {contracts.map((contract) => (
     <option key={contract.id} value={contract.id}>
-      Na {contract.typ_umowy} from {new Date(contract.contract_from_date).toLocaleDateString()} to {new Date(contract.contract_to_date).toLocaleDateString()}
+      Na okres: {contract.typ_umowy} from {new Date(contract.contract_from_date).toLocaleDateString()} to {new Date(contract.contract_to_date).toLocaleDateString()}
     </option>
   ))}
 </select>

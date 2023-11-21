@@ -26,6 +26,8 @@ function Employee({ employee, updateEmployeeInList, taxOffices }) {
   const [editEmployeeDetailsMode, setEditEmployeeDetailsMode] = useState(false);
   const [editParametersMode, setEditParametersMode] = useState(false);
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
+  const [editContractsMode, setEditContractsMode] = useState(false);
+  const [editingContractId, setEditingContractId] = useState(null);
   const [updateMessage, setUpdateMessage] = useState('');
   const [taxOffice, setTaxOffice] = useState(employee.tax_office); // Assuming 'tax_office' is the property
   const [taxOfficeName, setTaxOfficeName] = useState(''); // You might need to adjust this based on how you handle tax office names
@@ -132,6 +134,37 @@ const location = useLocation(); // Correct usage of useLocation
     setEditParametersMode(!editParametersMode);
     // Ensure that editing employee details is turned off when editing parameters
     setEditEmployeeDetailsMode(false);
+  };
+
+  const toggleEditContractsMode = (contractId) => {
+    setEditContractsMode(!editContractsMode);
+    setEditingContractId(contractId);
+  };
+  
+  const handleUpdateContract = async (e, contractId) => {
+    e.preventDefault();
+  
+    const updatedContractData = {
+      gross_amount: e.target.gross_amount.value,
+      contract_from_date: e.target.contract_from_date.value,
+      contract_to_date: e.target.contract_to_date.value,
+      typ_umowy: e.target.typ_umowy.value,
+      stanowisko: e.target.stanowisko.value,
+      etat: e.target.etat.value,
+      workstart_date: e.target.workstart_date.value,
+      
+    };
+  
+    try {
+      const response = await axios.put(`http://localhost:3001/api/contracts/${contractId}`, updatedContractData);
+      // Handle success
+      setEditContractsMode(false);
+      setEditingContractId(null);
+      // Update local state or UI as needed
+    } catch (error) {
+      console.error('Error updating contract:', error);
+      // Handle error appropriately
+    }
   };
   
 
@@ -388,22 +421,60 @@ const location = useLocation(); // Correct usage of useLocation
     )}
 
 
-      {contractsVisible && (
-        <div>
-          <h3>Contracts:</h3>
-          {contracts.length === 0 ? (
-            <p>No contracts found.</p>
+{contractsVisible && (
+  <div>
+    <h3>Contracts:</h3>
+    {contracts.length === 0 ? (
+      <p>No contracts found.</p>
+    ) : (
+      contracts.map((contract) => (
+        <div key={contract.id}>
+          {editContractsMode && editingContractId === contract.id ? (
+            // Render the form for editing this specific contract
+            <form onSubmit={(e) => handleUpdateContract(e, contract.id)}>
+              <label htmlFor="gross_amount">Gross Amount:</label>
+              <input type="number" name="gross_amount" defaultValue={contract.gross_amount} />
+
+              <label htmlFor="contract_from_date">Contract From:</label>
+              <input type="date" name="contract_from_date" defaultValue={contract.contract_from_date} />
+
+              <label htmlFor="contract_to_date">Contract To:</label>
+              <input type="date" name="contract_to_date" defaultValue={contract.contract_to_date} />
+
+              <label htmlFor="typ_umowy">Typ Umowy:</label>
+              <input type="text" name="typ_umowy" defaultValue={contract.typ_umowy} />
+
+              <label htmlFor="stanowisko">Stanowisko:</label>
+              <input type="text" name="stanowisko" defaultValue={contract.stanowisko} />
+
+              <label htmlFor="etat">Etat:</label>
+              <input type="text" name="etat" defaultValue={contract.etat} />
+
+              <label htmlFor="Rozpoczęcie pracy">Rozpoczęcie pracy:</label>
+              <input type="date" name="workstart_date" defaultValue={contract.workstart_date} />
+
+              <button type="submit">Save Changes</button>
+              <button onClick={() => toggleEditContractsMode(null)}>Cancel</button>
+            </form>
           ) : (
-            contracts.map((contract) => (
-              <div key={contract.id}>
-                <p>Gross Amount: {contract.gross_amount}</p>
-                <p>Contract From: {new Date(contract.contract_from_date).toLocaleDateString()}</p>
-                <p>Contract To: {new Date(contract.contract_to_date).toLocaleDateString()}</p>
-              </div>
-            ))
+            // Render the normal view of the contract
+            <div>
+              <p>Gross Amount: {contract.gross_amount}</p>
+              <p>Contract From: {new Date(contract.contract_from_date).toLocaleDateString()}</p>
+              <p>Contract To: {new Date(contract.contract_to_date).toLocaleDateString()}</p>
+              <p>Typ Umowy: {contract.typ_umowy}</p>
+              <p>Stanowisko: {contract.stanowisko}</p>
+              <p>Etat: {contract.etat}</p>
+              <p>Dzień rozpoczęcia pracy: {new Date(contract.workstart_date).toLocaleDateString()}</p>
+              <button onClick={() => toggleEditContractsMode(contract.id)}>Edit</button>
+            </div>
           )}
         </div>
-      )}
+      ))
+    )}
+  </div>
+)}
+
 
 {generateContractVisible && (
         <div>
