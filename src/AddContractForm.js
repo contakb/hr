@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 
 function AddContractForm() {
-  const { employeeId } = useParams();
+  const { employeeId, contractId } = useParams();
   const navigate = useNavigate();
   console.log('Employee ID:', employeeId);
 
@@ -16,8 +16,33 @@ function AddContractForm() {
   const [workstart_date, setworkstart_date] = useState('');
   const [contract, setContract] = useState(null);
   const [period_próbny, setperiod_próbny] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // State to track if form is submitting
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
-
+  
+   // Check if we are in edit mode (contractId is present)
+   const isEditMode = !!contractId;
+  // Load contract data if contractId is provided
+  useEffect(() => {
+    if (contractId) {
+      axios.get(`http://localhost:3001/api/empcontracts/${contractId}`)
+        .then(response => {
+          const contract = response.data;
+          setGrossAmount(contract.gross_amount);
+          setStartDate(contract.contract_from_date);
+          setEndDate(contract.contract_to_date);
+          setstanowisko(contract.stanowisko);
+          setetat(contract.etat);
+          settyp_umowy(contract.typ_umowy);
+          setworkstart_date(contract.workstart_date);
+          // Set other fields as needed
+        })
+        .catch(error => console.error('Error fetching contract:', error));
+    }
+  }, [contractId]);
+  
+  
   // Add this function to handle the back button click
 const handleBackClick = () => {
   navigate(-1); // This navigates to the previous page in history
@@ -38,42 +63,86 @@ const viewEmployeeContract = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
+    setIsError(false);
+    setFeedbackMessage('');
+  
+    const contractData = {
+      grossAmount,
+      startDate,
+      endDate,
+      stanowisko,
+      etat,
+      typ_umowy,
+      workstart_date,
+      period_próbny
+    };
 
+    setIsSubmitting(true); // Disable the submit button
+
+    // Check for overlapping contracts if it's a new contract
+    if (!contractId) {
+      const isOverlapping = await checkForOverlappingContracts(startDate, endDate);
+      if (isOverlapping) {
+        setFeedbackMessage('There is already a contract for the selected period.');
+        setIsError(true);
+        setIsSubmitting(false);
+        return;
+      }
+    }
+  
     try {
-      const response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-contract`, {
-        grossAmount,
-        startDate,
-        endDate,
-        stanowisko,
-        etat,
-        typ_umowy,
-        workstart_date,
-        period_próbny
-        
-      });
-      // Update the contract state with the returned data
-setContract(response.data.contract);
-// Assuming the response includes the newly created contract and its ID
-const newContractId = response.data.newContract.id;
-
-// Redirect to EmployeeContract with the new contract ID
-navigate(`/EmployeeContract/${employeeId}`, { state: { newContractId } });
-
-      // Handle successful contract addition
-      console.log('Contract added:', response.data.contract);
-
-      // Clear form fields
-      setGrossAmount('');
-      setStartDate('');
-      setEndDate('');
-      setstanowisko('');
-      setetat('');
-      settyp_umowy('');
-      setworkstart_date('');
-      setperiod_próbny('');
+      let response;
+      if (contractId) {
+        // Update existing contract
+        response = await axios.put(`http://localhost:3001/api/contracts/${contractId}`, contractData);
+        setFeedbackMessage('Contract updated successfully.');
+      } else {
+        // Add new contract
+        response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-contract`, contractData);
+        setFeedbackMessage('Contract added successfully.');
+        setContract(response.data.contract);
+      }
+  
+      // Handle response for both adding and updating
+      console.log('Contract operation successful:', response.data);
+  
+      // Assuming the response includes the contract data and its ID
+      const updatedOrNewContractId = contractId || response.data.newContract.id;
+  
+      // Redirect to EmployeeContract with the updated or new contract ID
+      navigate(`/EmployeeContract/${employeeId}`, { state: { updatedOrNewContractId } });
+  
+      // Clear form fields after adding a new contract
+      if (!contractId) {
+        setGrossAmount('');
+        setStartDate('');
+        setEndDate('');
+        setstanowisko('');
+        setetat('');
+        settyp_umowy('');
+        setworkstart_date('');
+        setperiod_próbny('');
+      }
     } catch (error) {
-      // Handle contract addition error
-      console.error('Error adding contract:', error);
+      console.error('Error in contract operation:', error);
+      setFeedbackMessage('An error occurred during the contract operation.');
+      setIsError(true);
+    }
+    setIsSubmitting(false); // Re-enable the submit button after submission
+  };
+  // Function to check for overlapping contracts
+  const checkForOverlappingContracts = async (newStart, newEnd) => {
+    try {
+      const response = await axios.get(`http://localhost:3001/api/contracts/${employeeId}`);
+      return response.data.contracts.some(contract => {
+        const start = new Date(contract.contract_from_date);
+        const end = new Date(contract.contract_to_date);
+        return (new Date(newStart) <= end && new Date(newEnd) >= start);
+      });
+    } catch (error) {
+      console.error('Error checking overlapping contracts:', error);
+      return false;
     }
   };
 
@@ -106,7 +175,13 @@ navigate(`/EmployeeContract/${employeeId}`, { state: { newContractId } });
   };
   return (
     <div>
-      <h2>Add Contract</h2>
+      {/* Dynamically set the page title */}
+      <h2>{isEditMode ? 'Edit Contract' : 'Add Contract'}</h2>
+      {feedbackMessage && (
+        <div style={{ color: isError ? 'red' : 'green' }}>
+          {feedbackMessage}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <label>Gross Amount:</label>
         <input type="text" value={grossAmount} onChange={handleGrossAmountChange} />
@@ -174,13 +249,15 @@ navigate(`/EmployeeContract/${employeeId}`, { state: { newContractId } });
         <label>Dzień rozpoczęcia pracy:</label>
         <input type="date" value={workstart_date} onChange={handleworkstart_date} />
 
-        <button type="submit">Add Contract</button>
+        <button type="submit" disabled={isSubmitting}>
+          {isEditMode ? 'Update Contract' : 'Add Contract'}
+        </button>
         
       </form>
       <button onClick={viewEmployeeContract}>View Contract</button>
       {contract && (
   <div>
-    <h2>Contract Created Successfully!</h2>
+    <h2>{isEditMode ? 'Contract Updated Successfully!' : 'Contract Created Successfully!'}</h2>
     <p>Contract ID: {contract.id}</p>
     <p>Employee ID: {contract.employee_id}</p>
     <p>Gross Amount: {contract.gross_amount}</p>
@@ -193,7 +270,9 @@ navigate(`/EmployeeContract/${employeeId}`, { state: { newContractId } });
     <p>Dł umowy po okresie próbnym: {contract.period_próbny}</p>
   </div>
 )}
-<p><button onClick={viewEmployeeContract}>View Contract</button></p>
+{isEditMode && (
+        <button onClick={viewEmployeeContract}>Aneks</button>
+      )}
 <p><button onClick={handleBackClick}>Back</button></p>
     </div>
     

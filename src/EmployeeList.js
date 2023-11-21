@@ -35,7 +35,9 @@ function Employee({ employee, updateEmployeeInList, taxOffices }) {
 
 const location = useLocation(); // Correct usage of useLocation
 
-
+const handleFullEdit = (contractId) => {
+  navigate(`/add-contract/${id}/${contractId}`);
+};
 
 
   const handleAddContract = () => {
@@ -160,7 +162,9 @@ const location = useLocation(); // Correct usage of useLocation
       // Handle success
       setEditContractsMode(false);
       setEditingContractId(null);
-      // Update local state or UI as needed
+      setUpdateMessage('Contract data updated successfully!');
+        console.log('Message set:', updateMessage);
+        setTimeout(() => setUpdateMessage(''), 3000); // Message disappears after 3 seconds
     } catch (error) {
       console.error('Error updating contract:', error);
       // Handle error appropriately
@@ -429,6 +433,7 @@ const location = useLocation(); // Correct usage of useLocation
     ) : (
       contracts.map((contract) => (
         <div key={contract.id}>
+          {updateMessage && <div className="update-message">{updateMessage}</div>}
           {editContractsMode && editingContractId === contract.id ? (
             // Render the form for editing this specific contract
             <form onSubmit={(e) => handleUpdateContract(e, contract.id)}>
@@ -467,6 +472,7 @@ const location = useLocation(); // Correct usage of useLocation
               <p>Etat: {contract.etat}</p>
               <p>Dzień rozpoczęcia pracy: {new Date(contract.workstart_date).toLocaleDateString()}</p>
               <button onClick={() => toggleEditContractsMode(contract.id)}>Edit</button>
+              <button onClick={() => handleFullEdit(contract.id)}>Full Edit</button>
             </div>
           )}
         </div>

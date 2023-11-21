@@ -603,6 +603,27 @@ app.put('/api/contracts/:contractId', async (req, res) => {
   }
 });
 
+app.get('/api/empcontracts/:contractId', async (req, res) => {
+  const contractId = req.params.contractId;
+
+  try {
+    const { data, error } = await supabase
+      .from('contracts') // Replace with your contracts table name
+      .select('*')
+      .eq('id', contractId)
+      .single(); // Fetch a single row
+
+    if (error) {
+      console.error('Error fetching contract:', error);
+      res.status(500).json({ error: 'Error fetching contract' });
+    } else {
+      res.json(data);
+    }
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 app.get('/api/contracts/:employeeId', async (req, res) => {

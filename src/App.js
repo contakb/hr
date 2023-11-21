@@ -49,6 +49,8 @@ function App() {
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
       <Route path="/employee-param/:employeeId" element={<EmployeeParam />} />
       <Route path="/TerminateContract/:employeeId" element={<TerminateContract />} />
+      <Route path="/add-contract/:employeeId/:contractId" element={<AddContractForm />} />
+
 
        
 
