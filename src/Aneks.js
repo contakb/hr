@@ -20,6 +20,9 @@ function Aneks() {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [employee_id, setEmployeeId] = useState(''); // Initialize employee_id state
+  const [showGrossAmount, setShowGrossAmount] = useState(false);
+const [showStanowisko, setShowStanowisko] = useState(false);
+const [showEtat, setShowEtat] = useState(false);
 
 
   
@@ -64,19 +67,19 @@ const handleSubmit = async (event) => {
     setIsError(false);
     setFeedbackMessage('');
   
-    const aneksData = {
-      gross_amount: grossAmount,
-      contract_from_date: startDate,
-      stanowisko,
-      etat,
-      employee_id: employeeId,
-      // Include other relevant fields
+    let updatedFields = {
+      contract_from_date: startDate, // This field is always included
+      employee_id: employeeId,      // Assuming this is always needed
     };
+  
+    if (showGrossAmount) updatedFields.gross_amount = grossAmount;
+    if (showStanowisko) updatedFields.stanowisko = stanowisko;
+    if (showEtat) updatedFields.etat = etat;
   
     try {
       const response = await axios.post('http://localhost:3001/api/aneks', {
         originalContractId: contractId,
-        aneksData
+        aneksData: updatedFields
       });
   
       setFeedbackMessage('Aneks added successfully.');
@@ -121,18 +124,70 @@ const handleSubmit = async (event) => {
         </div>
       )}
       <form onSubmit={handleSubmit}>
+      <div>
+    <label>Data obowiązywania zmiany:</label>
+    <input 
+      type="date" 
+      value={startDate} 
+      onChange={handleStartDateChange} 
+    />
+  </div>
+  <div>
+    <label>
+      <input 
+        type="checkbox" 
+        checked={showGrossAmount} 
+        onChange={() => setShowGrossAmount(!showGrossAmount)} 
+      />
+      Gross Amount
+    </label>
+    {showGrossAmount && (
+      <div>
         <label>Gross Amount:</label>
-        <input type="text" value={grossAmount} onChange={handleGrossAmountChange} />
+        <input 
+          type="text" 
+          value={grossAmount} 
+          onChange={handleGrossAmountChange} 
+        />
+      </div>
+    )}
+  </div>
 
-        <label>Data obowiązywania zmiany:</label>
-        <input type="date" value={startDate} onChange={handleStartDateChange} />
-
+  <div>
+    <label>
+      <input 
+        type="checkbox" 
+        checked={showStanowisko} 
+        onChange={() => setShowStanowisko(!showStanowisko)} 
+      />
+      Stanowisko
+    </label>
+    {showStanowisko && (
+      <div>
         <label>Stanowisko:</label>
-        <input type="text" value={stanowisko} onChange={handleStanowisko} />
+        <input 
+          type="text" 
+          value={stanowisko} 
+          onChange={handleStanowisko} 
+        />
+      </div>
+    )}
+  </div>
 
+  <div>
+    <label>
+      <input 
+        type="checkbox" 
+        checked={showEtat} 
+        onChange={() => setShowEtat(!showEtat)} 
+      />
+      Etat
+    </label>
+    {showEtat && (
+      <div>
         <label>Etat:</label>
-<select value={etat} onChange={handleetat}>
-<option value="" disabled hidden>wybierz wielkość etatu</option>
+        <select value={etat} onChange={handleetat}>
+          <option value="" disabled hidden>wybierz wielkość etatu</option>
   <option value="1/1">1/1</option>
   <option value="1/2">1/2</option>
   <option value="1/3">1/3</option>
@@ -143,6 +198,9 @@ const handleSubmit = async (event) => {
   <option value="3/8">3/8</option>
   <option value="7/8">7/8</option>
 </select>
+</div>
+    )}
+  </div>
 
 
         <button type="submit" disabled={isSubmitting}>
