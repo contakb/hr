@@ -577,6 +577,91 @@ app.put('/api/employee-params/:employeeId', async (req, res) => {
   }
 });
 
+app.post('/api/aneks', async (req, res) => {
+  const { originalContractId, aneksData } = req.body;
+
+  try {
+    // Fetch the original contract to get the end date and employee_id
+    const originalContractResponse = await supabase
+      .from('contracts')
+      .select('contract_to_date, employee_id')
+      .eq('id', originalContractId)
+      .single();
+
+    if (originalContractResponse.error) {
+      throw originalContractResponse.error;
+    }
+
+    const originalContract = originalContractResponse.data;
+    const originalContractToDate = originalContract.contract_to_date;
+
+    // Find the most recent aneks/contract that continues the original contract
+    const latestContractResponse = await supabase
+      .from('contracts')
+      .select('*')
+      .eq('kontynuacja', originalContractId)
+      .or(`id.eq.${originalContractId}`)
+      .order('contract_from_date', { ascending: false })
+      .limit(1);
+
+    let latestContractId;
+    if (latestContractResponse.data && latestContractResponse.data.length > 0) {
+      // If there's a continuing contract/aneks, use it as the latest
+      latestContractId = latestContractResponse.data[0].id;
+    } else {
+      // If there's no continuing contract/aneks, use the original contract itself as the latest
+      latestContractId = originalContractId;
+    }
+
+    // Update the end date of the most recent contract/aneks
+    const adjustedEndDate = new Date(aneksData.contract_from_date);
+    adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+
+    await supabase
+      .from('contracts')
+      .update({ contract_to_date: adjustedEndDate.toISOString().split('T')[0] })
+      .eq('id', latestContractId)
+      .select();
+
+    // Create the new aneks entry
+    const aneksContractData = {
+      ...aneksData,
+      kontynuacja: originalContractId, // Link back to the original contract ID
+      employee_id: originalContract.employee_id, // Set the employee_id from the original contract
+      contract_to_date: originalContractToDate, // Set the contract_to_date from the original contract
+    };
+
+    const insertResponse = await supabase
+      .from('contracts')
+      .insert([aneksContractData])
+      .select();
+
+    
+    console.log('Insert response:', insertResponse);
+        
+
+    if (insertResponse.error) {
+      throw insertResponse.error;
+    }
+
+    const insertedAneksContract = insertResponse.data && insertResponse.data.length > 0 ? insertResponse.data[0] : null;
+
+    if (insertedAneksContract) {
+      res.send({
+        message: 'Aneks created successfully',
+        aneksContract: insertedAneksContract
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to create aneks' });
+    }
+
+  } catch (error) {
+    console.error('Error handling aneks:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+
+
 app.put('/api/contracts/:contractId', async (req, res) => {
   const contractId = req.params.contractId;
   const { gross_amount, contract_from_date, contract_to_date, typ_umowy, stanowisko, etat, workstart_date } = req.body;

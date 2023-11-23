@@ -20,6 +20,7 @@ import ToDo from './ToDo';
 import MedicalExaminationView from './MedicalExaminationView';
 import EmployeeParam from './EmployeeParam';
 import TerminateContract from './TerminateContract';
+import Aneks from './Aneks';
 
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
       <Route path="/employee-param/:employeeId" element={<EmployeeParam />} />
       <Route path="/TerminateContract/:employeeId" element={<TerminateContract />} />
       <Route path="/add-contract/:employeeId/:contractId" element={<AddContractForm />} />
+      <Route path="/Aneks/:employeeId/:contractId" element={<Aneks />} />
 
 
        

@@ -63,6 +63,7 @@ const viewEmployeeContract = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     setIsSubmitting(true);
     setIsError(false);
     setFeedbackMessage('');
@@ -78,8 +79,7 @@ const viewEmployeeContract = () => {
       period_próbny
     };
 
-    setIsSubmitting(true); // Disable the submit button
-
+    
     // Check for overlapping contracts if it's a new contract
     if (!contractId) {
       const isOverlapping = await checkForOverlappingContracts(startDate, endDate);
@@ -97,6 +97,7 @@ const viewEmployeeContract = () => {
         // Update existing contract
         response = await axios.put(`http://localhost:3001/api/contracts/${contractId}`, contractData);
         setFeedbackMessage('Contract updated successfully.');
+        setIsSubmitting(false); // Re-enable the button only for updates
       } else {
         // Add new contract
         response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-contract`, contractData);
@@ -107,11 +108,9 @@ const viewEmployeeContract = () => {
       // Handle response for both adding and updating
       console.log('Contract operation successful:', response.data);
   
-      // Assuming the response includes the contract data and its ID
-      const updatedOrNewContractId = contractId || response.data.newContract.id;
+    
   
-      // Redirect to EmployeeContract with the updated or new contract ID
-      navigate(`/EmployeeContract/${employeeId}`, { state: { updatedOrNewContractId } });
+       
   
       // Clear form fields after adding a new contract
       if (!contractId) {
@@ -126,11 +125,12 @@ const viewEmployeeContract = () => {
       }
     } catch (error) {
       console.error('Error in contract operation:', error);
-      setFeedbackMessage('An error occurred during the contract operation.');
       setIsError(true);
+      setIsSubmitting(false); // Re-enable the submit button after submission
     }
-    setIsSubmitting(false); // Re-enable the submit button after submission
+    
   };
+
   // Function to check for overlapping contracts
   const checkForOverlappingContracts = async (newStart, newEnd) => {
     try {
@@ -270,9 +270,7 @@ const viewEmployeeContract = () => {
     <p>Dł umowy po okresie próbnym: {contract.period_próbny}</p>
   </div>
 )}
-{isEditMode && (
-        <button onClick={viewEmployeeContract}>Aneks</button>
-      )}
+
 <p><button onClick={handleBackClick}>Back</button></p>
     </div>
     

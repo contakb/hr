@@ -39,6 +39,10 @@ const handleFullEdit = (contractId) => {
   navigate(`/add-contract/${id}/${contractId}`);
 };
 
+const handleAneks = (contractId) => {
+  navigate(`/aneks/${id}/${contractId}`);
+};
+
 
   const handleAddContract = () => {
     navigate(`/add-contract/${id}`);
@@ -473,6 +477,7 @@ const handleFullEdit = (contractId) => {
               <p>Dzień rozpoczęcia pracy: {new Date(contract.workstart_date).toLocaleDateString()}</p>
               <button onClick={() => toggleEditContractsMode(contract.id)}>Edit</button>
               <button onClick={() => handleFullEdit(contract.id)}>Full Edit</button>
+              <button onClick={() => handleAneks(contract.id)}>Aneks</button>
             </div>
           )}
         </div>
