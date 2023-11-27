@@ -215,13 +215,9 @@ const handleSubmit = async (event) => {
     <p>Contract ID: {contract.id}</p>
     <p>Employee ID: {contract.employee_id}</p>
     <p>Gross Amount: {contract.gross_amount}</p>
-    <p>Start Date: {contract.contract_from_date}</p>
-    <p>End Date: {contract.contract_to_date}</p>
+    <p>Data zmiany: {contract.contract_from_date}</p>
     <p>Stanowisko: {contract.stanowisko}</p>
     <p>Etat: {contract.etat}</p>
-    <p>Workstart Date: {contract.workstart_date}</p>
-    <p>Typ Umowy: {contract.typ_umowy}</p>
-    <p>Dł umowy po okresie próbnym: {contract.period_próbny}</p>
   </div>
 )}
 

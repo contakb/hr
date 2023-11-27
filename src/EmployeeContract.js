@@ -24,6 +24,10 @@ const EmployeeContract = () => {
   
         setEmployee(employeeResponse.data.employee);
         setContracts(contractResponse.data.contracts);
+
+          // Assuming contractResponse.data.contracts is an array of contracts
+        const combinedContracts = combineContracts(contractResponse.data.contracts);
+        setContracts(combinedContracts);
   
         const state = location.state || {};
         const newContractId = state.newContractId;
@@ -38,6 +42,7 @@ const EmployeeContract = () => {
       } catch (error) {
         console.error('Error fetching data:', error);
       }
+    
     }
   
     fetchData();
@@ -55,6 +60,44 @@ const handleContractSelection = (e) => {
 
 // Convert selectedContractId to a number for comparison if contract IDs are numbers
 const selectedContract = contracts.find(contract => contract.id === Number(selectedContractId));
+
+function combineContracts(contracts) {
+  // Sort contracts by contract_from_date in ascending order
+  contracts.sort((a, b) => new Date(a.contract_from_date) - new Date(b.contract_from_date));
+
+  let contractMap = new Map();
+
+  contracts.forEach(contract => {
+    const originalId = contract.kontynuacja || contract.id;
+
+    if (!contract.kontynuacja) {
+      // Original contract
+      contractMap.set(originalId, {
+        ...contract,
+        latestEndDate: contract.contract_to_date
+      });
+    } else {
+      // Aneks
+      const existing = contractMap.get(originalId);
+      contractMap.set(originalId, {
+        ...existing,
+        latestEndDate: contract.contract_to_date,
+        stanowisko: existing?.stanowisko || contract.stanowisko,
+        etat: existing?.etat || contract.etat,
+      });
+    }
+  });
+
+  return Array.from(contractMap.values()).map(contract => ({
+    ...contract,
+    contract_to_date: contract.latestEndDate
+  }));
+}
+
+
+
+
+
 
 
 return (
@@ -87,6 +130,7 @@ return (
           </p>
           <p><strong>stanowisko: </strong> {selectedContract?.stanowisko}</p>
           <p><strong>etat: </strong> {selectedContract?.etat}</p>
+          <p><strong>wynagrodzenie brutto: </strong> {selectedContract?.gross_amount}</p>
           <p><strong>okres, na który strony mają zawrzeć umowę na czas określony po umowie na okres próbny: </strong> {selectedContract?.period_próbny} miesiące</p>
           <p><strong>Pracodawca:</strong> Your Company Name, located at Your Company Address</p>
           <p><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.city}</p>

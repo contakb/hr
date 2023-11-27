@@ -84,16 +84,15 @@ const handleAneks = (contractId) => {
     setEditMode(!editMode);
   };
   
-
-  const toggleGenerateContract = () => {
-    setGenerateContractVisible(!generateContractVisible);
-  };  
+  
 
   const toggleContracts = async () => {
     if (!contractsVisible) {
       try {
         const response = await axios.get(`http://localhost:3001/api/contracts/${id}`);
-        setContracts(response.data.contracts);
+        console.log("Fetched contracts:", response.data.contracts);
+        const combinedContracts = combineContracts(response.data.contracts);
+        setContracts(combinedContracts);
       } catch (error) {
         console.error('Error fetching contracts:', error);
         setContracts([]);
@@ -102,6 +101,88 @@ const handleAneks = (contractId) => {
 
     setContractsVisible(!contractsVisible);
   };
+
+  function combineContracts(contracts) {
+    // Sort contracts by contract_from_date in ascending order
+    contracts.sort((a, b) => new Date(a.contract_from_date) - new Date(b.contract_from_date));
+    
+    let contractMap = new Map();
+  
+    contracts.forEach(contract => {
+      const originalId = contract.kontynuacja || contract.id;
+  
+      if (!contractMap.has(originalId)) {
+        contractMap.set(originalId, { original: null, aneks: [] });
+      }
+  
+      const contractData = contractMap.get(originalId);
+  
+      if (!contract.kontynuacja) {
+        // This is the original contract
+        contractData.original = contract;
+      } else {
+        // This is an aneks
+        contractData.aneks.push(contract);
+      }
+    });
+  
+    return Array.from(contractMap.values());
+  }
+  
+
+
+  function getOriginalContract(originalContractId, allContracts) {
+    const originalContract = allContracts.find(contract => contract.id === originalContractId);
+    console.log("Found original contract for aneks:", originalContract);
+    return originalContract;
+  }
+  
+  
+  
+  const AneksView = ({ contract, originalContract }) => {
+    
+    const changes = [];
+    
+    
+    // You may want to ensure that you're comparing numbers, as different types (string vs number) could cause issues.
+    const originalGrossAmount = Number(originalContract.gross_amount);
+    const aneksGrossAmount = Number(contract.gross_amount);
+
+    console.log("Aneks contract data:", contract);
+    console.log("Original contract data:", originalContract);
+
+    if (!originalContract) {
+      console.error('Original contract not found for aneks:', contract);
+      return <p>Original contract data missing!</p>;
+    }
+
+    if (aneksGrossAmount !== originalGrossAmount) {
+      changes.push(`Gross Amount changed from ${originalGrossAmount} to ${aneksGrossAmount}`);
+    }
+  
+    // Log the data to see if they are being passed correctly and to confirm the change is detected.
+    console.log("Original contract gross amount:", originalGrossAmount);
+    console.log("Aneks contract gross amount:", aneksGrossAmount);
+    console.log("Detected changes:", changes);
+  
+    return (
+      <div>
+        <p>Aneks details (debug):</p>
+        <p>Original Gross Amount: {originalContract.gross_amount}</p>
+        <p>New Gross Amount: {contract.gross_amount}</p>
+        {/* Render detected changes or a message if none */}
+        {changes.length > 0 ? (
+          <ul>{changes.map((change, index) => <li key={index}>{change}</li>)}</ul>
+        ) : (
+          <p>No changes were made in this aneks.</p>
+        )}
+      </div>
+    );
+  };
+
+
+  
+
   const toggleParameters = async () => {
     if (!parametersVisible) {
       try {
@@ -176,30 +257,7 @@ const handleAneks = (contractId) => {
   };
   
 
-  const handleGenerateContract = async () => {
-    try {
-      const contractResponse = await axios.get(`http://localhost:3001/api/contracts/${id}`);
-      const contracts = contractResponse.data.contracts;
   
-      if (contracts.length === 0) {
-        console.error('No contracts found.');
-        return;
-      }
-  
-      if (contracts.length === 1) {
-        // If there's only one contract, select it
-        setSelectedContract(contracts[0]);
-        setGenerateContractVisible(true);
-        toggleGenerateContract();
-      } else {
-        // If there are multiple contracts, you can provide a way for the user to select one
-        // For example, display a dropdown or modal for contract selection
-        // You'll need to implement the contract selection logic here
-      }
-    } catch (error) {
-      console.error('Error generating contract:', error);
-    }
-  };
   
   const handleUpdateParameters = async (e) => {
     e.preventDefault();
@@ -266,38 +324,7 @@ const handleAneks = (contractId) => {
   
   
 
-  const generatePDF = () => {
-    const contractContent = document.getElementById('contract-content');
-    if (contractContent) {
-      html2canvas(contractContent)
-        .then((canvas) => {
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF();
-          pdf.addImage(imgData, 'PNG', 10, 10, 190, 260);
-          pdf.save('employment_contract.pdf');
-          setShowPDF(true); // Show the PDF content
-        })
-        .catch((error) => {
-          console.error('Error generating PDF:', error);
-        });
-    }
-  };
-
-  useEffect(() => {
-    // Register the click event for the button after component mount
-    const pdfButton = document.getElementById('pdf-button');
-    if (pdfButton) {
-      pdfButton.addEventListener('click', generatePDF);
-    }
-
-
-    // Cleanup: remove the event listener when the component unmounts
-    return () => {
-      if (pdfButton) {
-        pdfButton.removeEventListener('click', generatePDF);
-      }
-    };
-  }, []); // Empty dependency array to run this effect once after component
+  
 
   useEffect(() => {
     if (updateMessage) {
@@ -331,7 +358,7 @@ const handleAneks = (contractId) => {
       <button onClick={toggleDetails}>{showDetails ? 'Hide Details' : 'Show Details'}</button>
       <button onClick={handleAddContract}>Add Contract</button>
       <button onClick={toggleContracts}>{contractsVisible ? 'Hide Contracts' : 'Show Contracts'}</button>
-      <button onClick={handleGenerateContract}>{generateContractVisible ? 'Hide Contract' : 'Show Contract'}</button>
+      
       <button onClick={() => handleGenerateContractPage(id)}>Generuj</button>
 
       <button onClick={handleMedicalExamination}>Medical Examination</button>
@@ -435,49 +462,65 @@ const handleAneks = (contractId) => {
     {contracts.length === 0 ? (
       <p>No contracts found.</p>
     ) : (
-      contracts.map((contract) => (
-        <div key={contract.id}>
+      contracts.map(({ original, aneks }) => (
+        <div key={original.id}>
+          {/* Render Original Contract Details */}
+          <p>Original Contract ID: {original.id}</p>
           {updateMessage && <div className="update-message">{updateMessage}</div>}
-          {editContractsMode && editingContractId === contract.id ? (
-            // Render the form for editing this specific contract
-            <form onSubmit={(e) => handleUpdateContract(e, contract.id)}>
+          {editContractsMode && editingContractId === original.id ? (
+            // Render the form for editing the original contract
+            <form onSubmit={(e) => handleUpdateContract(e, original.id)}>
+              {/* Add all form fields for editing the original contract */}
               <label htmlFor="gross_amount">Gross Amount:</label>
-              <input type="number" name="gross_amount" defaultValue={contract.gross_amount} />
-
+              <input type="number" name="gross_amount" defaultValue={original.gross_amount} />
               <label htmlFor="contract_from_date">Contract From:</label>
-              <input type="date" name="contract_from_date" defaultValue={contract.contract_from_date} />
-
+              <input type="date" name="contract_from_date" defaultValue={original.contract_from_date} />
               <label htmlFor="contract_to_date">Contract To:</label>
-              <input type="date" name="contract_to_date" defaultValue={contract.contract_to_date} />
-
+              <input type="date" name="contract_to_date" defaultValue={original.contract_to_date} />
               <label htmlFor="typ_umowy">Typ Umowy:</label>
-              <input type="text" name="typ_umowy" defaultValue={contract.typ_umowy} />
-
+              <input type="text" name="typ_umowy" defaultValue={original.typ_umowy} />
               <label htmlFor="stanowisko">Stanowisko:</label>
-              <input type="text" name="stanowisko" defaultValue={contract.stanowisko} />
-
+              <input type="text" name="stanowisko" defaultValue={original.stanowisko} />
               <label htmlFor="etat">Etat:</label>
-              <input type="text" name="etat" defaultValue={contract.etat} />
-
+              <input type="text" name="etat" defaultValue={original.etat} />
               <label htmlFor="Rozpoczęcie pracy">Rozpoczęcie pracy:</label>
-              <input type="date" name="workstart_date" defaultValue={contract.workstart_date} />
-
+              <input type="date" name="workstart_date" defaultValue={original.workstart_date} />
               <button type="submit">Save Changes</button>
               <button onClick={() => toggleEditContractsMode(null)}>Cancel</button>
             </form>
           ) : (
-            // Render the normal view of the contract
+            // Render the normal view of the original contract
             <div>
-              <p>Gross Amount: {contract.gross_amount}</p>
-              <p>Contract From: {new Date(contract.contract_from_date).toLocaleDateString()}</p>
-              <p>Contract To: {new Date(contract.contract_to_date).toLocaleDateString()}</p>
-              <p>Typ Umowy: {contract.typ_umowy}</p>
-              <p>Stanowisko: {contract.stanowisko}</p>
-              <p>Etat: {contract.etat}</p>
-              <p>Dzień rozpoczęcia pracy: {new Date(contract.workstart_date).toLocaleDateString()}</p>
-              <button onClick={() => toggleEditContractsMode(contract.id)}>Edit</button>
-              <button onClick={() => handleFullEdit(contract.id)}>Full Edit</button>
-              <button onClick={() => handleAneks(contract.id)}>Aneks</button>
+              <p>Gross Amount: {original.gross_amount}</p>
+              <p>Contract From: {new Date(original.contract_from_date).toLocaleDateString()}</p>
+              <p>Contract To: {aneks.length > 0 ? new Date(aneks[aneks.length - 1].contract_to_date).toLocaleDateString() : new Date(original.contract_to_date).toLocaleDateString()}</p>
+              <p>Typ Umowy: {original.typ_umowy}</p>
+              <p>Stanowisko: {original.stanowisko}</p>
+              <p>Etat: {original.etat}</p>
+              <p>Rozpoczęcie pracy: {new Date(original.workstart_date).toLocaleDateString()}</p>
+              <button onClick={() => toggleEditContractsMode(original.id)}>Edit</button>
+              <button onClick={() => handleFullEdit(original.id)}>Full Edit</button>
+              <button onClick={() => handleAneks(original.id)}>Aneks</button>
+            </div>
+          )}
+
+          {/* Render Aneks Contracts */}
+          {aneks && aneks.length > 0 && (
+            <div>
+              <h4>Aneks:</h4>
+              {aneks.map(aneksContract => (
+                <div key={aneksContract.id}>
+                  <p>Aneks Contract ID: {aneksContract.id}</p>
+                  <AneksView contract={aneksContract} originalContract={original} />
+                  {/* Display details of aneks contract */}
+                  <div>
+                    {/* Display details of aneks contract */}
+                    <p>Gross Amount: {aneksContract.gross_amount}</p>
+                    <p>Contract From: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
+                    {/* Add more fields if needed */}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -487,23 +530,7 @@ const handleAneks = (contractId) => {
 )}
 
 
-{generateContractVisible && (
-        <div>
-          <h3>Generated Contract:</h3>
-          {console.log('employeeData:', employee)} {/* Add this line */}
-          <EmployeeContract employeeData={employee} contract={selectedContract} />
-          {showPDF ? (
-            <div>
-              <button onClick={() => setShowPDF(false)}>Close PDF</button>
-            </div>
-          ) : (
-            <div>
-              <button id="pdf-button">Download PDF</button>
-              <button onClick={handleGenerateContractPage}>Generuj</button> {/* Add this button */}
-            </div>
-          )}
-        </div>
-      )}
+
     </div>
       )
 }
