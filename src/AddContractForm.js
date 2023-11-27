@@ -19,16 +19,20 @@ function AddContractForm() {
   const [isSubmitting, setIsSubmitting] = useState(false); // State to track if form is submitting
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [isAneksPresent, setIsAneksPresent] = useState(false);
+
 
   
    // Check if we are in edit mode (contractId is present)
    const isEditMode = !!contractId;
   // Load contract data if contractId is provided
   useEffect(() => {
-    if (contractId) {
-      axios.get(`http://localhost:3001/api/empcontracts/${contractId}`)
-        .then(response => {
-          const contract = response.data;
+    const fetchContractDetails = async () => {
+      if (contractId) {
+        try {
+          // Fetch the contract being edited
+          const contractResponse = await axios.get(`http://localhost:3001/api/empcontracts/${contractId}`);
+          const contract = contractResponse.data;
           setGrossAmount(contract.gross_amount);
           setStartDate(contract.contract_from_date);
           setEndDate(contract.contract_to_date);
@@ -36,11 +40,29 @@ function AddContractForm() {
           setetat(contract.etat);
           settyp_umowy(contract.typ_umowy);
           setworkstart_date(contract.workstart_date);
-          // Set other fields as needed
-        })
-        .catch(error => console.error('Error fetching contract:', error));
-    }
+          // ... Any other fields that need to be set
+  
+          // Fetch all contracts for the employee to check for aneks
+        const allContractsResponse = await axios.get(`http://localhost:3001/api/contracts/${contract.employee_id}`);
+        const allContracts = allContractsResponse.data.contracts;
+        console.log("All contracts for employee:", allContracts);
+
+        // Check if any contract is an aneks to the current contract
+        const aneksExists = allContracts.some(c => c.kontynuacja === parseInt(contractId));
+        console.log("Contract ID being edited:", contractId);
+        console.log("Aneks Exists:", aneksExists);
+
+        setIsAneksPresent(aneksExists);
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+    };
+  
+    fetchContractDetails();
   }, [contractId]);
+  
+
   
   
   // Add this function to handle the back button click
@@ -187,10 +209,21 @@ const viewEmployeeContract = () => {
         <input type="text" value={grossAmount} onChange={handleGrossAmountChange} />
 
         <label>Start Date:</label>
-        <input type="date" value={startDate} onChange={handleStartDateChange} />
+<input 
+  type="date" 
+  value={startDate} 
+  onChange={handleStartDateChange} 
+  disabled={isEditMode && isAneksPresent} 
+/>
 
-        <label>End Date:</label>
-        <input type="date" value={endDate} onChange={handleEndDateChange} />
+<label>End Date:</label>
+<input 
+  type="date" 
+  value={endDate} 
+  onChange={handleEndDateChange} 
+  disabled={isEditMode && isAneksPresent} 
+/>
+
 
         <label>Stanowisko:</label>
         <input type="text" value={stanowisko} onChange={handleStanowisko} />

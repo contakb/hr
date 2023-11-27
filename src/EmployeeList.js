@@ -356,7 +356,6 @@ const handleAneks = (contractId) => {
       <p>Name: {name}</p>
       <p>Surname: {surname}</p>
       <button onClick={toggleDetails}>{showDetails ? 'Hide Details' : 'Show Details'}</button>
-      <button onClick={handleAddContract}>Add Contract</button>
       <button onClick={toggleContracts}>{contractsVisible ? 'Hide Contracts' : 'Show Contracts'}</button>
       
       <button onClick={() => handleGenerateContractPage(id)}>Generuj</button>
@@ -460,7 +459,10 @@ const handleAneks = (contractId) => {
   <div>
     <h3>Contracts:</h3>
     {contracts.length === 0 ? (
-      <p>No contracts found.</p>
+      <div>
+        <p>No contracts found.</p>
+        <button onClick={handleAddContract}>Add Contract</button>
+      </div>
     ) : (
       contracts.map(({ original, aneks }) => (
         <div key={original.id}>
@@ -498,9 +500,14 @@ const handleAneks = (contractId) => {
               <p>Stanowisko: {original.stanowisko}</p>
               <p>Etat: {original.etat}</p>
               <p>Rozpoczęcie pracy: {new Date(original.workstart_date).toLocaleDateString()}</p>
-              <button onClick={() => toggleEditContractsMode(original.id)}>Edit</button>
+              {aneks.length === 0 ? (
+      <button onClick={() => toggleEditContractsMode(original.id)}>Quick edit</button>
+    ) : (
+      <p>Do umowy istnieje aneks. Zmiany w umowie poprzez aneks</p>
+    )}
               <button onClick={() => handleFullEdit(original.id)}>Full Edit</button>
               <button onClick={() => handleAneks(original.id)}>Aneks</button>
+              <button onClick={handleAddContract}>Add new Contract</button>
             </div>
           )}
 
