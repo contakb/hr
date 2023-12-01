@@ -244,7 +244,7 @@ const viewEmployeeContract = () => {
 
 
 <label>Typ umowy:</label>
-<select value={typ_umowy} onChange={handletyp_umowy}>
+<select value={typ_umowy} onChange={handletyp_umowy} disabled={isEditMode && isAneksPresent}>
 <option value="" disabled hidden>wybierz typ umowy</option>
   <option value="próbny 1 miesiąc">okres próbny 1 miesiąc</option>
   <option value="próbny 2 miesiące">okres próbny 2 miesiące</option>

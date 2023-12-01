@@ -21,6 +21,8 @@ import MedicalExaminationView from './MedicalExaminationView';
 import EmployeeParam from './EmployeeParam';
 import TerminateContract from './TerminateContract';
 import Aneks from './Aneks';
+import CreateCompany from './CreateCompany';
+import SetupPage from './setup';
 
 
 function App() {
@@ -34,7 +36,7 @@ function App() {
 		  <Route path="/account/:username" element={<AccountDetails />} />
           <Route path="/LoginUser" element={<LoginUser />} />
           <Route path="*" element={<Navigate to="/" />} />
-		  <Route path="/company" element={CreateCompanyForm} />
+		  <Route path="/company" element={<CreateCompanyForm />} />
 		  <Route path="/salaryCalculator" element={<SalaryCalculator />} />
 		  <Route path="/createEmployee" element={<EmployeeForm />} />
 		  <Route path="/employeeList" element={<EmployeeList />} /> {/* Add this route for the EmployeeList */}
@@ -52,6 +54,8 @@ function App() {
       <Route path="/TerminateContract/:employeeId" element={<TerminateContract />} />
       <Route path="/add-contract/:employeeId/:contractId" element={<AddContractForm />} />
       <Route path="/Aneks/:employeeId/:contractId" element={<Aneks />} />
+      <Route path="/createcompany" element={<CreateCompany />} />
+      <Route path="/setup" element={<SetupPage />} />
 
 
        

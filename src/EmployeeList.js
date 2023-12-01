@@ -39,9 +39,12 @@ const handleFullEdit = (contractId) => {
   navigate(`/add-contract/${id}/${contractId}`);
 };
 
-const handleAneks = (contractId) => {
-  navigate(`/aneks/${id}/${contractId}`);
+const handleAneks = (originalContractId, latestAneksId = null) => {
+  // If a latest aneks ID is provided, use it; otherwise, use the original contract ID
+  const contractIdToUse = latestAneksId || originalContractId;
+  navigate(`/aneks/${id}/${contractIdToUse}`);
 };
+
 
 
   const handleAddContract = () => {
@@ -506,7 +509,12 @@ const handleAneks = (contractId) => {
       <p>Do umowy istnieje aneks. Zmiany w umowie poprzez aneks</p>
     )}
               <button onClick={() => handleFullEdit(original.id)}>Full Edit</button>
-              <button onClick={() => handleAneks(original.id)}>Aneks</button>
+              {aneks.length === 0 ? (
+    <button onClick={() => handleAneks(original.id)}>Create Aneks</button>
+  ) : (
+    <button onClick={() => handleAneks(original.id, aneks[aneks.length - 1].id)}>Modify Aneks</button>
+  )
+}
               <button onClick={handleAddContract}>Add new Contract</button>
             </div>
           )}
@@ -524,6 +532,7 @@ const handleAneks = (contractId) => {
                     {/* Display details of aneks contract */}
                     <p>Gross Amount: {aneksContract.gross_amount}</p>
                     <p>Contract From: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
+                    <button onClick={() => handleAneks(aneksContract.id)}>Aneks</button>
                     {/* Add more fields if needed */}
                   </div>
                 </div>

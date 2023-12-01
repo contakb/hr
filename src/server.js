@@ -551,32 +551,6 @@ app.get('/api/employee-params/:employeeId', async (req, res) => {
   }
 });
 
-app.put('/api/employee-params/:employeeId', async (req, res) => {
-  const employeeId = req.params.employeeId;
-  const { koszty, ulga, kod_ub, valid_from } = req.body;
-
-  try {
-    const { data, error } = await supabase
-      .from('emp_var')
-      .update({ koszty, ulga, kod_ub, valid_from })
-      .eq('employee_id', employeeId)
-      .select(); // Chain a select() after update()
-
-    if (error) {
-      console.error('Error updating employee parameters:', error);
-      res.status(500).json({ error: error.message }); // Provide more specific error message
-    } else {
-      res.json({
-        message: 'Parameters updated successfully',
-        updatedParameters: data
-      });
-    }
-  } catch (error) {
-    console.error('Server error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
 app.post('/api/aneks', async (req, res) => {
   const { originalContractId, aneksData } = req.body;
 
@@ -584,7 +558,7 @@ app.post('/api/aneks', async (req, res) => {
     // Fetch the original contract to get the end date and employee_id
     const originalContractResponse = await supabase
       .from('contracts')
-      .select('contract_to_date, employee_id')
+      .select('contract_to_date, employee_id, kontynuacja')
       .eq('id', originalContractId)
       .single();
 
@@ -593,42 +567,50 @@ app.post('/api/aneks', async (req, res) => {
     }
 
     const originalContract = originalContractResponse.data;
-    const originalContractToDate = originalContract.contract_to_date;
 
-    // Find the most recent aneks/contract that continues the original contract
-    const latestContractResponse = await supabase
+    // If the original contract has a 'kontynuacja' field, it means it's an aneks itself,
+    // so we need to trace back to the original contract this aneks is based on.
+    const baseOriginalContractId = originalContract.kontynuacja || originalContractId;
+
+    // Fetch all related contracts and aneks
+    const relatedContractsResponse = await supabase
       .from('contracts')
       .select('*')
-      .eq('kontynuacja', originalContractId)
-      .or(`id.eq.${originalContractId}`)
-      .order('contract_from_date', { ascending: false })
-      .limit(1);
+      .eq('employee_id', originalContract.employee_id)
+      .order('contract_from_date', { ascending: true });
 
-    let latestContractId;
-    if (latestContractResponse.data && latestContractResponse.data.length > 0) {
-      // If there's a continuing contract/aneks, use it as the latest
-      latestContractId = latestContractResponse.data[0].id;
-    } else {
-      // If there's no continuing contract/aneks, use the original contract itself as the latest
-      latestContractId = originalContractId;
+    if (relatedContractsResponse.error) {
+      throw relatedContractsResponse.error;
     }
 
-    // Update the end date of the most recent contract/aneks
-    const adjustedEndDate = new Date(aneksData.contract_from_date);
-    adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+    const relatedContracts = relatedContractsResponse.data;
 
-    await supabase
-      .from('contracts')
-      .update({ contract_to_date: adjustedEndDate.toISOString().split('T')[0] })
-      .eq('id', latestContractId)
-      .select();
+    // Find the immediate predecessor of the new aneks
+    const predecessor = relatedContracts
+      .reverse() // so that we start checking from the most recent
+      .find(contract => new Date(contract.contract_from_date) < new Date(aneksData.contract_from_date));
+
+    // If a predecessor is found and it's not the original contract, update its contract_to_date
+    if (predecessor && predecessor.id !== baseOriginalContractId) {
+      const adjustedEndDate = new Date(aneksData.contract_from_date);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+
+      const updateResponse = await supabase
+        .from('contracts')
+        .update({ contract_to_date: adjustedEndDate.toISOString().split('T')[0] })
+        .eq('id', predecessor.id);
+
+      if (updateResponse.error) {
+        throw updateResponse.error;
+      }
+    }
 
     // Create the new aneks entry
     const aneksContractData = {
       ...aneksData,
-      kontynuacja: originalContractId, // Link back to the original contract ID
-      employee_id: originalContract.employee_id, // Set the employee_id from the original contract
-      contract_to_date: originalContractToDate, // Set the contract_to_date from the original contract
+      kontynuacja: baseOriginalContractId,
+      employee_id: originalContract.employee_id,
+      contract_to_date: originalContract.contract_to_date // Use the original contract end date
     };
 
     const insertResponse = await supabase
@@ -636,10 +618,8 @@ app.post('/api/aneks', async (req, res) => {
       .insert([aneksContractData])
       .select();
 
-    
     console.log('Insert response:', insertResponse);
-        
-
+    
     if (insertResponse.error) {
       throw insertResponse.error;
     }
@@ -654,12 +634,12 @@ app.post('/api/aneks', async (req, res) => {
     } else {
       res.status(500).json({ error: 'Failed to create aneks' });
     }
-
   } catch (error) {
     console.error('Error handling aneks:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
+
 
 
 app.put('/api/contracts/:contractId', async (req, res) => {
@@ -1213,9 +1193,130 @@ app.get('/account/:username', isAuthenticated, async (req, res) => {
   }
 });
 
+app.post('/create-company', async (req, res) => {
+  const CompanyName = req.body.CompanyName;
+  const street = req.body.street;
+  const number = req.body.number;
+  const postcode = req.body.postcode;
+  const city = req.body.city;
+  const country = req.body.country;
+  const taxOfficeName = req.body.taxOfficeName;
+  const PESEL = req.body.PESEL;
+  const Taxid = req.body.Taxid;
+  const Bankaccount = req.body.Bankaccount;
+  const formaPrawna = req.body.formaPrawna;
+  const wypadkowe = req.body.wypadkowe
 
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .insert([
+        {
+          company_name: CompanyName,
+          street: street,
+          number: number,
+          post_code: postcode,
+          city: city,
+          country: country,
+          tax_office: taxOfficeName,
+          pesel: PESEL,
+          taxid: Taxid,
+          bank_account: Bankaccount,
+          forma: formaPrawna,
+          wypadkowe: wypadkowe,
+        }
+      ])
+      .select();
 
+      const { data: secondData, error: secondError } = await supabase.from('compnies').insert(/*...*/);
 
+      console.log('Supabase Response:', data, error);
+        
+
+    if (error) {
+      console.error('Error inserting employee data', error);
+      res.status(500).send('Error occurred while saving data.');
+      return;
+    }
+
+    // Check if data has the expected structure
+    if (data && data.length > 0) {
+      const company_id  = data[0].id;
+      res.send({
+        company_id,
+        CompanyName,
+      });
+    } else {
+      console.error('Unexpected response structure from Supabase');
+      res.status(500).send('Error occurred while processing the response.');
+    }
+  } catch (err) {
+    console.error('An unexpected error occurred', err);
+    res.status(500).send('An unexpected error occurred.');
+  }
+});
+
+// Fetch company data
+app.get('/api/created_company', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*'); // Fetch all columns, or specify the columns you need
+
+    if (error) {
+      throw error;
+    }
+
+    if (data && data.length > 0) {
+      res.json(data[0]); // Send the first company record as response
+    } else {
+      res.status(404).send('No company data found');
+    }
+  } catch (err) {
+    console.error('Error fetching company data:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+app.put('/update-company/:companyId', async (req, res) => {
+  const companyId = req.params.companyId;
+  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .update({
+        company_name: CompanyName,
+        street: street,
+        number: number,
+        post_code: postcode,
+        city: city,
+        country: country,
+        tax_office: taxOfficeName,
+        pesel: PESEL,
+        taxid: Taxid,
+        bank_account: Bankaccount,
+        forma: formaPrawna,
+        wypadkowe: wypadkowe,
+      })
+      .eq('id', companyId);
+
+    if (error) {
+      console.error('Error updating company data', error);
+      res.status(500).send('Error occurred while updating data.');
+      return;
+    }
+
+    if (data && data.length > 0) {
+      res.send({ message: 'Company updated successfully', updatedCompany: data[0] });
+    } else {
+      res.status(404).send('Company not found.');
+    }
+  } catch (error) {
+    console.error('Server Error:', error);
+    res.status(500).send('Error occurred while updating company data.');
+  }
+});
 
 app.post('/company', isAuthenticated, async (req, res) => {
   const { companyname, address, taxid } = req.body;
