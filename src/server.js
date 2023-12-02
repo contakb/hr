@@ -1279,44 +1279,46 @@ app.get('/api/created_company', async (req, res) => {
 });
 
 app.put('/update-company/:companyId', async (req, res) => {
-  const companyId = req.params.companyId;
+  const companyId = req.params.companyId; // Get the companyId from the URL parameter
   const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe } = req.body;
 
   try {
-    const { data, error } = await supabase
-      .from('companies')
-      .update({
-        company_name: CompanyName,
-        street: street,
-        number: number,
-        post_code: postcode,
-        city: city,
-        country: country,
-        tax_office: taxOfficeName,
-        pesel: PESEL,
-        taxid: Taxid,
-        bank_account: Bankaccount,
-        forma: formaPrawna,
-        wypadkowe: wypadkowe,
-      })
-      .eq('id', companyId);
+      const { data, error } = await supabase
+          .from('companies')
+          .update({
+              company_name: CompanyName,
+              street: street,
+              number: number,
+              post_code: postcode,
+              city: city,
+              country: country,
+              tax_office: taxOfficeName,
+              pesel: PESEL,
+              taxid: Taxid,
+              bank_account: Bankaccount,
+              forma: formaPrawna,
+              wypadkowe: wypadkowe,
+          })
+          .eq('company_id', companyId) // Match 'company_id' with the parameter
+          .select(); // Chain a select() after update()
 
-    if (error) {
-      console.error('Error updating company data', error);
-      res.status(500).send('Error occurred while updating data.');
-      return;
-    }
+      if (error) {
+          console.error('Error updating company data', error);
+          res.status(500).send('Error occurred while updating data.');
+          return;
+      }
 
-    if (data && data.length > 0) {
-      res.send({ message: 'Company updated successfully', updatedCompany: data[0] });
-    } else {
-      res.status(404).send('Company not found.');
-    }
+      if (data && data.length > 0) {
+          res.send({ message: 'Company updated successfully', updatedCompany: data[0] });
+      } else {
+          res.status(404).send('Company not found.');
+      }
   } catch (error) {
-    console.error('Server Error:', error);
-    res.status(500).send('Error occurred while updating company data.');
+      console.error('Server Error:', error);
+      res.status(500).send('Error occurred while updating company data.');
   }
 });
+
 
 app.post('/company', isAuthenticated, async (req, res) => {
   const { companyname, address, taxid } = req.body;

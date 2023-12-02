@@ -19,6 +19,7 @@ function CreateCompany() {
   const [number, setNumber] = useState('');
   const [postcode, setPostcode] = useState('');
   const [city, setCity] = useState('');
+  const [companyId, setcompanyId] = useState('');
   const [Taxid, setTaxid] = useState('');
   const [PESEL, setPESEL] = useState('');
   const [country, setCountry] = useState('');
@@ -64,17 +65,22 @@ useEffect(() => {
 }, []); // Will also trigger only on the initial mount of the component
 
 useEffect(() => {
-    axios.get('http://localhost:3001/api/created_company')
-      .then(response => {
-        setCompanyData(response.data);
-        setIsLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching company data:', error);
-        setError('Failed to fetch company data.');
-        setIsLoading(false);
-      });
-  }, []);
+  axios.get('http://localhost:3001/api/created_company')
+    .then(response => {
+      console.log("Fetched company data:", response.data);
+      setCompanyData(response.data);
+      setIsLoading(false);
+    })
+    .catch(error => {
+      console.error('Error fetching company data:', error);
+      setError('Failed to fetch company data.');
+      setCompanyData(null); // Set companyData to null when fetch fails
+      setIsLoading(false);
+    });
+}, []);
+
+
+
 
     const [validationError, setValidationError] = useState(null);  // Add this line
 
@@ -117,7 +123,21 @@ useEffect(() => {
     const regex = /^\d{2}-\d{3}$/;
     return regex.test(postcode);
   }
+  const handleSubmit = (event) => {
+    event.preventDefault();
   
+    console.log('CreatedCompany Data:', companyData); // Debugging
+  
+    if (isEditMode && companyData && companyData.company_id) {
+      // When in edit mode and company data is available
+      handleUpdateCompany(event, companyData.company_id);
+  } else if (!isEditMode) {
+      // When creating a new company
+      handleCreateCompany(event);
+  } else {
+      console.error('No valid company data for update.');
+  }
+};
 
   const handleCreateCompany = (event) => {
     event.preventDefault();
@@ -318,15 +338,11 @@ const toggleEditMode = (editMode) => {
   setIsEditMode(editMode); // Update the state to enter/exit edit mode
 };
 
-const handleformaPrawnaChange = (event) => {
-    setFormData({
-      ...formData,
-      formaPrawna: event.target.value,
-    });
-  };
 
-  const handleUpdateCompany = (event) => {
+
+const handleUpdateCompany = (event, companyId) => {
     event.preventDefault();
+
   
     // Validation code
     if (!CompanyName || !street || !number || !postcode || !city || !country || !Taxid || !taxOfficeName) {
@@ -359,18 +375,19 @@ const handleformaPrawnaChange = (event) => {
       Taxid,
       Bankaccount,
       formaPrawna: formData.formaPrawna,
-      wypadkowe: wypadkoweRate
+      wypadkowe: wypadkoweRate,
+      
     };
   
-    axios.put(`http://localhost:3001/update-company/${createdCompany.companyId}`, companyData)
-      .then(response => {
-        console.log('Company updated successfully:', response.data);
-        // Update UI or navigate to another page as needed
-      })
-      .catch(error => {
-        console.error('Error updating company:', error);
-        setValidationError('Failed to update company data.');
-      });
+    axios.put(`http://localhost:3001/update-company/${companyId}`, companyData)
+        .then(response => {
+            console.log('Company updated successfully:', response.data);
+            // Update UI or navigate to another page as needed
+        })
+        .catch(error => {
+            console.error('Error updating company:', error);
+            setValidationError('Failed to update company data.');
+        });
   };
   
   
@@ -393,11 +410,12 @@ const handleformaPrawnaChange = (event) => {
         <p>country: {companyData.country}</p>
         <p>Tax ID: {companyData.taxid}</p>
         <p>Tax Office: {companyData.tax_office}</p>
+        <p>ID: {companyData.company_id}</p>
 
         <button onClick={() => toggleEditMode(true)}>Edit Company</button>
                 </div>
             ) : (
-              <form onSubmit={createdCompany ? handleUpdateCompany : handleCreateCompany}>
+              <form onSubmit={handleSubmit}>
                     {/* Your form fields go here */}
         <label>Tax id:</label>
         <input type="text" value={Taxid} onChange={handleTaxidChange} />
@@ -489,9 +507,9 @@ const handleformaPrawnaChange = (event) => {
     Note: If your company has more than 10 employees, please enter the rate provided by ZUS.
   </p>
 </div>
-<button type="submit">{companyData ? 'Update Company' : 'Create Company'}</button>
-                    <button onClick={() => toggleEditMode(false)}>Cancel</button>
-        <button onClick={handleClearData}>Clear Data</button>
+<button type="submit">{isEditMode ? 'Update Company' : 'Create Company'}</button>
+   <button onClick={() => toggleEditMode(false)}>Cancel</button>
+   <button onClick={handleClearData}>Clear Data</button>
       </form>)}
 
 
@@ -511,6 +529,7 @@ const handleformaPrawnaChange = (event) => {
           <p>Bank account: {createdCompany.Bankaccount}</p>
           <p>Forma prawna: {createdCompany.formaPrawna}</p>
           <p>Stawka ub. wypadkowe: {createdCompany.wypadkoweRate}</p>
+          <p>Stawka ub. wypadkowe: {createdCompany.company_id}</p>
         </div>
 		)}
         

@@ -123,7 +123,7 @@ return (
         <div className="contract-terms">
           <h2>Warunki umowy</h2>
           <p>This employment contract ("Contract") is entered into on 
-          {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} 
+           {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} 
           na umowę o pracę na: {selectedContract ? selectedContract.typ_umowy : "N/A"} 
           od {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} 
           do {selectedContract && selectedContract.contract_to_date ? new Date(selectedContract.contract_to_date).toLocaleDateString() : "N/A"} 
