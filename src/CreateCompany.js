@@ -38,6 +38,8 @@ const [companyData, setCompanyData] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [updateMessage, setUpdateMessage] = useState('');
+
 
 
 
@@ -64,19 +66,33 @@ useEffect(() => {
   }
 }, []); // Will also trigger only on the initial mount of the component
 
-useEffect(() => {
+const fetchCompanyData = () => {
   axios.get('http://localhost:3001/api/created_company')
     .then(response => {
-      console.log("Fetched company data:", response.data);
-      setCompanyData(response.data);
+      if (response.data && response.data.company_id) {
+        setCompanyData(response.data);
+        setError(''); // Clear any previous error messages
+      } else {
+        setCompanyData(null); // Set to null if no data is returned
+      }
       setIsLoading(false);
     })
     .catch(error => {
       console.error('Error fetching company data:', error);
-      setError('Failed to fetch company data.');
+      // Check if the error is due to no data found and set an appropriate message
+      if (error.response && error.response.status === 404) {
+        setError('No existing company data found. Please fill out the form to create a new company.');
+      } else {
+        setError('Failed to fetch company data.');
+      }
+
       setCompanyData(null); // Set companyData to null when fetch fails
       setIsLoading(false);
     });
+};
+
+useEffect(() => {
+  fetchCompanyData();
 }, []);
 
 
@@ -193,6 +209,26 @@ useEffect(() => {
       .then((response) => {
         // Handle successful create employee
   console.log('Company created:', response.data);
+  // Set success message
+  setUpdateMessage('Company created successfully.');
+    
+  // Fetch the latest company data
+  fetchCompanyData(); 
+  // Clear form fields
+  setCompanyName('');
+  setStreet('');
+  setNumber('');
+  setPostcode('');
+  setCity('');
+setCountry('');
+  setTaxOffice('');
+  setPESEL('');
+
+  // Switch back to view mode after a delay
+  setTimeout(() => {
+    setIsEditMode(false);
+    setUpdateMessage('');
+}, 3000);
 
 // Use the returned employeeId from the server response
 const createdCompanyData = {
@@ -209,31 +245,13 @@ const createdCompanyData = {
   Bankaccount,
   formaPrawna
 };
-  
-  // This function will redirect to the AddContractForm for the specific employee
-  const handleGoToAddContract = (employeeId) => {
-    navigate(`/add-contract/${employeeId}`);
-  }
-
-  // This function will redirect to the AddContractForm for the specific employee
-  const goToAddParameters = (employeeId) => {
-    navigate(`/employee-param/${employeeId}`);
-  }
 
 // Set the created employee data in the state
 localStorage.setItem('createdCompany', JSON.stringify(createdCompanyData));
 setCreatedCompany(createdCompanyData);
 
 
-        // Clear form fields
-        setCompanyName('');
-        setStreet('');
-        setNumber('');
-        setPostcode('');
-        setCity('');
-		setCountry('');
-        setTaxOffice('');
-        setPESEL('');
+        
       })
       .catch((error) => {
         // Handle create employee error
@@ -382,7 +400,10 @@ const handleUpdateCompany = (event, companyId) => {
     axios.put(`http://localhost:3001/update-company/${companyId}`, companyData)
         .then(response => {
             console.log('Company updated successfully:', response.data);
-            // Update UI or navigate to another page as needed
+            setUpdateMessage('Company updated successfully.');
+        fetchCompanyData(); // Fetch the latest company data
+        setIsEditMode(false); // Switch back to view mode
+        setTimeout(() => setUpdateMessage(''), 3000); // Clear message after 3 seconds
         })
         .catch(error => {
             console.error('Error updating company:', error);
@@ -396,10 +417,15 @@ const handleUpdateCompany = (event, companyId) => {
       <div>
             <h1>Company Form</h1>
             {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
+            {updateMessage && <div style={{ color: 'green' }}>{updateMessage}</div>}
             {isLoading ? (
                 <p>Loading...</p>
             ) : error ? (
-                <p>{error}</p>
+              <div>
+              <p>{error}</p>
+              {/* Call renderForm function to display the form for creating a new company */}
+              {renderForm()}
+            </div>
             ) : companyData && !isEditMode ? (
                 <div>
                     <h2>Company Information</h2>
@@ -415,14 +441,26 @@ const handleUpdateCompany = (event, companyId) => {
         <button onClick={() => toggleEditMode(true)}>Edit Company</button>
                 </div>
             ) : (
-              <form onSubmit={handleSubmit}>
-                    {/* Your form fields go here */}
-        <label>Tax id:</label>
-        <input type="text" value={Taxid} onChange={handleTaxidChange} />
+              renderForm()
+              )}
 
+    
+
+
+     
+        
+    </div>
+  );
+  function renderForm() {
+    return (
+      <form onSubmit={handleSubmit}>
+         {/* Your form fields go here */}
+         <label>Tax id:</label>
+        <input type="text" value={Taxid} onChange={handleTaxidChange} />
+  
         <label>Company Name:</label>
         <input type="text" value={CompanyName} onChange={handleCompanyNameChange} />
-
+  
         <label>
       Forma Prawna:
       <select
@@ -434,7 +472,7 @@ const handleUpdateCompany = (event, companyId) => {
         <option value="osoba_fizyczna">Osoba Fizyczna</option>
       </select>
     </label>
-
+  
     {formData.formaPrawna === 'osoba_fizyczna' && (
       <label>
         PESEL Number:
@@ -446,25 +484,25 @@ const handleUpdateCompany = (event, companyId) => {
         />
       </label>
           )}
-
+  
         <label>Street:</label>
         <input type="text" value={street} onChange={handleStreetChange} />
-
+  
         <label>Number:</label>
         <input type="text" value={number} onChange={handleNumberChange} />
-
+  
         <label>Postcode:</label>
         <input type="text" value={postcode} onChange={handlePostcodeChange} />
-
+  
         <label>City:</label>
         <input type="text" value={city} onChange={handleCityChange} />
-		
-		<label>Country:</label>
+    
+    <label>Country:</label>
         <input type="text" value={country} onChange={handleCountryChange} />
-
+  
         <label>Bank account:</label>
         <input type="text" value={Bankaccount} onChange={handleBankaccountChange} />
-
+  
         <label>Tax Office:</label>
             <Select 
                 options={taxOfficeOptions} 
@@ -473,7 +511,7 @@ const handleUpdateCompany = (event, companyId) => {
                 placeholder="Wybierz US"
                 value={taxOfficeOptions.find(option => option.value === taxOffice)}
             />
-
+  
         
         <p><label htmlFor="numberOfEmployees">Number of Employees:</label>
         <input 
@@ -489,8 +527,8 @@ const handleUpdateCompany = (event, companyId) => {
       setWypadkoweRate(''); // Reset the rate for more than 10 employees
     }
   }} 
-/></p>
-<div>
+  /></p>
+  <div>
   <label htmlFor="ubezpieczenieWypadkowe">Ubezpieczenie Wypadkowe Rate:</label>
   {numberOfEmployees > 10 ? (
     <input 
@@ -506,35 +544,13 @@ const handleUpdateCompany = (event, companyId) => {
   <p className="note">
     Note: If your company has more than 10 employees, please enter the rate provided by ZUS.
   </p>
-</div>
-<button type="submit">{isEditMode ? 'Update Company' : 'Create Company'}</button>
-   <button onClick={() => toggleEditMode(false)}>Cancel</button>
-   <button onClick={handleClearData}>Clear Data</button>
-      </form>)}
-
-
-     
-
-	    {createdCompany && (
-        <div>
-          <h2>Company Created Successfully!</h2>
-          <p>Company Name: {createdCompany.CompanyName}</p>
-          <p>Street: {createdCompany.street}</p>
-          <p>Number: {createdCompany.number}</p>
-          <p>Postcode: {createdCompany.postcode}</p>
-          <p>City: {createdCompany.city}</p>
-          <p>Tax Office: {createdCompany.taxOffice}</p>
-          <p>Pesel - dla osoby fizycznej: {createdCompany.PESEL}</p>
-          <p>Tax id: {createdCompany.Taxid}</p>
-          <p>Bank account: {createdCompany.Bankaccount}</p>
-          <p>Forma prawna: {createdCompany.formaPrawna}</p>
-          <p>Stawka ub. wypadkowe: {createdCompany.wypadkoweRate}</p>
-          <p>Stawka ub. wypadkowe: {createdCompany.company_id}</p>
-        </div>
-		)}
-        
-    </div>
-  );
+  </div>
+        <button type="submit">{isEditMode ? 'Update Company' : 'Create Company'}</button>
+        <button onClick={() => toggleEditMode(false)}>Cancel</button>
+        <button onClick={handleClearData}>Clear Data</button>
+      </form>
+    );
 }
 
+}
 export default CreateCompany;
