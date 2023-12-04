@@ -173,8 +173,8 @@ useEffect(() => {
       return;
     }  
     // Conditional PESEL validation only for 'osobaFizyczna'
-  if (formData.formaPrawna === 'osoba_fizyczna') {
-    if (!PESEL || !isValidPESEL(PESEL)) {
+    if (formData.formaPrawna === 'osoba_fizyczna') {
+    if (!formData.PESEL || !isValidPESEL(formData.PESEL)) {
       setValidationError("Invalid or missing PESEL number for Osoba Fizyczna!");
       return;
   }
@@ -200,7 +200,7 @@ useEffect(() => {
         city,
 		country,
         taxOfficeName,
-        PESEL: formData.PESEL,
+        PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
         Taxid,
         Bankaccount,
         formaPrawna: formData.formaPrawna,
@@ -373,10 +373,11 @@ const handleUpdateCompany = (event, companyId) => {
       return;
     }
   
-    if (formData.formaPrawna === 'osoba_fizyczna' && (!PESEL || !isValidPESEL(PESEL))) {
+    if (formData.formaPrawna === 'osoba_fizyczna' && (!formData.PESEL || !isValidPESEL(formData.PESEL))) {
       setValidationError("Invalid or missing PESEL number for Osoba Fizyczna!");
       return;
-    }
+  }
+  
   
     // Clear validation error if all checks pass
     setValidationError(null);
@@ -389,13 +390,15 @@ const handleUpdateCompany = (event, companyId) => {
       city,
       country,
       taxOfficeName,
-      PESEL: formData.formaPrawna === 'osoba_fizyczna' ? PESEL : null,
+      PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
       Taxid,
       Bankaccount,
       formaPrawna: formData.formaPrawna,
       wypadkowe: wypadkoweRate,
       
     };
+
+    console.log('Updating company data:', companyData);
   
     axios.put(`http://localhost:3001/update-company/${companyId}`, companyData)
         .then(response => {
@@ -428,15 +431,21 @@ const handleUpdateCompany = (event, companyId) => {
             </div>
             ) : companyData && !isEditMode ? (
                 <div>
-                    <h2>Company Information</h2>
                     <p>Company Name: {companyData.company_name}</p>
         <p>street: {companyData.street}</p>
         <p>number: {companyData.number}</p>
+        <p>kod pocztowy: {companyData.post_code}</p>
         <p>city: {companyData.city}</p>
         <p>country: {companyData.country}</p>
         <p>Tax ID: {companyData.taxid}</p>
+        {companyData.forma === 'osoba_fizyczna' && (
+        <p>PESEL: {companyData.pesel}</p>
+      )}
         <p>Tax Office: {companyData.tax_office}</p>
         <p>ID: {companyData.company_id}</p>
+        <p>ubezpieczenie wypadkowe: {companyData.wypadkowe}</p>
+        <p>rachunek bankowy: {companyData.bank_account}</p>
+        <p>forma działalności: {companyData.forma}</p>
 
         <button onClick={() => toggleEditMode(true)}>Edit Company</button>
                 </div>
