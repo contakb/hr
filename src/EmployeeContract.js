@@ -7,6 +7,10 @@ const EmployeeContract = () => {
   const [employee, setEmployee] = useState({});
   const [contracts, setContracts] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState(null);
+  const [companyData, setCompanyData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [updateMessage, setUpdateMessage] = useState('');
   
   const navigate = useNavigate();
 
@@ -47,6 +51,35 @@ const EmployeeContract = () => {
   
     fetchData();
   }, [employeeId, location]); // This is where useEffect should e
+
+  const fetchCompanyData = () => {
+    axios.get('http://localhost:3001/api/created_company')
+      .then(response => {
+        if (response.data && response.data.company_id) {
+          setCompanyData(response.data);
+          setError(''); // Clear any previous error messages
+        } else {
+          setCompanyData(null); // Set to null if no data is returned
+        }
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching company data:', error);
+        // Check if the error is due to no data found and set an appropriate message
+        if (error.response && error.response.status === 404) {
+          setError('No existing company data found. Please fill out the form to create a new company.');
+        } else {
+          setError('Failed to fetch company data.');
+        }
+  
+        setCompanyData(null); // Set companyData to null when fetch fails
+        setIsLoading(false);
+      });
+  };
+  
+  useEffect(() => {
+    fetchCompanyData();
+  }, []);
 
     // Add this function to handle the back button click
 const handleBackClick = () => {
@@ -118,6 +151,7 @@ return (
         <div className="employee-info">
           <p><strong>Name:</strong> {employee.name}</p>
           <p><strong>Surname:</strong> {employee.surname}</p>
+         
           {/* Add more employee information here */}
         </div>
         <div className="contract-terms">
@@ -132,7 +166,7 @@ return (
           <p><strong>etat: </strong> {selectedContract?.etat}</p>
           <p><strong>wynagrodzenie brutto: </strong> {selectedContract?.gross_amount}</p>
           <p><strong>okres, na który strony mają zawrzeć umowę na czas określony po umowie na okres próbny: </strong> {selectedContract?.period_próbny} miesiące</p>
-          <p><strong>Pracodawca:</strong> Your Company Name, located at Your Company Address</p>
+          <p><strong>Pracodawca: </strong>{companyData.company_name}  <p><strong>ul:</strong> {companyData.street} {companyData.number} {companyData.post_code} {companyData.city} {companyData.country} </p></p>,
           <p><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.city}</p>
         </div>
         <div className="signatures">
