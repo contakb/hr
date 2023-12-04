@@ -442,13 +442,7 @@ const handleUpdateCompany = (event, companyId) => {
                 </div>
             ) : (
               renderForm()
-              )}
-
-    
-
-
-     
-        
+              )}  
     </div>
   );
   function renderForm() {
