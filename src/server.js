@@ -640,6 +640,63 @@ app.post('/api/aneks', async (req, res) => {
   }
 });
 
+app.delete('/api/contracts/:id', async (req, res) => {
+  const contractId = req.params.id;
+
+  try {
+    // Fetch the contract (annex) to be deleted
+    const contractResponse = await supabase
+      .from('contracts')
+      .select('contract_to_date, kontynuacja')
+      .eq('id', contractId)
+      .single();
+
+    if (contractResponse.error) {
+      throw contractResponse.error;
+    }
+
+    const contractToDelete = contractResponse.data;
+
+    // Fetch the predecessor contract or annex
+    const predecessorResponse = await supabase
+      .from('contracts')
+      .select('*')
+      .eq('id', contractToDelete.kontynuacja)
+      .single();
+
+    if (predecessorResponse.error) {
+      throw predecessorResponse.error;
+    }
+
+    const predecessorContract = predecessorResponse.data;
+
+    // Update the predecessor contract's contract_to_date
+    const updateResponse = await supabase
+      .from('contracts')
+      .update({ contract_to_date: contractToDelete.contract_to_date })
+      .eq('id', predecessorContract.id);
+
+    if (updateResponse.error) {
+      throw updateResponse.error;
+    }
+
+    // Delete the annex
+    const deleteResponse = await supabase
+      .from('contracts')
+      .delete()
+      .match({ id: contractId });
+
+    if (deleteResponse.error) {
+      throw deleteResponse.error;
+    }
+
+    res.send({ message: 'Contract (annex) deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting contract (annex):', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+
 
 
 app.put('/api/contracts/:contractId', async (req, res) => {

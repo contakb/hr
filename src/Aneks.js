@@ -113,13 +113,28 @@ const handleSubmit = async (event) => {
   const handleetat = (event) => {
     setetat(event.target.value);
   };
+
+  const handleDeleteAneks = async () => {
+    const userConfirmed = window.confirm("Are you sure you want to delete this annex?");
+    if (!userConfirmed) return;
+  
+    try {
+      await axios.delete(`http://localhost:3001/api/contracts/${contractId}`);
+      setFeedbackMessage('Annex deleted successfully.');
+      // Redirect or update UI as needed
+    } catch (error) {
+      console.error('Error deleting annex:', error);
+      setIsError(true);
+      setFeedbackMessage('Error in deleting annex.');
+    }
+  };
   
   return (
     <div>
       {/* Dynamically set the page title */}
       <h2>Skasuj aneks</h2>
       <p>Anuluj aktualny aneks nr {contractId} z dnia {startDate}</p>
-      <button onClick={viewEmployeeContract}>Skasuj</button>
+      <button onClick={handleDeleteAneks}>Skasuj</button>
       {feedbackMessage && (
         <div style={{ color: isError ? 'red' : 'green' }}>
           {feedbackMessage}
