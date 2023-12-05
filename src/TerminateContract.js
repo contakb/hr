@@ -49,7 +49,9 @@ const TerminateContract = () => {
             setEmployee(employeeResponse.data.employee);
             setContracts(contractResponse.data.contracts);
 
-          
+              // Assuming contractResponse.data.contracts is an array of contracts
+        const combinedContracts = combineContracts(contractResponse.data.contracts);
+        setContracts(combinedContracts);
         
 
             const state = location.state || {};
@@ -83,7 +85,38 @@ const TerminateContract = () => {
     fetchData();
 }, [employeeId, location]);
 
-
+function combineContracts(contracts) {
+    // Sort contracts by contract_from_date in ascending order
+    contracts.sort((a, b) => new Date(a.contract_from_date) - new Date(b.contract_from_date));
+  
+    let contractMap = new Map();
+  
+    contracts.forEach(contract => {
+      const originalId = contract.kontynuacja || contract.id;
+  
+      if (!contract.kontynuacja) {
+        // Original contract
+        contractMap.set(originalId, {
+          ...contract,
+          latestEndDate: contract.contract_to_date
+        });
+      } else {
+        // Aneks
+        const existing = contractMap.get(originalId);
+        contractMap.set(originalId, {
+          ...existing,
+          latestEndDate: contract.contract_to_date,
+          stanowisko: existing?.stanowisko || contract.stanowisko,
+          etat: existing?.etat || contract.etat,
+        });
+      }
+    });
+  
+    return Array.from(contractMap.values()).map(contract => ({
+      ...contract,
+      contract_to_date: contract.latestEndDate
+    }));
+  }
     // Add this function to handle the back button click
 const handleBackClick = () => {
   navigate(-1); // This navigates to the previous page in history

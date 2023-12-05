@@ -1008,7 +1008,7 @@ app.get('/api/employees/:employeeId', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('employees')
-      .select('id, name, surname, street, city, pesel')  // Add any other columns you need here
+      .select('*')  // Add any other columns you need here
       .eq('id', employeeId);  // Use the provided employeeId to filter the result
 
     if (error) {

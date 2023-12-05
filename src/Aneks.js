@@ -117,7 +117,9 @@ const handleSubmit = async (event) => {
   return (
     <div>
       {/* Dynamically set the page title */}
-      <h2>Aneks do umowy</h2>
+      <h2>Skasuj aneks</h2>
+      <p>Anuluj aktualny aneks nr {contractId} z dnia {startDate}</p>
+      <button onClick={viewEmployeeContract}>Skasuj</button>
       {feedbackMessage && (
         <div style={{ color: isError ? 'red' : 'green' }}>
           {feedbackMessage}
@@ -125,6 +127,7 @@ const handleSubmit = async (event) => {
       )}
       <form onSubmit={handleSubmit}>
       <div>
+      <h2>Dodaj nowy aneks do umowy</h2>
     <label>Data obowiązywania zmiany:</label>
     <input 
       type="date" 
@@ -209,6 +212,7 @@ const handleSubmit = async (event) => {
         
       </form>
       <button onClick={viewEmployeeContract}>Wyświetl aneks</button>
+      
       {contract && (
   <div>
     <h2>Aneks przygotowany Successfully!</h2>

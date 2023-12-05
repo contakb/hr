@@ -32,6 +32,7 @@ function Employee({ employee, updateEmployeeInList, taxOffices }) {
   const [taxOffice, setTaxOffice] = useState(employee.tax_office); // Assuming 'tax_office' is the property
   const [taxOfficeName, setTaxOfficeName] = useState(''); // You might need to adjust this based on how you handle tax office names
   
+  
 
 const location = useLocation(); // Correct usage of useLocation
 
@@ -352,12 +353,22 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
         setTaxOfficeName('');
     }
   };
+
+  const isContractTerminated = (endDate) => {
+    const today = new Date();
+    const contractEndDate = new Date(endDate);
+    return contractEndDate < today;
+};
+  const contractStatus = isContractTerminated(employee.contractEndDate) ? 'Terminated' : 'Active';
+  const statusColor = contractStatus === 'Terminated' ? 'red' : 'green';
  
 
   return (
     <div>
+      <span style={{ color: statusColor }}>{contractStatus}</span>
       <p>Name: {name}</p>
       <p>Surname: {surname}</p>
+  
       <button onClick={toggleDetails}>{showDetails ? 'Hide Details' : 'Show Details'}</button>
       <button onClick={toggleContracts}>{contractsVisible ? 'Hide Contracts' : 'Show Contracts'}</button>
       
@@ -365,6 +376,8 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
 
       <button onClick={handleMedicalExamination}>Medical Examination</button>
       <button onClick={() => handleTerminateContractPage(id)}>Terminate Contract</button>
+
+      <hr /> {/* Horizontal line divider */}
 
 
       {showDetails && (
@@ -471,6 +484,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
         <div key={original.id}>
           {/* Render Original Contract Details */}
           <p>Original Contract ID: {original.id}</p>
+          
           {updateMessage && <div className="update-message">{updateMessage}</div>}
           {editContractsMode && editingContractId === original.id ? (
             // Render the form for editing the original contract
@@ -503,6 +517,14 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
               <p>Stanowisko: {original.stanowisko}</p>
               <p>Etat: {original.etat}</p>
               <p>Rozpoczęcie pracy: {new Date(original.workstart_date).toLocaleDateString()}</p>
+              <p>typ rozwiązania umowy: {original.termination_type}</p>
+               {/* New row for Contract Termination Status */}
+               <p>
+            Contract Status: 
+            {isContractTerminated(aneks.length > 0 ? aneks[aneks.length - 1].contract_to_date : original.contract_to_date)
+              ? <span style={{ color: 'red' }}> Terminated</span>
+              : <span style={{ color: 'green' }}> Active</span>}
+          </p>
               {aneks.length === 0 ? (
       <button onClick={() => toggleEditContractsMode(original.id)}>Quick edit</button>
     ) : (
@@ -532,10 +554,13 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
                     {/* Display details of aneks contract */}
                     <p>Gross Amount: {aneksContract.gross_amount}</p>
                     <p>Contract From: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
-                    <button onClick={() => handleAneks(aneksContract.id)}>Aneks</button>
+                    <button onClick={() => handleAneks(original.id, aneks[aneks.length - 1].id)}>Modify Aneks</button>
+                    
                     {/* Add more fields if needed */}
                   </div>
+                  <hr /> {/* Horizontal line divider */}
                 </div>
+                
               ))}
             </div>
           )}
@@ -560,6 +585,7 @@ function EmployeeList() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('');
   const [taxOffices, setTaxOffices] = useState([]); // New state for tax offices
+  const [filterStatus, setFilterStatus] = useState('all'); // new state for filtering by contract status
 
   const updateEmployeeInList = (employeeId, newDetails) => {
     setEmployees(currentEmployees => {
@@ -587,16 +613,34 @@ function EmployeeList() {
     setSortOrder(e.target.value);
   };
 
-  // Sorting and filtering logic combined
+  const isContractTerminated = (endDate) => {
+    const today = new Date();
+    const contractEndDate = new Date(endDate);
+    return contractEndDate < today;
+  };
+  
   const filteredAndSortedEmployees = employees
-    .filter(employee => employee.surname.toLowerCase().includes(filter.toLowerCase()))
+    .filter(employee => {
+      // Apply surname filter
+      const surnameMatch = employee.surname.toLowerCase().includes(filter.toLowerCase());
+  
+      // Apply contract status filter
+      const isTerminated = isContractTerminated(employee.contractEndDate);
+      const statusMatch = filterStatus === 'all' || 
+                          (filterStatus === 'active' && !isTerminated) || 
+                          (filterStatus === 'terminated' && isTerminated);
+  
+      return surnameMatch && statusMatch;
+    })
     .sort((a, b) => {
+      // Apply sorting
       if (sortOrder === 'asc') {
         return a.surname.localeCompare(b.surname);
       } else {
         return b.surname.localeCompare(a.surname);
       }
     });
+  
 
   const fetchEmployees = async () => {
     try {
@@ -637,6 +681,11 @@ function EmployeeList() {
           <option value="asc">Sort A-Z</option>
           <option value="desc">Sort Z-A</option>
         </select>
+        <select onChange={(e) => setFilterStatus(e.target.value)}>
+        <option value="all">All Employees</option>
+        <option value="active">Active Employees</option>
+        <option value="terminated">Terminated Employees</option>
+      </select>
         <button className="create-employee-button" onClick={() => navigate('/createEmployee')}>
           Create Employee
         </button>
