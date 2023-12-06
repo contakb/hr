@@ -115,19 +115,21 @@ const handleSubmit = async (event) => {
   };
 
   const handleDeleteAneks = async () => {
-    const userConfirmed = window.confirm("Are you sure you want to delete this annex?");
-    if (!userConfirmed) return;
-  
-    try {
-      await axios.delete(`http://localhost:3001/api/contracts/${contractId}`);
-      setFeedbackMessage('Annex deleted successfully.');
-      // Redirect or update UI as needed
-    } catch (error) {
-      console.error('Error deleting annex:', error);
-      setIsError(true);
-      setFeedbackMessage('Error in deleting annex.');
-    }
-  };
+      const userConfirmed = window.confirm("Are you sure you want to delete this annex?");
+      if (!userConfirmed) return;
+
+      console.log('Attempting to delete annex with ID:', contractId); // Log the contractId
+    
+      try {
+        await axios.delete(`http://localhost:3001/api/contracts/${contractId}`);
+        setFeedbackMessage('Annex deleted successfully.');
+        // Redirect or update UI as needed
+      } catch (error) {
+        console.error('Error deleting annex:', error);
+        setIsError(true);
+        setFeedbackMessage('Error in deleting annex.');
+      }
+    };
   
   return (
     <div>

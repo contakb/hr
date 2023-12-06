@@ -642,45 +642,62 @@ app.post('/api/aneks', async (req, res) => {
 
 app.delete('/api/contracts/:id', async (req, res) => {
   const contractId = req.params.id;
+  console.log('Delete request received for contract ID:', contractId);
 
   try {
-    // Fetch the contract (annex) to be deleted
-    const contractResponse = await supabase
+    const contractToDeleteResponse = await supabase
       .from('contracts')
-      .select('contract_to_date, kontynuacja')
+      .select('contract_to_date, kontynuacja, employee_id, contract_from_date')
       .eq('id', contractId)
       .single();
 
-    if (contractResponse.error) {
-      throw contractResponse.error;
+    if (contractToDeleteResponse.error || !contractToDeleteResponse.data) {
+      res.status(400).json({ error: 'Contract not found' });
+      return;
     }
 
-    const contractToDelete = contractResponse.data;
+    const contractToDelete = contractToDeleteResponse.data;
 
-    // Fetch the predecessor contract or annex
-    const predecessorResponse = await supabase
+    const allRelatedContractsResponse = await supabase
       .from('contracts')
       .select('*')
-      .eq('id', contractToDelete.kontynuacja)
-      .single();
+      .eq('employee_id', contractToDelete.employee_id);
 
-    if (predecessorResponse.error) {
-      throw predecessorResponse.error;
+    if (allRelatedContractsResponse.error) {
+      throw allRelatedContractsResponse.error;
     }
 
-    const predecessorContract = predecessorResponse.data;
+    const allRelatedContracts = allRelatedContractsResponse.data;
 
-    // Update the predecessor contract's contract_to_date
-    const updateResponse = await supabase
-      .from('contracts')
-      .update({ contract_to_date: contractToDelete.contract_to_date })
-      .eq('id', predecessorContract.id);
+    let contractToUpdate = null;
+    let minDateDifference = Infinity;
 
-    if (updateResponse.error) {
-      throw updateResponse.error;
+    allRelatedContracts.forEach(contract => {
+      if (contract.id !== contractId) {
+        const dateDifference = new Date(contractToDelete.contract_from_date) - new Date(contract.contract_to_date);
+        if (dateDifference > 0 && dateDifference < minDateDifference) {
+          minDateDifference = dateDifference;
+          contractToUpdate = contract;
+        }
+      }
+    });
+
+    if (contractToUpdate) {
+      console.log('Contract to update:', contractToUpdate.id);
+      const updateResponse = await supabase
+        .from('contracts')
+        .update({ contract_to_date: contractToDelete.contract_to_date })
+        .eq('id', contractToUpdate.id)
+        .select ();
+
+      if (updateResponse.error) {
+        throw updateResponse.error;
+      }
+      console.log('Update response:', updateResponse);
+    } else {
+      console.log('No previous contract to update.');
     }
 
-    // Delete the annex
     const deleteResponse = await supabase
       .from('contracts')
       .delete()
@@ -690,12 +707,30 @@ app.delete('/api/contracts/:id', async (req, res) => {
       throw deleteResponse.error;
     }
 
+    console.log('Delete response:', deleteResponse);
     res.send({ message: 'Contract (annex) deleted successfully' });
   } catch (error) {
     console.error('Error deleting contract (annex):', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
