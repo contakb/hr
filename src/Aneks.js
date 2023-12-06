@@ -23,6 +23,7 @@ function Aneks() {
   const [showGrossAmount, setShowGrossAmount] = useState(false);
 const [showStanowisko, setShowStanowisko] = useState(false);
 const [showEtat, setShowEtat] = useState(false);
+const [relatedContracts, setRelatedContracts] = useState([]);
 
 
   
@@ -114,22 +115,97 @@ const handleSubmit = async (event) => {
     setetat(event.target.value);
   };
 
-  const handleDeleteAneks = async () => {
-      const userConfirmed = window.confirm("Are you sure you want to delete this annex?");
-      if (!userConfirmed) return;
-
-      console.log('Attempting to delete annex with ID:', contractId); // Log the contractId
-    
+  const fetchRelatedContracts = async (employeeId) => {
+    try {
+      const response = await axios.get(`http://localhost:3001/api/contracts/${employeeId}`);
+      return response.data.contracts;
+    } catch (error) {
+      console.error('Error fetching related contracts:', error);
+      throw error;
+    }
+  };
+  
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        await axios.delete(`http://localhost:3001/api/contracts/${contractId}`);
-        setFeedbackMessage('Annex deleted successfully.');
-        // Redirect or update UI as needed
+        const contracts = await fetchRelatedContracts(employeeId);
+        console.log('Contract ID:', contractId, typeof contractId);
+
+
+        const contract = contracts.find(c => c.id === contractId);
+        if (contract) {
+          setGrossAmount(contract.gross_amount);
+          setStartDate(contract.contract_from_date);
+          setEndDate(contract.contract_to_date);
+          setstanowisko(contract.stanowisko);
+          setetat(contract.etat);
+          settyp_umowy(contract.typ_umowy);
+          setworkstart_date(contract.workstart_date);
+          setEmployeeId(contract.employee_id);
+          // Set other fields as needed
+          
+        }
+        
       } catch (error) {
-        console.error('Error deleting annex:', error);
-        setIsError(true);
-        setFeedbackMessage('Error in deleting annex.');
+        console.error('Error fetching contract data:', error);
+        // Handle error
       }
     };
+    console.log('Contract IDs in relatedContracts:', relatedContracts.map(contract => contract.id));
+
+  
+    if (contractId && employeeId) {
+      fetchData();
+    }
+  }, [contractId, employeeId]);
+  
+
+  const handleDeleteAneks = async () => {
+    const userConfirmed = window.confirm("Are you sure you want to delete this annex?");
+    if (!userConfirmed) return;
+  
+    console.log('Attempting to delete annex with ID:', contractId);
+  
+    try {
+      // Log to check the type and value of contractId
+      console.log('Contract ID:', contractId, typeof contractId);
+  
+      const relatedContracts = await fetchRelatedContracts(employeeId);
+  
+      // Log to check all contract IDs in relatedContracts
+      console.log('Contract IDs in relatedContracts:', relatedContracts.map(contract => contract.id));
+  
+      // Convert contractId to a number if it's a string
+      const numericContractId = Number(contractId);
+      const currentContract = relatedContracts.find(contract => contract.id === numericContractId);
+  
+      // Log to check the found currentContract
+      console.log('Current Contract:', currentContract);
+  
+      if (!currentContract) {
+        alert("Error: Contract not found.");
+        return;
+      }
+  
+      if (currentContract.kontynuacja === null) {
+        alert("This contract cannot be deleted because it is not an annex.");
+        return;
+      }
+  
+      await axios.delete(`http://localhost:3001/api/contracts/${contractId}`);
+      setFeedbackMessage('Annex deleted successfully.');
+      // Redirect or update UI as needed
+    } catch (error) {
+      console.error('Error deleting annex:', error);
+      setIsError(true);
+      setFeedbackMessage('Error in deleting annex.');
+    }
+  };
+  
+  
+  
+  
+  
   
   return (
     <div>
