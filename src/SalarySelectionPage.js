@@ -31,6 +31,9 @@ const [employeeDaysNotWorked, setemployeeDaysNotWorked] = useState({});
 const [proRatedEmployees, setProRatedEmployees] = useState([]);
 const [proRatedGrossSummary, setProRatedGrossSummary] = useState({});
 const [employeeBonuses, setEmployeeBonuses] = useState({});
+const [companyData, setCompanyData] = useState(null);
+const [isLoading, setIsLoading] = useState(true);
+const [wypadkoweRate, setWypadkoweRate] = useState(0); // Initialize with a default value
 
 
 
@@ -337,6 +340,47 @@ useEffect(() => {
   }
 }, [validContracts, workingHours, holidays, year, month]);
 
+const fetchCompanyData = () => {
+  axios.get('http://localhost:3001/api/created_company')
+    .then(response => {
+      if (response.data && response.data.company_id) {
+        setCompanyData(response.data);
+
+        // Parse the wypadkowe rate as a float (remove "%" and convert to float)
+        const parsedWypadkoweRate = parseFloat(response.data.wypadkowe.replace('%', ''));
+
+        setWypadkoweRate(parsedWypadkoweRate); // Update the state with the parsed value
+// Parse the wypadkowe rate as a float (remove "%" and convert to float
+
+        console.log('wypadkoweRate in fetchCompanyData:', wypadkoweRate); // Add this log
+
+        setError(''); // Clear any previous error messages
+        
+        // Handle the calculatedValues as needed
+      } else {
+        setCompanyData(null); // Set to null if no data is returned
+      }
+      setIsLoading(false);
+    })
+    .catch(error => {
+      console.error('Error fetching company data:', error);
+      // Check if the error is due to no data found and set an appropriate message
+      if (error.response && error.response.status === 404) {
+        setError('No existing company data found. Please fill out the form to create a new company.');
+      } else {
+        setError('Failed to fetch company data.');
+      }
+
+      setCompanyData(null); // Set companyData to null when fetch fails
+      setIsLoading(false);
+    });
+};
+
+
+useEffect(() => {
+  fetchCompanyData();
+}, []);
+
 
 
 
@@ -551,13 +595,14 @@ const handleBonusChange = (value, employeeId) => {
 
 
 
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate) => {
   // Log to check the received value of daysNotWorked
   console.log("Days Not Worked Received:", totalDaysNotWorked);
   console.log(`Days Not Worked Received for Employee:`, totalDaysNotWorked);
   console.log(`proRatedGross:`, proRatedGross);
   console.log(`proRatedGross:`, totalProRatedGross);
   console.log("Received bonus in calculateSalary:", bonus);  // This log should show the bonus value
+  console.log('wypadkoweRatee:', wypadkoweRate);
   // Calling calculateSalary for an individual employee
 console.log("State before individual calculation:", employeeBonuses);
 
@@ -578,12 +623,14 @@ console.log("State before individual calculation:", employeeBonuses);
 
   // Use proRatedGross if available, otherwise use grossAmountValue
   let customGrossAmount = proRatedGross ? parseFloat(proRatedGross) : parseFloat(grossAmountValue);
+  
 
   // Debug log
   
 let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
 let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
 let wynChorobowe = 0;
+
 
 
 
@@ -672,6 +719,8 @@ pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
   let zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09 ? parseFloat(zal_2021) : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
   
   let netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
+  let wypadkoweValue = customGrossAmount * (wypadkoweRate/100);
+  
 
   const calculatedValues = {
       grossAmount: grossAmountValue,
@@ -681,7 +730,7 @@ pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
       rent_pr: (customGrossAmount * 0.065).toFixed(2),
       rent_ub: roundUpToCent(customGrossAmount * 0.015).toFixed(2),
       chorobowe: (customGrossAmount * 0.0245).toFixed(2),
-      wypadkowe: (customGrossAmount * 0.0167).toFixed(2),
+      wypadkowe: wypadkoweValue.toFixed(2), // Use the calculated wypadkowe value
       FP: roundUpToCent(customGrossAmount * 0.0245).toFixed(2),
       FGSP: roundUpToCent(customGrossAmount * 0.001).toFixed(2),
       wyn_chorobowe: wynChorobowe.toFixed(2),
@@ -730,7 +779,9 @@ const calculateSalaryForAll = () => {
       totalDaysNotWorked,
       employeeProRatedGross,
       bonus, 
-      bonusValue // Ensure this is correctly positioned in the parameter list
+      bonusValue,
+      wypadkoweRate
+       // Ensure this is correctly positioned in the parameter list
     );
 
     // Update the employee's contract data with calculated values
@@ -773,7 +824,8 @@ const handleCalculateSalary = () => {
             workingHours,
             totalDaysNotWorked,
             proRatedGross,
-            bonus // Pass the proRatedGross value here
+            bonus,
+            wypadkoweRate // Pass the proRatedGross value here
           );
           console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
 
@@ -1027,6 +1079,9 @@ const renderEmployeeTable = () => {
 
   const bonusValue = employeeBonuses[employee.employee_id] || 0;
 
+  // Add a log to check the value of wypadkoweRate before calling calculateSalary
+  console.log('wypadkoweRate before calling calculateSalary:', wypadkoweRate);
+
   console.log("Individual Current state of employeeBonuses:", employeeBonuses);
   console.log(`Individual calculation - Bonus for employee ${employee.employee_id}:`, bonusValue);
   console.log(`Bonus for individual calculation for employee ${employee.employee_id}:`, bonus);
@@ -1050,6 +1105,7 @@ const renderEmployeeTable = () => {
       employeeProRatedGross,
       bonus,
       bonusValue,
+      wypadkoweRate,
       employeeBonuses[employee.employee_id] || 0
        // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
     );
