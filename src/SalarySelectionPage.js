@@ -2,6 +2,7 @@
   import axios from 'axios';
   import DatePicker from 'react-datepicker'; // Import DatePicker
   import 'react-datepicker/dist/react-datepicker.css'; // Import styles
+import { set } from 'date-fns';
 
   function calculateDaysNotWorked(workingDayCount, totalWorkingDaysInMonth) {
     return Math.max(0, totalWorkingDaysInMonth - workingDayCount);
@@ -34,6 +35,12 @@ const [employeeBonuses, setEmployeeBonuses] = useState({});
 const [companyData, setCompanyData] = useState(null);
 const [isLoading, setIsLoading] = useState(true);
 const [wypadkoweRate, setWypadkoweRate] = useState(0); // Initialize with a default value
+const [parameters, setParameters] = useState(null);
+const [koszty, setKoszty] = useState(null);
+const [ulga, setUlga] = useState(null);
+
+const [initialFetchCompleted, setInitialFetchCompleted] = useState(false);
+
 
 
 
@@ -143,8 +150,23 @@ const fetchValidContracts = async () => {
         console.log("Response received:", response.data);
         
         const employeesData = response.data.employees;
+        // Store the employee_id for each employee in validContracts
+    const validContractsData = employeesData.map(employee => ({
+      ...employee,
+      employee_id: employee.employee_id, // Store the employee_id
+    }));
         setValidContracts(employeesData);
         setCalculatedContracts(employeesData); // Set the same fetched data to calculatedContracts
+        console.log("Valid contracts fetched:", employeesData);
+
+        // After fetching contracts, fetch and update parameters
+    console.log('Fetching and updating parameters...');
+    const updatedValidContracts = await Promise.all(validContractsData.map(fetchAllParameters));
+    console.log('Updated valid contracts:', updatedValidContracts);
+    setValidContracts(updatedValidContracts);
+
+    // Now, log the employeeParameters array
+    console.log('Employee Parameters:', employeeParameters);
 
     } catch (error) {
         console.error('Error fetching valid contracts:', error);
@@ -381,6 +403,70 @@ useEffect(() => {
   fetchCompanyData();
 }, []);
 
+// Define the employeeParameters array at the top-level scope
+const employeeParameters = [];
+
+const fetchAllParameters = async (employee) => {
+  console.log(`Fetching parameters for employee ${employee.employee_id}`);
+  try {
+    const response = await axios.get(`http://localhost:3001/api/employee-params/${employee.employee_id}`);
+    if (response.data) {
+      console.log(`Fetched parameters for employee ${employee.employee_id}:`);
+      const hasParameters = response.data.parameters.length > 0;
+      // Parse the parameters as needed
+      const koszty = parseFloat(response.data.parameters[0].koszty);
+      const ulga = parseFloat(response.data.parameters[0].ulga);
+
+      console.log(`Fetched parameters for employee ${employee.employee_id}:`);
+      console.log('koszty:', koszty);
+      console.log('ulga:', ulga);
+
+      // Create an object with employee_id, koszty, ulga, and other parameters if needed
+      const employeeParam = {
+        employee_id: employee.employee_id,
+        koszty: koszty,
+        ulga: ulga,
+
+        
+        // Add other parameters here if needed
+      };
+
+      // Push the employee parameters object into the array
+      employeeParameters.push(employeeParam);
+      console.log('EmoloyeeParam:', employeeParam);
+
+      // Update the copy of the employee with the parsed values
+      return {
+        ...employee,
+        koszty,
+        ulga,
+        
+      };
+    } else {
+       // Logic for when parameters don't exist
+       console.warn(`No parameters found for employee ID ${employee.employee_id}`);
+       // Handle employees without parameters here, for example, set default values
+       // ...
+       // Log that there is no data for this employee
+       console.log(`No data found for employee ID ${employee.employee_id}`);
+      // Logic for when parameters don't exist
+      return employee; // Return the original employee object
+    }
+  } catch (error) {
+    console.error(`Error fetching parameters for employee ${employee.employee_id}:`, error);
+    return employee; // Return the original employee object in case of an error
+  }
+};
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -595,7 +681,18 @@ const handleBonusChange = (value, employeeId) => {
 
 
 
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga,employeeId) => {
+  // Find the employee parameters based on the employee ID
+  const employeeParam = employeeParameters.find((param) => param.employee_id === employeeId);
+
+  // Initialize koszty and ulga from employeeParam
+  const employeeKoszty = employeeParam ? (employeeParam.koszty || 0) : 0;
+  const employeeUlga = employeeParam ? (employeeParam.ulga || 0) : 0;
+  
+
+  // Log the values of koszty and ulga to debug
+  console.log('koszty:', employeeKoszty);
+  console.log('ulga:', employeeUlga);
   // Log to check the received value of daysNotWorked
   console.log("Days Not Worked Received:", totalDaysNotWorked);
   console.log(`Days Not Worked Received for Employee:`, totalDaysNotWorked);
@@ -608,7 +705,7 @@ console.log("State before individual calculation:", employeeBonuses);
 
 
 
-
+ 
   // Check if the additionalDaysArray is an array, if not, log an error and return
   if (!Array.isArray(additionalDaysArray)) {
       console.error("additionalDaysArray must be an array.");
@@ -739,8 +836,8 @@ pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
       zaliczka,
       zal_2021,
       zdrowotne,
-      ulga: '300.00',
-      koszty: '250.00',
+      ulga: employeeUlga, // Use employeeUlga
+  koszty: employeeKoszty, // Use employeeKoszty
       social_base: customGrossAmount,  // This now includes the bonus
       additionalDays: additionalDaysArray.reduce((acc, val) => acc + val, 0)  // Sum of all additional days
   };
@@ -749,6 +846,7 @@ pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
 };
 
 const calculateSalaryForAll = () => {
+  
   const updatedContracts = calculatedContracts.map((employee, index) => {
     const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
     const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
@@ -767,6 +865,8 @@ const calculateSalaryForAll = () => {
     console.log(`Bulk calculation - BonusValue for employee ${employee.employee_id}:`, bonusValue);
     console.log("Current state of employeeBonuses:", employeeBonuses);
 
+    
+
 
     // Call calculateSalary function with the appropriate arguments
     const calculatedValues = calculateSalary(
@@ -780,7 +880,10 @@ const calculateSalaryForAll = () => {
       employeeProRatedGross,
       bonus, 
       bonusValue,
-      wypadkoweRate
+      wypadkoweRate,
+      employee.koszty, // Pass koszty from the employee object
+  employee.ulga,  
+      employee.employee_id // Pass the employee's ID here
        // Ensure this is correctly positioned in the parameter list
     );
 
@@ -910,6 +1013,13 @@ const renderEmployeeTable = () => {
       </thead>
       <tbody>
       {calculatedContracts.map((employee, index) => {
+        console.log('Employee object:', employee); 
+        // Debug log to check if employee has parameters
+    console.log(`Employee ${employee.employee_id} has parameters:`, employee.parameters);
+
+    // Debug logs for specific parameters (koszty and ulga)
+    console.log(`Koszty for Employee ${employee.employee_id}:`, employee.parameters?.[0]?.koszty);
+    console.log(`Ulga for Employee ${employee.employee_id}:`, employee.parameters?.[0]?.ulga);
         const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
         
 
@@ -999,9 +1109,9 @@ const renderEmployeeTable = () => {
               
     <td>{employee.contracts?.[0]?.podstawa_zdrow}</td>
     <td>{employee.contracts?.[0]?.zdrowotne}</td>
-    <td>{employee.contracts?.[0]?.koszty}</td>
+    <td>{employee.koszty || 'No Info'}</td>
     <td>{employee.contracts?.[0]?.podstawa_zaliczki}</td>
-    <td>{employee.contracts?.[0]?.ulga}</td>
+    <td>{employee.parameters?.[0]?.ulga || 'No Info'}</td>
     <td>{employee.contracts?.[0]?.zaliczka}</td>
     <td>{employee.contracts?.[0]?.zal_2021}</td>
     <td>{employee.contracts?.[0]?.netAmount}</td>
@@ -1106,6 +1216,9 @@ const renderEmployeeTable = () => {
       bonus,
       bonusValue,
       wypadkoweRate,
+      employee.koszty,
+      employee.ulga,
+      employee.employee_id,
       employeeBonuses[employee.employee_id] || 0
        // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
     );
