@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import 'react-toastify/dist/ReactToastify.css'; // Import toastify CSS
 import reportWebVitals from './reportWebVitals';
 
 const serverUrl = 'http://localhost:3001'; // Update the port number if needed

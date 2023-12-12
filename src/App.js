@@ -1,3 +1,4 @@
+import { ToastContainer } from 'react-toastify';
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate, Switch } from 'react-router-dom';
 import Login from './Login';
@@ -28,6 +29,18 @@ import SetupPage from './setup';
 function App() {
   return (
     <div className="App">
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <Router>
 	  {/* Navigation */}
         <NavigationPage />

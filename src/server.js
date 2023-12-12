@@ -217,6 +217,35 @@ function formatTimestamp(timestampString) {
   return timestampObj.toISOString().split('T')[0]; // Extract YYYY-MM-DD format
 }
 
+// Assuming you're using Express.js for your server
+
+app.post('/api/save-health-breaks', async (req, res) => {
+  console.log("Received breaks data:", req.body);
+  const breaksData = req.body.breaksData;
+  
+  // Loop through breaksData and insert each entry into the database
+  try {
+      for (const breakEntry of breaksData) {
+          await supabase
+              .from('health_breaks')
+              .insert([
+                  {
+                      employee_id: breakEntry.employee_id,
+                      break_type: breakEntry.break_type,
+                      break_start_date: breakEntry.break_start_date,
+                      break_end_date: breakEntry.break_end_date,
+                      break_days: breakEntry.break_days
+                  }
+              ])
+      }
+      res.status(200).send("Breaks data saved successfully.");
+  } catch (error) {
+      console.error("Error saving breaks data:", error);
+      res.status(500).send("Error saving breaks data.");
+  }
+});
+
+
 app.post('/api/save-salary-data', async (req, res) => {
   const salaryData = req.body; // The salary data received from the frontend
 
