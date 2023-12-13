@@ -43,6 +43,8 @@ const [transformedBreakData, setTransformedBreakData] = useState([]);
 
 
 const [notification, setNotification] = useState({ show: false, employeeId: null });
+const [isSalarySaved, setIsSalarySaved] = useState(false);
+const [areBreaksSaved, setAreBreaksSaved] = useState(false);
 
 
 
@@ -519,6 +521,16 @@ const handleHealthBreakTypeChange = (e, index) => {
     type: e.target.value,
   };
   setHealthBreaks(updatedBreaks);
+  // Display a notification
+  toast.info(`Break type changed. Please recalculate the salary.`, {
+    position: "top-center",
+    autoClose: 5000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    theme: "colored",
+  });
 };
 
 // Define the handleAdditionalBreakStartDateChange function
@@ -578,6 +590,16 @@ const handleAdditionalBreakTypeChange = (e, employeeId, breakIndex) => {
   const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
   breaksForEmployee[breakIndex].type = e.target.value;
   setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+  // Display a notification
+  toast.info(`Break type changed for employee ID ${employeeId}. Please recalculate the salary.`, {
+    position: "top-center",
+    autoClose: 5000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    theme: "colored",
+  });
 };
 
 
@@ -818,8 +840,8 @@ pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
       zal_2021,
       zdrowotne,
       allBreaks,
-      ulga,
-      koszty,// Use employeeKoszty
+      ulga: employeeUlga,
+      koszty:employeeKoszty,// Use employeeKoszty
       bonus,
       social_base: customGrossAmount,  // This now includes the bonus
       additionalDays: additionalDaysArray.reduce((acc, val) => acc + val, 0)  // Sum of all additional days
@@ -1048,6 +1070,7 @@ const handleSaveBreaksData = async () => {
       if (response.status === 200) {
         console.log("Breaks data saved successfully.", response.data);
         toast.success("Breaks data saved successfully.");
+        setAreBreaksSaved(true); // Update the state variable
       } else {
         console.error("Failed to save breaks data. Response status:", response.status);
         toast.error("Failed to save breaks data.");
@@ -1062,6 +1085,66 @@ const handleSaveBreaksData = async () => {
   }
 };
 
+const handleSaveSalaryData = () => {
+  // Check if the salary date is not set
+  if (!salaryDate) {
+    toast.warn("Please pick a salary date before saving.");
+    return; // Stop the function execution
+  }
+  const salaryData = [];
+
+  calculatedContracts.forEach(employee => {
+    // Use the first contract for the employee, assuming it's the most relevant
+    const contract = employee.contracts && employee.contracts[0];
+
+    if (contract) {
+      const salary = {
+        employee_id: employee.employee_id,
+        gross_total: parseFloat(contract.grossAmount),
+        social_base: parseFloat(contract.social_base), // Use the calculated social_base
+        emeryt_ub: parseFloat(contract.emeryt_ub),
+        emeryt_pr: parseFloat(contract.emeryt_pr),
+        rent_ub: parseFloat(contract.rent_ub),
+        rent_pr: parseFloat(contract.rent_pr),
+        chorobowe: parseFloat(contract.chorobowe),
+        wypadkowe: parseFloat(contract.wypadkowe),
+        fp: parseFloat(contract.FP),
+        fgsp: parseFloat(contract.FGSP),
+        health_base: parseFloat(contract.podstawa_zdrow),
+        heath_amount: parseFloat(contract.zdrowotne),
+        tax_base: parseFloat(contract.podstawa_zaliczki),
+        tax: parseFloat(contract.zaliczka),
+        ulga: parseFloat(contract.ulga),
+        koszty: parseFloat(contract.koszty),
+        zal_2021: parseFloat(contract.zal_2021),
+        net_amount: parseFloat(contract.netAmount),
+        bonus: parseFloat(contract.bonus),
+        wyn_chorobowe: parseFloat(contract.wyn_chorobowe),
+        salary_month: month, // From state
+        salary_year: year, // From state
+        salary_date: salaryDate, // From state
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      salaryData.push(salary);
+    }
+  });
+
+  // Send the salary data to the server
+  axios.post('http://localhost:3001/api/save-salary-data', salaryData)
+  .then(response => {
+    // Handle successful response
+    console.log('Salary data saved successfully!');
+    toast.success("Salary data saved successfully!");
+    setIsSalarySaved(true); // Update the state variable
+  })
+  .catch(error => {
+    // Handle error
+    console.error('Error saving salary data:', error);
+    toast.error("Error occurred while saving salary data.");
+  });
+};
 
 
 
@@ -1087,8 +1170,12 @@ const renderEmployeeTable = () => {
         onChange={(e) => setSalaryDate(e.target.value)}
       />
       <button onClick={calculateSalaryForAll}>Calculate Salary for All</button>
-      <button onClick={handleSaveBreaksData}>
+      <button onClick={handleSaveBreaksData} disabled={areBreaksSaved}>
+        
     Save Breaks Data
+</button>
+<button onClick={handleSaveSalaryData} disabled={areBreaksSaved}>
+  Save Salary Data
 </button>
       {notification.show && 
         <Notification 

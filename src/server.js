@@ -276,12 +276,15 @@ app.post('/api/save-salary-data', async (req, res) => {
       created_at: formatTimestamp(salary.created_at), // Convert created_at to a valid date format using formatTimestamp()
       updated_at: formatTimestamp(salary.updated_at), // Convert updated_at to a valid date format using formatTimestamp()
       zal_2021: salary.zal_2021,
+      wyn_chorobowe: salary.wyn_chorobowe,
+      bonus: salary.bonus,
     }));
 
     // Insert all salary records into the 'salaries' table using Supabase
     const { data, error } = await supabase
       .from('salaries')
-      .upsert(salaryRecords);
+      .upsert(salaryRecords)
+      .select();
 
 
     if (error) {
