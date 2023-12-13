@@ -245,6 +245,27 @@ app.post('/api/save-health-breaks', async (req, res) => {
   }
 });
 
+// API Endpoint to get health breaks for a specific employee
+app.get('/api/get-health-breaks', async (req, res) => {
+  const employeeId = req.query.employee_id;
+
+  try {
+    const { data, error } = await supabase
+      .from('health_breaks')
+      .select('*')
+      .eq('employee_id', employeeId);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error fetching health breaks:", error);
+    res.status(500).send("Error fetching health breaks.");
+  }
+});
+
 
 app.post('/api/save-salary-data', async (req, res) => {
   const salaryData = req.body; // The salary data received from the frontend
@@ -309,7 +330,7 @@ app.get('/salary-list', async (req, res) => {
     // Define the base query for retrieving salary data
     let baseQuery = supabase
       .from('salaries')
-      .select('id, employee_id, gross_total, salary_month, salary_year, salary_date, net_amount, emeryt_ub, rent_ub, chorobowe, heath_amount, koszty,  tax, employees!salaries_employee_id_fkey(name, surname)')
+      .select('id, employee_id, gross_total, social_base, salary_month, salary_year, salary_date, net_amount, emeryt_ub, rent_ub, chorobowe, heath_amount, koszty, wyn_chorobowe, bonus,  tax, employees!salaries_employee_id_fkey(name, surname)')
       .order('salary_date', { ascending: false });
 
     // Add filters for month and year if provided

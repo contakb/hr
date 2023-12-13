@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 
+
+
 function SalaryListPage() {
   const [salaryList, setSalaryList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,15 @@ function SalaryListPage() {
   const fetchSalaryList = async () => {
     try {
       const response = await axios.get('http://localhost:3001/salary-list');
-      setSalaryList(response.data);
+      let salaryData = response.data;
+  
+      // Fetch health breaks for each employee and add them to the salary data
+      for (let salary of salaryData) {
+        const healthBreaksResponse = await axios.get(`http://localhost:3001/api/get-health-breaks?employee_id=${salary.employee_id}`);
+        salary.healthBreaks = healthBreaksResponse.data; // Add health breaks to the salary object
+      }
+  
+      setSalaryList(salaryData);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching salary list:', error);
@@ -53,6 +63,20 @@ function SalaryListPage() {
     );
     setSelectedSalaryList(selectedSalaryList);
   };
+
+  const handleEditSalary = (salaryListByMonthYear) => {
+    console.log("Navigating to edit mode with data:", salaryListByMonthYear);
+    const healthBreaksForSalaries = salaryListByMonthYear.flatMap(salary => salary.healthBreaks);
+    navigate('/salary-selection', {
+      state: {
+        isEditMode: true,
+        editableData: salaryListByMonthYear,
+        healthBreaks: healthBreaksForSalaries
+      }
+    });
+  };
+  
+  
 
   return (
     <div className="salary-list-container">
@@ -104,6 +128,8 @@ function SalaryListPage() {
                 <td>{new Date(salaryListByMonthYear[0].salary_date).toLocaleDateString()}</td>
                 <td>
                   <button onClick={() => handleViewDetails(combination)}>Szczegóły</button>
+                  <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edit</button>
+
                 </td>
               </tr>
             );
@@ -132,6 +158,8 @@ function SalaryListDetails({ salaryList }) {
             <th>Year</th>
             <th>Salary Date</th>
 			<th>Brutto</th>
+      <th>Podstawa zus</th>
+      <th>Bonus</th>
 			<th>Ub.emeryt</th>
 			<th>Ub.rentowe</th>
 			<th>Ub.zdrowotne</th>
@@ -139,6 +167,8 @@ function SalaryListDetails({ salaryList }) {
 			<th>Koszty</th>
 			<th>Podatek</th>
 			<th>Netto</th>
+      <th>wyn.chorobowe</th>
+      <th>przerwy</th>
             {/* Add additional details here if needed */}
           </tr>
         </thead>
@@ -152,6 +182,8 @@ function SalaryListDetails({ salaryList }) {
               <td>{salary.salary_year}</td>
               <td>{new Date(salary.salary_date).toLocaleDateString()}</td>
 			  <td>{salary.gross_total}</td>
+        <td>{salary.social_base}</td> 
+        <td>{salary.bonus}</td>
 			  <td>{salary.emeryt_ub}</td>
 			  <td>{salary.rent_ub}</td>
 			  <td>{salary.chorobowe}</td>
@@ -159,6 +191,11 @@ function SalaryListDetails({ salaryList }) {
 			  <td>{salary.koszty}</td>
 			  <td>{salary.tax}</td>
 			  <td>{salary.net_amount}</td>
+        <td>{salary.wyn_chorobowe}</td>
+        <td>
+                {salary.healthBreaks.map(breakItem => 
+                  `${breakItem.break_type} (${breakItem.break_start_date} - ${breakItem.break_end_date}, Days: ${breakItem.break_days}`).join('\n')}
+              </td>
               {/* Add additional details here if needed */}
             </tr>
           ))}
