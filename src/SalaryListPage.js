@@ -22,10 +22,26 @@ function SalaryListPage() {
       const response = await axios.get('http://localhost:3001/salary-list');
       let salaryData = response.data;
   
-      // Fetch health breaks for each employee and add them to the salary data
       for (let salary of salaryData) {
+        // Define selectedMonthStart and selectedMonthEnd for each salary
+        const selectedMonthStart = new Date(salary.salary_year, salary.salary_month - 1, 1);
+        const selectedMonthEnd = new Date(salary.salary_year, salary.salary_month, 0);
+  
+        // Fetch and filter health breaks
         const healthBreaksResponse = await axios.get(`http://localhost:3001/api/get-health-breaks?employee_id=${salary.employee_id}`);
-        salary.healthBreaks = healthBreaksResponse.data; // Add health breaks to the salary object
+        salary.healthBreaks = healthBreaksResponse.data.filter(hb => {
+          const breakStart = new Date(hb.break_start_date);
+          const breakEnd = new Date(hb.break_end_date);
+          return (breakStart <= selectedMonthEnd && breakEnd >= selectedMonthStart);
+        });
+  
+        // Fetch and filter contracts
+        const contractsResponse = await axios.get(`http://localhost:3001/api/contracts/${salary.employee_id}`);
+        salary.contracts = contractsResponse.data.contracts.filter(contract => {
+          const contractStart = new Date(contract.contract_from_date);
+          const contractEnd = contract.contract_to_date ? new Date(contract.contract_to_date) : new Date();
+          return (contractStart <= selectedMonthEnd && contractEnd >= selectedMonthStart);
+        });
       }
   
       setSalaryList(salaryData);
@@ -36,6 +52,9 @@ function SalaryListPage() {
       setLoading(false);
     }
   };
+  
+  
+  
 
   const handleCreateNewSalaryList = () => {
     navigate('/salary-selection');
@@ -66,16 +85,49 @@ function SalaryListPage() {
 
   const handleEditSalary = (salaryListByMonthYear) => {
     console.log("Navigating to edit mode with data:", salaryListByMonthYear);
-    const healthBreaksForSalaries = salaryListByMonthYear.flatMap(salary => salary.healthBreaks);
+
+    const formattedData = salaryListByMonthYear.map(salary => {
+      return {
+        employee_id: salary.employee_id,
+        name: salary.employees.name,
+        surname: salary.employees.surname,
+        gross_amount: salary.gross_total,
+        contract_details: salary.contracts.map(contract => {
+          return {
+            gross_amount: contract.gross_amount,
+            contract_from_date: contract.contract_from_date,
+            contract_to_date: contract.contract_to_date
+            // Add other contract details if necessary
+          };
+        }),
+        allBreaks: salary.healthBreaks.map(hb => {
+          return {
+            days: hb.break_days, // If you have this information
+            endDate: new Date(hb.break_end_date).toISOString(),
+            startDate: new Date(hb.break_start_date).toISOString(),
+            type: hb.break_type,
+            
+            // Add other break details if necessary
+          };
+        })
+      };
+    });
+
+    console.log("Formatted Data for Edit:", formattedData);
+
     navigate('/salary-selection', {
       state: {
         isEditMode: true,
-        editableData: salaryListByMonthYear,
-        healthBreaks: healthBreaksForSalaries
+        editableData: formattedData,
+        editYear: salaryListByMonthYear[0].salary_year,
+        editMonth: salaryListByMonthYear[0].salary_month
       }
     });
-  };
+};
+
   
+  
+
   
 
   return (

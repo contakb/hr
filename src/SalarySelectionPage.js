@@ -4,6 +4,7 @@
   import { toast } from 'react-toastify';
   import 'react-datepicker/dist/react-datepicker.css'; // Import styles
 import { set } from 'date-fns';
+import { useLocation } from 'react-router-dom';
 
   function calculateDaysNotWorked(workingDayCount, totalWorkingDaysInMonth) {
     return Math.max(0, totalWorkingDaysInMonth - workingDayCount);
@@ -15,7 +16,10 @@ import { set } from 'date-fns';
     const [error, setError] = useState(null);
     const [month, setMonth] = useState('');
     const [year, setYear] = useState('');
-    const [validContracts, setValidContracts] = useState([]);
+    const location = useLocation();
+  const { isEditMode, editableData } = location.state || {};
+     // Initialize state based on whether you are in edit mode or not
+  const [validContracts, setValidContracts] = useState(isEditMode ? editableData : []);
     const [salaryDate, setSalaryDate] = useState('');
     const [healthBreaks, setHealthBreaks] = useState([]); // Initialize healthBreaks as an empty array
     const [additionalBreaks, setAdditionalBreaks] = useState([]);
@@ -32,6 +36,7 @@ const [daysNotWorked, setDaysNotWorked] = useState([]);
 const [employeeDaysNotWorked, setemployeeDaysNotWorked] = useState({});
 const [proRatedEmployees, setProRatedEmployees] = useState([]);
 const [proRatedGrossSummary, setProRatedGrossSummary] = useState({});
+const [GrossAmounts, setGrossAmounts] = useState({});
 const [employeeBonuses, setEmployeeBonuses] = useState({});
 const [companyData, setCompanyData] = useState(null);
 const [isLoading, setIsLoading] = useState(true);
@@ -42,9 +47,79 @@ const [ulga, setUlga] = useState(null);
 const [transformedBreakData, setTransformedBreakData] = useState([]);
 
 
+
 const [notification, setNotification] = useState({ show: false, employeeId: null });
 const [isSalarySaved, setIsSalarySaved] = useState(false);
 const [areBreaksSaved, setAreBreaksSaved] = useState(false);
+    const { editYear, editMonth } = location.state || {};
+
+
+  
+
+    useEffect(() => {
+      console.log("Received Data for Edit:", location.state);
+      if (isEditMode && editableData) {
+        setYear(editYear);
+        setMonth(editMonth);
+    
+        const mappedData = editableData.map(ed => {
+          // Map contract details if needed
+          const contracts = ed.contract_details.map(cd => {
+            return {
+              grossAmount: cd.gross_amount,
+              // add other contract details if needed
+            };
+          });
+    
+          // Assuming allBreaks is an array of health breaks
+          const healthBreaksForEmployee = ed.allBreaks.map(hb => {
+            return {
+              startDate: hb.startDate ? new Date(hb.startDate) : null,
+              endDate: hb.endDate ? new Date(hb.endDate) : null,
+              type: hb.type,
+              days: hb.days
+            };
+          });
+    
+          return {
+            employee_id: ed.employee_id,
+            name: ed.name,
+            surname: ed.surname,
+            gross_amount: ed.gross_amount,
+            contracts: contracts,
+            healthBreaks: healthBreaksForEmployee
+          };
+        });
+    
+        setCalculatedContracts(mappedData);
+    
+        // Flatten all health breaks into a single array for the healthBreaks state
+        const allHealthBreaks = mappedData.flatMap(ed => ed.healthBreaks);
+        setHealthBreaks(allHealthBreaks);
+      } else {
+        fetchValidContracts();
+      }
+    }, [isEditMode, editableData, editYear, editMonth]);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+
+
+
 
 
 
@@ -1242,6 +1317,7 @@ const renderEmployeeTable = () => {
     console.log(`Koszty for Employee ${employee.employee_id}:`, employee.koszty);
     console.log(`Ulga for Employee ${employee.employee_id}:`, employee.ulga);
         const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
+        console.log(`Health break for employee ${employee.employee_id}:`, healthBreak);
         
 
                         return (
@@ -1319,7 +1395,7 @@ const renderEmployeeTable = () => {
                     startDate={healthBreak.startDate}
                     endDate={healthBreak.endDate}
                     onChange={(date) => handleHealthBreakEndDateChange(date, index)}
-                    dateFormat="dd/MM/yyyy"
+                    dateFormat="yyyy/MM/dd"
                 />
               </td>
               <td></td>
@@ -1502,7 +1578,8 @@ const renderEmployeeTable = () => {
 
 return (
   <div className="salary-selection-page">
-    <h1>Salary Selection</h1>
+    <h1>{isEditMode ? "Edit Salary" : "Salary Selection"}</h1>
+    {!isEditMode && (
     <div className="filter-container">
       <label>
         Month:
@@ -1513,7 +1590,7 @@ return (
         <input type="text" value={year} onChange={handleYearChange} />
       </label>
       <button onClick={fetchValidContracts}>Fetch Valid Contracts</button>
-    </div>
+    </div>)}
     <div className="employee-list-container">{renderEmployeeTable()}</div>
   </div>
 );
