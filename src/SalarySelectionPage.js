@@ -5,13 +5,26 @@ import { toast } from 'react-toastify';
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
 import { set } from 'date-fns';
 import { useLocation } from 'react-router-dom';
+import { parseISO } from 'date-fns';
+import moment from 'moment-timezone';
+// Set the default timezone to Warsaw, Poland
+moment.tz.setDefault("Europe/Warsaw");
+
 
 function calculateDaysNotWorked(workingDayCount, totalWorkingDaysInMonth) {
   return Math.max(0, totalWorkingDaysInMonth - workingDayCount);
 }
+const defaultHealthBreak = {
+  startDate: null,
+  endDate: null,
+  days: 0,
+  type: ''
+  };
+  
 
 function SalarySelectionPage() {
   const [employees, setEmployees] = useState([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [month, setMonth] = useState('');
@@ -78,40 +91,49 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
 
   
 
-useEffect(() => {
-  console.log("Received Data for Edit:", location.state);
-  if (isEditMode && editableData) {
-    setYear(editYear);
-    setMonth(editMonth);
-
-    const mappedData = editableData.map(ed => {
-      // Map contract details as before
-      const contracts = ed.contract_details.map(cd => {
-        // Keep your existing logic here if needed
+  useEffect(() => {
+    console.log("Received Data for Edit:", location.state);
+    if (isEditMode && editableData) {
+      setYear(editYear);
+      setMonth(editMonth);
+  
+      const mappedData = editableData.map(ed => {
+        // Map contract details as before
+        const contracts = ed.contract_details.map(cd => {
+          // Keep your existing logic here if needed
+          return {
+            ...cd, // Spread existing contract details
+          };
+        });
+  
         return {
-          ...cd, // Spread existing contract details
-          // You might not need to include allBreaks here if you're handling them separately
+          employee_id: ed.employee_id,
+          name: ed.name,
+          surname: ed.surname,
+          gross_amount: ed.gross_amount,
+          contracts: contracts,
+          healthBreaks: ed.allBreaks // Assign all breaks directly to healthBreaks
         };
       });
-
-      return {
-        employee_id: ed.employee_id,
-        name: ed.name,
-        surname: ed.surname,
-        gross_amount: ed.gross_amount,
-        contracts: contracts,
-        healthBreaks: ed.allBreaks // Assign all breaks directly to healthBreaks
-      };
-    });
-
-    setCalculatedContracts(mappedData);
-    
-    // Call handleInitialBreaks to process additional breaks
-    handleInitialBreaks(editableData);
-  } else {
-    fetchValidContracts();
-  }
-}, [isEditMode, editableData, editYear, editMonth]);
+  
+      setCalculatedContracts(mappedData);
+  
+      // Update healthBreaks to contain the first break of each employee
+      const updatedHealthBreaks = mappedData.map(employee => 
+        employee.healthBreaks && employee.healthBreaks.length > 0 
+          ? employee.healthBreaks[0] 
+          : defaultHealthBreak
+      );
+  
+      setHealthBreaks(updatedHealthBreaks);
+  
+      // Call handleInitialBreaks to process additional breaks
+      handleInitialBreaks(editableData);
+    } else {
+      fetchValidContracts();
+    }
+  }, [isEditMode, editableData, editYear, editMonth, defaultHealthBreak]);
+  
 
   
   
@@ -185,12 +207,6 @@ const initialHealthBreaks = calculatedContracts.map(() => ({ ...defaultHealthBre
 }, [calculatedContracts]);
 
 
-const defaultHealthBreak = {
-startDate: null,
-endDate: null,
-days: 0,
-type: ''
-};
 
 
 const fetchEmployees = async () => {
@@ -547,57 +563,60 @@ try {
 
 // Define the handleHealthBreakStartDateChange function
 const handleHealthBreakStartDateChange = (date, index) => {
-const updatedBreaks = [...healthBreaks];
-const dateFormat = date.toISOString().split('T')[0];
-updatedBreaks[index] = {
-  ...updatedBreaks[index],
-  startDate: date,
-};
-setHealthBreaks(updatedBreaks);
+  console.log("New Start Date Selected:", date);
+  const updatedBreaks = [...healthBreaks];
+  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-// Calculate the number of days and update the state
-calculateDays(index, updatedBreaks);
+  console.log("Formatted Start Date:", formattedDate);
+
+  updatedBreaks[index] = {
+    ...updatedBreaks[index],
+    startDate: formattedDate,
+  };
+
+  setHealthBreaks(updatedBreaks);
+  calculateDays(index, updatedBreaks);
 };
+
+
+
 
 // Define the handleHealthBreakEndDateChange function
 const handleHealthBreakEndDateChange = (date, index) => {
-const updatedBreaks = [...healthBreaks];
-const formattedDate = date.toISOString().split('T')[0];
-updatedBreaks[index] = {
-  ...updatedBreaks[index],
-  endDate: date,
-};
-setHealthBreaks(updatedBreaks);
+  const updatedBreaks = [...healthBreaks];
+  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;  // Convert to ISO string in Warsaw time zone
 
-// Calculate the number of days and update the state
-calculateDays(index, updatedBreaks);
+  updatedBreaks[index] = {
+    ...updatedBreaks[index],
+    endDate: formattedDate,
+  };
+
+  setHealthBreaks(updatedBreaks);
+  calculateDays(index, updatedBreaks);
 };
+
 
 // Function to calculate the number of days between start and end dates and update the state
 const calculateDays = (index, updatedBreaks) => {
-const startDate = updatedBreaks[index].startDate;
-const endDate = updatedBreaks[index].endDate;
+  const startDate = updatedBreaks[index].startDate 
+                      ? moment(updatedBreaks[index].startDate).tz("Europe/Warsaw").toDate() 
+                      : null;
+  const endDate = updatedBreaks[index].endDate 
+                    ? moment(updatedBreaks[index].endDate).tz("Europe/Warsaw").toDate() 
+                    : null;
 
-if (startDate && endDate) {
-  const startDateWithoutTime = new Date(startDate);
-  startDateWithoutTime.setHours(0, 0, 0, 0);
+  if (startDate && endDate) {
+    const timeDifference = endDate.getTime() - startDate.getTime();
+    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+    updatedBreaks[index].days = daysDiff;
+  } else {
+    updatedBreaks[index].days = 0;
+  }
 
-  const endDateWithoutTime = new Date(endDate);
-  endDateWithoutTime.setHours(0, 0, 0, 0);
-
-  // Calculate the difference in milliseconds
-  const timeDifference = endDateWithoutTime.getTime() - startDateWithoutTime.getTime();
-
-  // Calculate the number of days, considering partial days
-  const daysDiff = timeDifference / (1000 * 60 * 60 * 24) + 1;
-
-  updatedBreaks[index].days = daysDiff;
-} else {
-  updatedBreaks[index].days = 0;
-}
-
-setHealthBreaks(updatedBreaks);
+  setHealthBreaks(updatedBreaks);
 };
+
+
 
 
 
@@ -623,56 +642,55 @@ toast.info(`Break type changed. Please recalculate the salary.`, {
 
 // Define the handleAdditionalBreakStartDateChange function
 const handleAdditionalBreakStartDateChange = (date, employeeId, breakIndex) => {
-const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
-const formattedDate = date.toISOString().split('T')[0];
-breaksForEmployee[breakIndex].startDate = date;
-setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+  const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
+  const formattedDate = date ? date.toISOString().split('T')[0] : null;
 
-// Calculate the number of days and update the state
-calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
-console.log("Updated additionalBreaksByEmployee after Start Date change:", additionalBreaksByEmployee);
+  breaksForEmployee[breakIndex].startDate = formattedDate;
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+
+  // Calculate the number of days and update the state
+  calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+  console.log("Updated additionalBreaksByEmployee after Start Date change:", additionalBreaksByEmployee);
 };
 
 
 // Define the handleAdditionalBreakEndDateChange function
 const handleAdditionalBreakEndDateChange = (date, employeeId, breakIndex) => {
-const formattedDate = date.toISOString().split('T')[0];
-const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
+  const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
+  const formattedDate = date ? date.toISOString().split('T')[0] : null;
 
-breaksForEmployee[breakIndex].endDate = date;
-setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+  breaksForEmployee[breakIndex].endDate = formattedDate;
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 
-// Calculate the number of days and update the state
-calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
-console.log("Updated additionalBreaksByEmployee after End Date change:", additionalBreaksByEmployee);
+  // Calculate the number of days and update the state
+  calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+  console.log("Updated additionalBreaksByEmployee after End Date change:", additionalBreaksByEmployee);
 };
+
 
 
 // Function to calculate the number of days between start and end dates for additional breaks and update the state
+// Function to calculate the number of days between start and end dates for additional breaks and update the state
 const calculateAdditionalDays = (employeeId, breakIndex, breaksForEmployee) => {
-const startDate = breaksForEmployee[breakIndex].startDate;
-const endDate = breaksForEmployee[breakIndex].endDate;
+  const startDate = breaksForEmployee[breakIndex].startDate 
+                      ? moment(breaksForEmployee[breakIndex].startDate).tz("Europe/Warsaw").toDate() 
+                      : null;
+  const endDate = breaksForEmployee[breakIndex].endDate 
+                    ? moment(breaksForEmployee[breakIndex].endDate).tz("Europe/Warsaw").toDate() 
+                    : null;
 
-if (startDate && endDate) {
-  const startDateWithoutTime = new Date(startDate);
-  startDateWithoutTime.setHours(0, 0, 0, 0);
+  if (startDate && endDate) {
+    const timeDifference = endDate.getTime() - startDate.getTime();
+    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+    breaksForEmployee[breakIndex].additionalDays = daysDiff;
+  } else {
+    breaksForEmployee[breakIndex].additionalDays = 0;
+  }
 
-  const endDateWithoutTime = new Date(endDate);
-  endDateWithoutTime.setHours(0, 0, 0, 0);
-
-  // Calculate the difference in milliseconds
-  const timeDifference = endDateWithoutTime.getTime() - startDateWithoutTime.getTime();
-
-  // Calculate the number of days, considering partial days
-  const daysDiff = timeDifference / (1000 * 60 * 60 * 24) + 1;
-
-  breaksForEmployee[breakIndex].additionalDays = daysDiff;
-} else {
-  breaksForEmployee[breakIndex].additionalDays = 0;
-}
-
-setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 };
+
+
 
 
 // Define the handleAdditionalBreakTypeChange function
@@ -1331,8 +1349,25 @@ Save Salary Data
   // Debug logs for specific parameters (koszty and ulga)
   console.log(`Koszty for Employee ${employee.employee_id}:`, employee.koszty);
   console.log(`Ulga for Employee ${employee.employee_id}:`, employee.ulga);
-  const healthBreak = employee.healthBreaks?.[index] || defaultHealthBreak;
+ 
+
+  const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
+  // Suppose you have a date string from the backend
+const dateStringFromBackend = employee.startDate; // Replace with your actual field
+
+// Convert the ISO date string to a local date using moment-timezone
+const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
       console.log(`Health break for employee ${employee.employee_id}:`, healthBreaks);
+      console.log("healthBreak.startDate:", healthBreak.startDate);
+      console.log("Parsed healthBreak.startDate:", healthBreak.startDate ? parseISO(healthBreak.startDate) : null);
+      console.log("healthBreak.endDate:", healthBreak.endDate);
+      console.log("Parsed healthBreak.endDate:", healthBreak.endDate ? parseISO(healthBreak.endDate) : null);
+      // Logs for debugging
+  console.log(`Employee ID: ${employee.employee_id}`);
+  console.log("Original Start Date:", healthBreak.startDate);
+      console.log("Processed Start Date for Display:", healthBreak.startDate 
+            ? moment.utc(healthBreak.startDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            : null);
       
       const additionalBreaks = additionalBreaksByEmployee[employee.employee_id] || [];
       
@@ -1346,14 +1381,25 @@ Save Salary Data
                               <td>{employee.gross_amount}</td>
                               <td>{employee.contracts?.[0]?.netAmount}</td>
                               <td>
-              <DatePicker
-                  selected={healthBreak.startDate}
-                  selectsStart
-                  startDate={healthBreak.startDate}
-                  endDate={healthBreak.endDate}
-                  onChange={(date) => handleHealthBreakStartDateChange(date, index)}
-                  dateFormat="yyyy/MM/dd"
-              />
+                              <DatePicker
+  key={`start-date-picker-${index}`} // Unique key for each DatePicker
+  selected={healthBreak.startDate 
+            ? moment.utc(healthBreak.startDate).tz("Europe/Warsaw").toDate()
+            : null}
+  selectsStart
+  startDate={healthBreak.startDate 
+            ? moment.utc(healthBreak.startDate).tz("Europe/Warsaw").toDate()
+            : null}
+  endDate={healthBreak.endDate 
+            ? moment.utc(healthBreak.endDate).tz("Europe/Warsaw").toDate()
+            : null}
+  onChange={(date) => handleHealthBreakStartDateChange(date, index)}
+  dateFormat="yyyy/MM/dd"
+/>
+
+
+
+
           </td>
 
          
@@ -1406,14 +1452,22 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
             <td></td>
             <td></td>
             <td>
-              <DatePicker
-                  selected={healthBreak.endDate}
-                  selectsEnd
-                  startDate={healthBreak.startDate}
-                  endDate={healthBreak.endDate}
-                  onChange={(date) => handleHealthBreakEndDateChange(date, index)}
-                  dateFormat="yyyy/MM/dd"
-              />
+            <DatePicker
+  selected={healthBreak.endDate 
+            ? moment.utc(healthBreak.endDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            : null}
+  selectsEnd
+  startDate={healthBreak.startDate 
+            ? moment.utc(healthBreak.startDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            : null}
+  endDate={healthBreak.endDate 
+            ? moment.utc(healthBreak.endDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            : null}
+  onChange={(date) => handleHealthBreakEndDateChange(date, index)}
+  dateFormat="yyyy/MM/dd"
+/>
+
+
             </td>
             <td></td>
             <td></td>
@@ -1437,24 +1491,31 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
                               
                               
                               {(additionalBreaksByEmployee[employee.employee_id] || []).map((breakItem, breakIndex) => (
+                                console.log(`Employee ID ${employee.employee_id} - Additional Break ${breakIndex} startDate:`, breakItem.startDate),
+                                console.log(`Employee ID ${employee.employee_id} - Additional Break ${breakIndex} Parsed startDate:`, breakItem.startDate ? parseISO(breakItem.startDate) : null),
                                
               <tr key={`additional-${index}-${breakIndex}`}>
                   <td colSpan={27}> {/* You can adjust colSpan according to the number of columns you have */}
                       <React.Fragment>
                           <td>
                           <DatePicker
-selected={breakItem.startDate} // ensure this gets the correct date
-onChange={(date) => handleAdditionalBreakStartDateChange(date, employee.employee_id, breakIndex)}
-dateFormat="dd/MM/yyyy"
+  selected={breakItem.startDate 
+            ? moment.utc(breakItem.startDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            : null}
+  onChange={(date) => handleAdditionalBreakStartDateChange(date, employee.employee_id, breakIndex)}
+  dateFormat="dd/MM/yyyy"
 />
 
-                          </td>
-                          <td>
-                          <DatePicker
-selected={breakItem.endDate}
-onChange={(date) => handleAdditionalBreakEndDateChange(date, employee.employee_id, breakIndex)}
-dateFormat="dd/MM/yyyy"
+</td>
+<td>
+<DatePicker
+  selected={breakItem.endDate 
+            ? moment.utc(breakItem.endDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            : null}
+  onChange={(date) => handleAdditionalBreakEndDateChange(date, employee.employee_id, breakIndex)}
+  dateFormat="dd/MM/yyyy"
 />
+
 
                           </td>
                           
