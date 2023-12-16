@@ -54,52 +54,65 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
   const { editYear, editMonth } = location.state || {};
 
 
+  const handleInitialBreaks = (editableData) => {
+    const updatedBreaksByEmployee = { ...additionalBreaksByEmployee };
+  
+    editableData.forEach(employee => {
+      if (employee.allBreaks && employee.allBreaks.length > 1) {
+        // Process only additional breaks
+        const additionalBreaks = employee.allBreaks.slice(1).map(breakData => ({
+          startDate: breakData.startDate ? new Date(breakData.startDate) : null,
+          endDate: breakData.endDate ? new Date(breakData.endDate) : null,
+          type: breakData.type || '',
+          additionalDays: breakData.additionalDays || 0
+        }));
+  
+        updatedBreaksByEmployee[employee.employee_id] = additionalBreaks;
+      }
+    });
+  
+    setAdditionalBreaksByEmployee(updatedBreaksByEmployee);
+  };
+  
 
 
-  useEffect(() => {
-    console.log("Received Data for Edit:", location.state);
-    if (isEditMode && editableData) {
-      setYear(editYear);
-      setMonth(editMonth);
   
-      const mappedData = editableData.map(ed => {
-        // Map contract details if needed
-        const contracts = ed.contract_details.map(cd => {
-          return {
-            grossAmount: cd.gross_amount,
-            // add other contract details if needed
-          };
-        });
-  
-        // Assuming allBreaks is an array of health breaks
-        const healthBreaksForEmployee = ed.allBreaks.map(hb => {
-          return {
-            startDate: hb.startDate ? new Date(hb.startDate) : null,
-            endDate: hb.endDate ? new Date(hb.endDate) : null,
-            type: hb.type,
-            days: hb.days
-          };
-        });
-  
+
+useEffect(() => {
+  console.log("Received Data for Edit:", location.state);
+  if (isEditMode && editableData) {
+    setYear(editYear);
+    setMonth(editMonth);
+
+    const mappedData = editableData.map(ed => {
+      // Map contract details as before
+      const contracts = ed.contract_details.map(cd => {
+        // Keep your existing logic here if needed
         return {
-          employee_id: ed.employee_id,
-          name: ed.name,
-          surname: ed.surname,
-          gross_amount: ed.gross_amount,
-          contracts: contracts,
-          healthBreaks: healthBreaksForEmployee
+          ...cd, // Spread existing contract details
+          // You might not need to include allBreaks here if you're handling them separately
         };
       });
-  
-      setCalculatedContracts(mappedData);
-  
-      // Flatten all health breaks into a single array for the healthBreaks state
-      const allHealthBreaks = mappedData.flatMap(ed => ed.healthBreaks);
-      setHealthBreaks(allHealthBreaks);
-    } else {
-      fetchValidContracts();
-    }
-  }, [isEditMode, editableData, editYear, editMonth]);
+
+      return {
+        employee_id: ed.employee_id,
+        name: ed.name,
+        surname: ed.surname,
+        gross_amount: ed.gross_amount,
+        contracts: contracts,
+        healthBreaks: ed.allBreaks // Assign all breaks directly to healthBreaks
+      };
+    });
+
+    setCalculatedContracts(mappedData);
+    
+    // Call handleInitialBreaks to process additional breaks
+    handleInitialBreaks(editableData);
+  } else {
+    fetchValidContracts();
+  }
+}, [isEditMode, editableData, editYear, editMonth]);
+
   
   
   
@@ -617,6 +630,7 @@ setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: bre
 
 // Calculate the number of days and update the state
 calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+console.log("Updated additionalBreaksByEmployee after Start Date change:", additionalBreaksByEmployee);
 };
 
 
@@ -630,6 +644,7 @@ setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: bre
 
 // Calculate the number of days and update the state
 calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+console.log("Updated additionalBreaksByEmployee after End Date change:", additionalBreaksByEmployee);
 };
 
 
@@ -1311,13 +1326,15 @@ Save Salary Data
     {calculatedContracts.map((employee, index) => {
       console.log('Employee object:', employee); 
       // Debug log to check if employee has parameters
-  console.log(`Employee ${employee.employee_id} has parameters:`, parameters);
+  console.log(`Employee ${employee.employee_id} has parameters:`, parameters);  
 
   // Debug logs for specific parameters (koszty and ulga)
   console.log(`Koszty for Employee ${employee.employee_id}:`, employee.koszty);
   console.log(`Ulga for Employee ${employee.employee_id}:`, employee.ulga);
-      const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
-      console.log(`Health break for employee ${employee.employee_id}:`, healthBreak);
+  const healthBreak = employee.healthBreaks?.[index] || defaultHealthBreak;
+      console.log(`Health break for employee ${employee.employee_id}:`, healthBreaks);
+      
+      const additionalBreaks = additionalBreaksByEmployee[employee.employee_id] || [];
       
 
                       return (
@@ -1330,7 +1347,7 @@ Save Salary Data
                               <td>{employee.contracts?.[0]?.netAmount}</td>
                               <td>
               <DatePicker
-                  selected={healthBreak.startDate || null}
+                  selected={healthBreak.startDate}
                   selectsStart
                   startDate={healthBreak.startDate}
                   endDate={healthBreak.endDate}
@@ -1390,7 +1407,7 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
             <td></td>
             <td>
               <DatePicker
-                  selected={healthBreak.endDate || null}
+                  selected={healthBreak.endDate}
                   selectsEnd
                   startDate={healthBreak.startDate}
                   endDate={healthBreak.endDate}

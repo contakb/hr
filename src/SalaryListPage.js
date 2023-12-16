@@ -100,16 +100,24 @@ function SalaryListPage() {
             // Add other contract details if necessary
           };
         }),
-        allBreaks: salary.healthBreaks.map(hb => {
-          return {
-            days: hb.break_days, // If you have this information
-            endDate: new Date(hb.break_end_date).toISOString(),
-            startDate: new Date(hb.break_start_date).toISOString(),
-            type: hb.break_type,
-            
-            // Add other break details if necessary
-          };
-        })
+        allBreaks: (() => {
+          const breaks = [];
+          salary.healthBreaks.forEach((hb, index) => {
+            const breakDetails = {
+              endDate: new Date(hb.break_end_date).toISOString(),
+              startDate: new Date(hb.break_start_date).toISOString(),
+              type: hb.break_type,
+              // Add other break details if necessary
+            };
+            if (index === 0) {
+              breakDetails.days = hb.break_days;
+            } else {
+              breakDetails.additionalDays = hb.break_days;
+            }
+            breaks.push(breakDetails);
+          });
+          return breaks;
+        })()
       };
     });
 
