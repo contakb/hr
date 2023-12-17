@@ -607,13 +607,20 @@ const calculateDays = (index, updatedBreaks) => {
 
   if (startDate && endDate) {
     const timeDifference = endDate.getTime() - startDate.getTime();
-    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24)) +1;
     updatedBreaks[index].days = daysDiff;
+
+    console.log("Start Date:", startDate);
+console.log("End Date:", endDate);
+console.log("Days Difference:", daysDiff);
+
   } else {
     updatedBreaks[index].days = 0;
+    
   }
 
   setHealthBreaks(updatedBreaks);
+  
 };
 
 
@@ -643,7 +650,7 @@ toast.info(`Break type changed. Please recalculate the salary.`, {
 // Define the handleAdditionalBreakStartDateChange function
 const handleAdditionalBreakStartDateChange = (date, employeeId, breakIndex) => {
   const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
-  const formattedDate = date ? date.toISOString().split('T')[0] : null;
+  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
   breaksForEmployee[breakIndex].startDate = formattedDate;
   setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
@@ -657,7 +664,7 @@ const handleAdditionalBreakStartDateChange = (date, employeeId, breakIndex) => {
 // Define the handleAdditionalBreakEndDateChange function
 const handleAdditionalBreakEndDateChange = (date, employeeId, breakIndex) => {
   const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
-  const formattedDate = date ? date.toISOString().split('T')[0] : null;
+  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
   breaksForEmployee[breakIndex].endDate = formattedDate;
   setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
@@ -681,7 +688,7 @@ const calculateAdditionalDays = (employeeId, breakIndex, breaksForEmployee) => {
 
   if (startDate && endDate) {
     const timeDifference = endDate.getTime() - startDate.getTime();
-    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
     breaksForEmployee[breakIndex].additionalDays = daysDiff;
   } else {
     breaksForEmployee[breakIndex].additionalDays = 0;
@@ -1454,14 +1461,14 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
             <td>
             <DatePicker
   selected={healthBreak.endDate 
-            ? moment.utc(healthBreak.endDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            ? moment.utc(healthBreak.endDate).tz("Europe/Warsaw").toDate()
             : null}
   selectsEnd
   startDate={healthBreak.startDate 
-            ? moment.utc(healthBreak.startDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            ? moment.utc(healthBreak.startDate).tz("Europe/Warsaw").toDate()
             : null}
   endDate={healthBreak.endDate 
-            ? moment.utc(healthBreak.endDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            ? moment.utc(healthBreak.endDate).tz("Europe/Warsaw").toDate()
             : null}
   onChange={(date) => handleHealthBreakEndDateChange(date, index)}
   dateFormat="yyyy/MM/dd"
@@ -1500,7 +1507,7 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
                           <td>
                           <DatePicker
   selected={breakItem.startDate 
-            ? moment.utc(breakItem.startDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            ? moment.utc(breakItem.startDate).tz("Europe/Warsaw").toDate()
             : null}
   onChange={(date) => handleAdditionalBreakStartDateChange(date, employee.employee_id, breakIndex)}
   dateFormat="dd/MM/yyyy"
@@ -1510,7 +1517,7 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
 <td>
 <DatePicker
   selected={breakItem.endDate 
-            ? moment.utc(breakItem.endDate).set({ hour: 12 }).tz("Europe/Warsaw").toDate()
+            ? moment.utc(breakItem.endDate).tz("Europe/Warsaw").toDate()
             : null}
   onChange={(date) => handleAdditionalBreakEndDateChange(date, employee.employee_id, breakIndex)}
   dateFormat="dd/MM/yyyy"
