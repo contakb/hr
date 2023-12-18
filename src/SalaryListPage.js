@@ -91,12 +91,14 @@ function SalaryListPage() {
         employee_id: salary.employee_id,
         name: salary.employees.name,
         surname: salary.employees.surname,
+        employee_koszty: salary.koszty,
+        employee_ulga: salary.ulga,
         gross_amount: salary.gross_total,
         contract_details: salary.contracts.map(contract => {
           return {
             gross_amount: contract.gross_amount,
             contract_from_date: contract.contract_from_date,
-            contract_to_date: contract.contract_to_date
+            contract_to_date: contract.contract_to_date,
             // Add other contract details if necessary
           };
         }),
@@ -225,6 +227,7 @@ function SalaryListDetails({ salaryList }) {
 			<th>Ub.zdrowotne</th>
 			<th>ub.chorobowe</th>
 			<th>Koszty</th>
+      <th>Ulga</th>
 			<th>Podatek</th>
 			<th>Netto</th>
       <th>wyn.chorobowe</th>
@@ -249,6 +252,7 @@ function SalaryListDetails({ salaryList }) {
 			  <td>{salary.chorobowe}</td>
 			  <td>{salary.heath_amount}</td>
 			  <td>{salary.koszty}</td>
+        <td>{salary.ulga}</td>
 			  <td>{salary.tax}</td>
 			  <td>{salary.net_amount}</td>
         <td>{salary.wyn_chorobowe}</td>

@@ -93,6 +93,7 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
 
   useEffect(() => {
     console.log("Received Data for Edit:", location.state);
+  
     if (isEditMode && editableData) {
       setYear(editYear);
       setMonth(editMonth);
@@ -107,10 +108,11 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
         });
   
         return {
-          employee_id: ed.employee_id,
+          employee_id: ed.employee_id, 
           name: ed.name,
           surname: ed.surname,
           gross_amount: ed.gross_amount,
+         
           contracts: contracts,
           healthBreaks: ed.allBreaks // Assign all breaks directly to healthBreaks
         };
@@ -787,6 +789,7 @@ console.log("Updated Bonuses after change:", updatedBonuses); // Log the updated
 const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, employeeId) => {
 
 console.log(`Calculating salary for employee ID ${employeeId}`);
+console.log(`Calculating salary for employee ID ${employeeId} with koszty=${koszty}, ulga=${ulga}`);
 
 console.log('Koszty:', koszty, 'Ulga:', ulga);
 // Set default values if koszty or ulga are not provided
@@ -1552,8 +1555,9 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
     ))}
 
           <tr>
-          <button onClick={() => {
-      
+          <button onClick={async () => {
+      const updatedEmployee = await fetchAllParameters(employee);
+      console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
             
   const daysOfBreak = healthBreak.days;
   const breakType = healthBreak.type;
@@ -1614,8 +1618,8 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
     bonus,
     bonusValue,
     wypadkoweRate,
-    employee.koszty,
-    employee.ulga,
+    updatedEmployee.koszty, // Use updated koszty
+    updatedEmployee.ulga,
     allBreaks,
     employee.employee_id,
     employeeBonuses[employee.employee_id] || 0
@@ -1624,7 +1628,7 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
   
   // Update this specific employee's data in the state:
   const updatedEmployees = [...calculatedContracts];
-  updatedEmployees[index] = { ...employee, contracts: [calculatedValues] };
+  updatedEmployees[index] = { ...updatedEmployee, contracts: [calculatedValues] };
   setCalculatedContracts(updatedEmployees);
   
 
@@ -1632,6 +1636,7 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
 
 
   console.log(`Updated employee data for ID ${employee.employee_id}:`, updatedEmployees[index]);
+
 }}>
   Calculate
   

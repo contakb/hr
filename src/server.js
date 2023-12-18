@@ -330,7 +330,7 @@ app.get('/salary-list', async (req, res) => {
     // Define the base query for retrieving salary data
     let baseQuery = supabase
       .from('salaries')
-      .select('id, employee_id, gross_total, social_base, salary_month, salary_year, salary_date, net_amount, emeryt_ub, rent_ub, chorobowe, heath_amount, koszty, wyn_chorobowe, bonus,  tax, employees!salaries_employee_id_fkey(name, surname)')
+      .select('id, employee_id, gross_total, social_base, salary_month, salary_year, salary_date, net_amount, emeryt_ub, rent_ub, chorobowe, heath_amount, koszty, ulga, wyn_chorobowe, bonus,  tax, employees!salaries_employee_id_fkey(name, surname)')
       .order('salary_date', { ascending: false });
 
     // Add filters for month and year if provided
