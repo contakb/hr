@@ -94,6 +94,7 @@ function SalaryListPage() {
         employee_koszty: salary.koszty,
         employee_ulga: salary.ulga,
         gross_amount: salary.gross_total,
+        
         contract_details: salary.contracts.map(contract => {
           return {
             gross_amount: contract.gross_amount,
@@ -109,6 +110,7 @@ function SalaryListPage() {
               endDate: new Date(hb.break_end_date).toISOString(),
               startDate: new Date(hb.break_start_date).toISOString(),
               type: hb.break_type,
+              id: hb.id
               // Add other break details if necessary
             };
             if (index === 0) {
