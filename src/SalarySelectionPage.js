@@ -785,6 +785,10 @@ const addAdditionalBreak = (employeeId) => {
   
   
   
+  
+  
+  
+  
   const deletePrimaryBreak = (employeeId) => {
     // Iterate over calculatedContracts to update the specific employee's breaks
     const updatedContracts = calculatedContracts.map(employee => {
