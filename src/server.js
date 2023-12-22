@@ -266,6 +266,26 @@ app.get('/api/get-health-breaks', async (req, res) => {
   }
 });
 
+app.delete('/api/delete-health-breaks', async (req, res) => {
+  console.log("Received request to delete breaks:", req.body);
+  const breakIds = req.body.breakIds;
+
+  // Loop through breakIds and delete each entry from the database
+  try {
+      for (const breakId of breakIds) {
+          await supabase
+              .from('health_breaks')
+              .delete()
+              .match({ id: breakId });
+      }
+      res.status(200).send("Breaks deleted successfully.");
+  } catch (error) {
+      console.error("Error deleting breaks:", error);
+      res.status(500).send("Error occurred while deleting breaks.");
+  }
+});
+
+
 
 app.post('/api/save-salary-data', async (req, res) => {
   const salaryData = req.body; // The salary data received from the frontend

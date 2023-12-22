@@ -724,69 +724,125 @@ toast.info(`Break type changed for employee ID ${employeeId}. Please recalculate
 
 
 const addAdditionalBreak = (employeeId) => {
-const newBreak = { startDate: null, endDate: null, type: '', additionalDays: 0 };
-const updatedBreaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || []), newBreak];
-setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: updatedBreaksForEmployee });
-};
-
-
-const deleteAdditionalBreak = (employeeId, breakIndex) => {
-  const breaksForEmployee = additionalBreaksByEmployee[employeeId] || [];
-  const breakToDelete = breaksForEmployee[breakIndex];
-
-  if (breakToDelete) {
-    if (breakToDelete.id) {
-      // If the break has an ID, mark it for deletion but keep in the array
-      breaksForEmployee[breakIndex] = { ...breakToDelete, isDeleted: true };
-      toast.info(`Additional break for employee ID: ${employeeId} marked for deletion.`);
-    } else {
-      // If it's a new break without an ID, just remove it from the array
-      toast.info(`Additional break for employee ID: ${employeeId} removed.`);
-    }
-
-    // Remove the break from the array (regardless of whether it's new or existing)
-    breaksForEmployee.splice(breakIndex, 1);
-
-    // Reset the specific additional break to the default state
-    breaksForEmployee[breakIndex] = { ...defaultHealthBreak };
-  } else {
-    // In case there's no break at the given index, reset to default
-    breaksForEmployee[breakIndex] = { ...defaultHealthBreak };
-    toast.info(`Break reset to default for employee ID: ${employeeId}.`);
-  }
-
-  // Update the state with the modified array of breaks
-  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
-};
-
-
-
-const deletePrimaryBreak = (employeeId) => {
-  let breaksMarkedForDeletion = [];
-
-  // Update healthBreaks for the specific employee
-  const updatedHealthBreaks = healthBreaks.map((breakItem, index) => {
-    if (calculatedContracts[index].employee_id === employeeId) {
-      if (breakItem.id) {
-        // If the break has an ID, mark it for deletion
-        breaksMarkedForDeletion.push(breakItem.id);
-        toast.info(`Primary break for employee ID: ${employeeId} marked for deletion.`);
+  const newBreak = { startDate: null, endDate: null, type: '', additionalDays: 0 };
+  const updatedBreaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || []), newBreak];
+  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: updatedBreaksForEmployee });
+  };
+  
+  
+  const deleteAdditionalBreak = (employeeId, breakIndex) => {
+    const breaksForEmployee = additionalBreaksByEmployee[employeeId] || [];
+    const breakToDelete = breaksForEmployee[breakIndex];
+  
+    if (breakToDelete) {
+      // Update the breaks in additionalBreaksByEmployee
+      if (breakToDelete.id) {
+        breaksForEmployee[breakIndex] = { ...breakToDelete, isDeleted: true };
+        toast.info(`Additional break for employee ID: ${employeeId} marked for deletion.`);
       } else {
-        toast.info(`Primary break for employee ID: ${employeeId} has been reset.`);
+        toast.info(`Additional break for employee ID: ${employeeId} removed.`);
       }
-      // Reset the primary break to the default state in both cases
-      return { ...defaultHealthBreak };
+      breaksForEmployee.splice(breakIndex, 1);
+  
+      // Update the breaks in calculatedContracts (healthBreaks)
+      const updatedEmployees = calculatedContracts.map(employee => {
+        if (employee.employee_id === employeeId) {
+          const updatedHealthBreaks = employee.healthBreaks.map((healthBreak, idx) => {
+            // Find the matching break in healthBreaks and mark it for deletion
+            if (healthBreak.id === breakToDelete.id) {
+              return { ...healthBreak, isDeleted: true };
+            }
+            return healthBreak;
+          });
+  
+          return { ...employee, healthBreaks: updatedHealthBreaks };
+        }
+        return employee;
+      });
+  
+      setCalculatedContracts(updatedEmployees);
+      setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+    } else {
+      toast.error(`No additional break found for employee ID: ${employeeId}.`);
     }
-    return breakItem;
-  });
+  };
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const deletePrimaryBreak = (employeeId) => {
+    // Iterate over calculatedContracts to update the specific employee's breaks
+    const updatedContracts = calculatedContracts.map(employee => {
+      if (employee.employee_id === employeeId) {
+        // Mark the primary health break for deletion and reset its data to default
+        // but keep the break's id
+        const updatedHealthBreaks = employee.healthBreaks.map(breakItem => {
+          if (breakItem.id === employee.healthBreaks[0]?.id) {
+            return { ...defaultHealthBreak, id: breakItem.id, isDeleted: true };
+          }
+          return breakItem;
+        });
+  
+        return {
+          ...employee,
+          contracts: [{ ...employee.contracts[0] }],
+          healthBreaks: updatedHealthBreaks,
+        };
+      }
+      return employee;
+    });
+  
+    setCalculatedContracts(updatedContracts);
+  
+    // Update healthBreaks in the state
+    const updatedHealthBreaks = healthBreaks.map((breakItem, index) => {
+      if (calculatedContracts[index]?.employee_id === employeeId && breakItem?.id) {
+        // Reset the break data to default and mark for deletion, but keep the id
+        return { ...defaultHealthBreak, id: breakItem.id, isDeleted: true };
+      }
+      return breakItem;
+    });
+  
+    setHealthBreaks(updatedHealthBreaks);
+  
+    toast.info(`Primary break for employee ID: ${employeeId} marked for deletion and reset to default.`);
+  };
+  
+  
+  
+  
+  
+  
 
-  setHealthBreaks(updatedHealthBreaks);
+  
+  
+  
+  
+  
 
-  // Update the breaksToDelete state
-  if (breaksMarkedForDeletion.length > 0) {
-    setBreaksToDelete(prev => [...prev, ...breaksMarkedForDeletion]);
-  }
-};
+
+
+
+
+
+
+
+
 
 
 
@@ -1688,6 +1744,9 @@ const grossAmountValue = employeeProRatedGross ? employeeProRatedGross : employe
   // Construct the arrays here, based on the additionalBreaks structure.
    // Extract the arrays for the specific employee from the additionalBreaksByEmployee structure.
    const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
+   // Filter out breaks that are marked for deletion
+  const validBreaksForEmployee = breaksForEmployee.filter(breakItem => !breakItem.isDeleted);
+
    const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
    const additionalBreakTypesArray = breaksForEmployee.map(breakItem => breakItem.type || '');
    // Extract total days not worked for this employee

@@ -110,7 +110,9 @@ function SalaryListPage() {
               endDate: new Date(hb.break_end_date).toISOString(),
               startDate: new Date(hb.break_start_date).toISOString(),
               type: hb.break_type,
-              id: hb.id
+              id: hb.id,
+              employee_id: salary.employee_id,
+
               // Add other break details if necessary
             };
             if (index === 0) {
