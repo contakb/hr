@@ -730,42 +730,51 @@ const addAdditionalBreak = (employeeId) => {
   };
   
   
-  const deleteAdditionalBreak = (employeeId, breakIndex) => {
+  const deleteAdditionalBreak = (employeeId, breakIndex, isEditMode) => {
     const breaksForEmployee = additionalBreaksByEmployee[employeeId] || [];
     const breakToDelete = breaksForEmployee[breakIndex];
   
     if (breakToDelete) {
-      // Update the breaks in additionalBreaksByEmployee
-      if (breakToDelete.id) {
-        breaksForEmployee[breakIndex] = { ...breakToDelete, isDeleted: true };
-        toast.info(`Additional break for employee ID: ${employeeId} marked for deletion.`);
+      // Direct removal in non-edit mode
+      if (!isEditMode) {
+        breaksForEmployee.splice(breakIndex, 1);
+        toast.info(`Break at index ${breakIndex} for employee ID: ${employeeId} removed in non-edit mode.`);
       } else {
-        toast.info(`Additional break for employee ID: ${employeeId} removed.`);
-      }
-      breaksForEmployee.splice(breakIndex, 1);
-  
-      // Update the breaks in calculatedContracts (healthBreaks)
-      const updatedEmployees = calculatedContracts.map(employee => {
-        if (employee.employee_id === employeeId) {
-          const updatedHealthBreaks = employee.healthBreaks.map((healthBreak, idx) => {
-            // Find the matching break in healthBreaks and mark it for deletion
-            if (healthBreak.id === breakToDelete.id) {
-              return { ...healthBreak, isDeleted: true };
-            }
-            return healthBreak;
-          });
-  
-          return { ...employee, healthBreaks: updatedHealthBreaks };
+        // Existing functionality: Mark the break for deletion or remove it
+        if (breakToDelete.id) {
+          breaksForEmployee[breakIndex] = { ...breakToDelete, isDeleted: true };
+          toast.info(`Additional break for employee ID: ${employeeId} marked for deletion.`);
+        } else {
+          toast.info(`Additional break for employee ID: ${employeeId} removed.`);
+          breaksForEmployee.splice(breakIndex, 1);
         }
-        return employee;
-      });
+      }
   
-      setCalculatedContracts(updatedEmployees);
+      // Safely update the breaks in calculatedContracts (healthBreaks)
+      if (calculatedContracts && calculatedContracts.map) {
+        const updatedEmployees = calculatedContracts.map(employee => {
+          if (employee.employee_id === employeeId && employee.healthBreaks && employee.healthBreaks.map) {
+            const updatedHealthBreaks = employee.healthBreaks.map((healthBreak) => {
+              if (healthBreak.id === breakToDelete.id) {
+                return { ...healthBreak, isDeleted: true };
+              }
+              return healthBreak;
+            });
+  
+            return { ...employee, healthBreaks: updatedHealthBreaks };
+          }
+          return employee;
+        });
+  
+        setCalculatedContracts(updatedEmployees);
+      }
+  
       setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
     } else {
       toast.error(`No additional break found for employee ID: ${employeeId}.`);
     }
   };
+  
   
   
   
