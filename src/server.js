@@ -285,6 +285,41 @@ app.delete('/api/delete-health-breaks', async (req, res) => {
   }
 });
 
+app.put('/api/update-health-breaks', async (req, res) => {
+  console.log("Received request to update breaks:", req.body);
+  const breaksData = req.body.breaksData;
+  let updatesMade = false;
+
+  try {
+    for (const breakEntry of breaksData) {
+      const { data, error } = await supabase
+        .from('health_breaks')
+        .update({
+          break_type: breakEntry.break_type,
+          break_start_date: breakEntry.break_start_date,
+          break_end_date: breakEntry.break_end_date,
+          break_days: breakEntry.break_days
+        })
+        .match({ id: breakEntry.id });
+
+      if (error) {
+        throw error;
+      }
+
+      // Check if data is non-empty, indicating updates were made
+      if (data && data.length > 0) {
+        updatesMade = true;
+      }
+    }
+
+    res.status(200).json({ message: "Breaks processed successfully.", updatesMade });
+  } catch (error) {
+    console.error("Error updating breaks:", error);
+    res.status(500).send("Error occurred while updating breaks.");
+  }
+});
+
+
 
 
 app.post('/api/save-salary-data', async (req, res) => {

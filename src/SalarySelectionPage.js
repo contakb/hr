@@ -1268,39 +1268,42 @@ const prepareBreaksData = () => {
   let deletedBreakIds = [];
 
   calculatedContracts.forEach(employee => {
-    employee.contracts.forEach(contract => {
-      contract.allBreaks.forEach(breakItem => {
-        console.log("Processing Break Item:", breakItem);
-            // Exclude breaks with null start or end dates or invalid type
-        // Calculate total break days
-        const totalBreakDays = (breakItem.days || 0) + (breakItem.additionalDays || 0);
-            // Exclude breaks with null start or end dates or invalid type
-            if (!breakItem.startDate || !breakItem.endDate || breakItem.type === 'brak') return;
-
+    // Process healthBreaks at the employee level
+    if (employee.healthBreaks && Array.isArray(employee.healthBreaks)) {
+      employee.healthBreaks.forEach(breakItem => {
         if (breakItem.isDeleted && typeof breakItem.id === 'number') {
-          // If the break is marked as deleted and has a numeric ID
           deletedBreakIds.push(breakItem.id);
-        } else if (typeof breakItem.id === 'number') {
-          // If the break has a numeric ID, it's an existing break that may have been updated
-          updatedBreaks.push({
-            id: breakItem.id,
-            employee_id: employee.employee_id,
-            break_type: breakItem.type,
-            break_start_date: formatDateForServer(breakItem.startDate),
-            break_end_date: formatDateForServer(breakItem.endDate),
-            break_days: totalBreakDays
-          });
-        } else {
-          // If the break doesn't have an ID or the ID is not a number, it's a new break
-          newBreaks.push({
-            employee_id: employee.employee_id,
-            break_type: breakItem.type,
-            break_start_date: formatDateForServer(breakItem.startDate),
-            break_end_date: formatDateForServer(breakItem.endDate),
-            break_days: totalBreakDays
-          });
         }
       });
+    }
+
+    // Process allBreaks within each contract
+    employee.contracts.forEach(contract => {
+      if (contract.allBreaks && Array.isArray(contract.allBreaks)) {
+        contract.allBreaks.forEach(breakItem => {
+          const totalBreakDays = (breakItem.days || 0) + (breakItem.additionalDays || 0);
+          if (!breakItem.startDate || !breakItem.endDate || breakItem.type === 'brak') return;
+
+          if (typeof breakItem.id === 'number' && !breakItem.isDeleted) {
+            updatedBreaks.push({
+              id: breakItem.id,
+              employee_id: employee.employee_id,
+              break_type: breakItem.type,
+              break_start_date: formatDateForServer(breakItem.startDate),
+              break_end_date: formatDateForServer(breakItem.endDate),
+              break_days: totalBreakDays
+            });
+          } else if (typeof breakItem.id !== 'number') {
+            newBreaks.push({
+              employee_id: employee.employee_id,
+              break_type: breakItem.type,
+              break_start_date: formatDateForServer(breakItem.startDate),
+              break_end_date: formatDateForServer(breakItem.endDate),
+              break_days: totalBreakDays
+            });
+          }
+        });
+      }
     });
   });
 
@@ -1309,27 +1312,26 @@ const prepareBreaksData = () => {
 
 
 
+
 const handleSaveBreaksData = async () => {
   const { newBreaks, updatedBreaks, deletedBreakIds } = prepareBreaksData();
   console.log("New Breaks to Save:", newBreaks);
-    console.log("Breaks to Update:", updatedBreaks);
-    console.log("Break IDs to Delete:", deletedBreakIds);
-    console.log("Break IDs to Delete:", deletedBreakIds);
+  console.log("Breaks to Update:", updatedBreaks);
+  console.log("Break IDs to Delete:", deletedBreakIds);
 
-  // Check if all breaks have a type selected and are not 'brak'
+  let employeesWithIncompleteBreaks = [];
 
-let employeesWithIncompleteBreaks = [];
+  calculatedContracts.forEach(employee => {
+    // Check if allBreaks exists before proceeding
+    if (employee.contracts[0].allBreaks && Array.isArray(employee.contracts[0].allBreaks)) {
+      const hasIncompleteBreaks = employee.contracts[0].allBreaks.some(breakItem => 
+        (breakItem.startDate || breakItem.endDate) && (!breakItem.type || breakItem.type === 'brak'));
 
-calculatedContracts.forEach(employee => {
-  // Check for breaks where dates are picked but the type is not selected or is 'brak'
-  const hasIncompleteBreaks = employee.contracts[0].allBreaks.some(breakItem => 
-    (breakItem.startDate || breakItem.endDate) && (!breakItem.type || breakItem.type === 'brak'));
-
-  if (hasIncompleteBreaks) {
-    // Add the employee's name or ID to the array
-    employeesWithIncompleteBreaks.push(`${employee.name} ${employee.surname} (ID: ${employee.employee_id})`);
-  }
-});
+      if (hasIncompleteBreaks) {
+        employeesWithIncompleteBreaks.push(`${employee.name} ${employee.surname} (ID: ${employee.employee_id})`);
+      }
+    }
+  });
 
 if (employeesWithIncompleteBreaks.length > 0) {
   // Convert the array to a comma-separated string
@@ -1361,32 +1363,47 @@ if (newBreaks.length > 0) {
     toast.error("Error occurred while saving breaks data.");
   }
 } else {
-  console.log("No valid breaks data to save.");
-  toast.info("No valid breaks data to save.");
+  console.log("No any new valid breaks data to save.");
+  toast.info("No any new valid breaks data to save.");
 }
-// Handle updating and deleting existing breaks
-try {
-  // Update existing breaks
-  if (updatedBreaks.length > 0) {
+if (updatedBreaks.length > 0) {
+  try {
     const responseUpdate = await axios.put('http://localhost:3001/api/update-health-breaks', { breaksData: updatedBreaks });
     if (responseUpdate.status === 200) {
       console.log("Breaks updated successfully.");
+      toast.success("Breaks updated successfully.");
+    } else {
+      console.error("Failed to update breaks. Response status:", responseUpdate.status);
+      toast.error("Failed to update breaks.");
     }
+  } catch (error) {
+    console.error("Error during breaks update:", error);
+    toast.error("Error occurred during breaks update.");
   }
+} else {
+  console.log("No breaks to update.");
+  toast.info("No breaks to update.");
+}
 
-  // Delete breaks marked for deletion
-  if (deletedBreakIds.length > 0) {
+
+if (deletedBreakIds.length > 0) {
+  try {
     const responseDelete = await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: deletedBreakIds } });
     if (responseDelete.status === 200) {
       console.log("Breaks deleted successfully.");
+      toast.success("Breaks deleted successfully.");
+      // Additional logic if needed post-deletion
+    } else {
+      console.error("Failed to delete breaks. Response status:", responseDelete.status);
+      toast.error("Failed to delete breaks.");
     }
+  } catch (error) {
+    console.error("Error during break deletion:", error);
+    toast.error("Error occurred during break deletion.");
   }
-
-  toast.success("Breaks operations (update/delete) completed successfully.");
-  setAreBreaksSaved(true); // Update the state variable
-} catch (error) {
-  console.error("Error during breaks update/delete operations:", error);
-  toast.error("Error occurred during breaks update/delete operations.");
+} else {
+  console.log("No any breaks to delete.");
+  toast.info("No any breaks to delete.");
 }
 };
 
