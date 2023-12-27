@@ -1133,6 +1133,13 @@ const updatedContracts = calculatedContracts.map((employee, index) => {
     ...breaksForEmployee
 ];
 
+// Log dates before formatting
+console.log('Dates before formatting:', allBreaks.map(breakItem => ({ startDate: breakItem.startDate, endDate: breakItem.endDate })));
+// Format the dates for all breaks using formatDateForServer
+allBreaks.forEach(breakItem => {
+  breakItem.startDate = formatDateForServer(breakItem.startDate);
+  breakItem.endDate = formatDateForServer(breakItem.endDate);
+});
 
 
   console.log("Current state of employeeBonuses:", employeeBonuses);
