@@ -658,8 +658,8 @@ const handleAdditionalBreakStartDateChange = (date, employeeId, breakIndex) => {
 
   breaksForEmployee[breakIndex].startDate = formattedDate;
   setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+  console.log(`Start Date Changed: ${formattedDate}`);
 
-  // Calculate the number of days and update the state
   calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
   console.log("Updated additionalBreaksByEmployee after Start Date change:", additionalBreaksByEmployee);
 };
@@ -672,6 +672,7 @@ const handleAdditionalBreakEndDateChange = (date, employeeId, breakIndex) => {
 
   breaksForEmployee[breakIndex].endDate = formattedDate;
   setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+  console.log(`End Date Changed: ${formattedDate}`);
 
   // Calculate the number of days and update the state
   calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
@@ -1221,16 +1222,22 @@ console.log(updatedContracts);
 setCalculatedContracts(updatedContracts);
 };
 
-const formatDateForServer = (dateString) => {
-  // Check if dateString is not null and is a string
-  if (typeof dateString !== 'string' || !dateString) return null;
+const formatDateForServer = (dateInput) => {
+  // If dateInput is a Date object, convert it to an ISO string
+  if (dateInput instanceof Date) {
+    dateInput = dateInput.toISOString();
+  }
+
+  // Check if dateInput is a string and not empty
+  if (typeof dateInput !== 'string' || !dateInput) return null;
 
   // Convert dateString to a Date object using moment-timezone
-  const date = moment(dateString).tz("Europe/Warsaw").toDate();
+  const date = moment(dateInput).tz("Europe/Warsaw").toDate();
 
   // Format the Date object using moment-timezone
   return moment(date).tz("Europe/Warsaw").format('YYYY-MM-DD');
 };
+
 
 
 
@@ -1722,8 +1729,9 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
             ? moment.utc(breakItem.startDate).tz("Europe/Warsaw").toDate()
             : null}
   onChange={(date) => handleAdditionalBreakStartDateChange(date, employee.employee_id, breakIndex)}
-  dateFormat="dd/MM/yyyy"
+  dateFormat="yyyy/MM/dd"
 />
+
 
 </td>
 <td>
@@ -1731,9 +1739,17 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
   selected={breakItem.endDate 
             ? moment.utc(breakItem.endDate).tz("Europe/Warsaw").toDate()
             : null}
+  selectsEnd
+  startDate={breakItem.startDate 
+            ? moment.utc(breakItem.startDate).tz("Europe/Warsaw").toDate()
+            : null}
+  endDate={breakItem.endDate 
+            ? moment.utc(breakItem.endDate).tz("Europe/Warsaw").toDate()
+            : null}
   onChange={(date) => handleAdditionalBreakEndDateChange(date, employee.employee_id, breakIndex)}
-  dateFormat="dd/MM/yyyy"
+  dateFormat="yyyy/MM/dd"
 />
+
 
 
                           </td>
@@ -1788,6 +1804,8 @@ const bonus = employeeBonuses[employee.employee_id] || 0;
 
 const bonusValue = employeeBonuses[employee.employee_id] || 0;
 
+
+
 const allBreaks = [
   { 
       startDate: healthBreak.startDate,
@@ -1799,6 +1817,16 @@ const allBreaks = [
   ...breaksForEmployee
 ];
 
+// Log dates before formatting
+console.log('Dates before formatting:', allBreaks.map(breakItem => ({ startDate: breakItem.startDate, endDate: breakItem.endDate })));
+// Format the dates for all breaks using formatDateForServer
+allBreaks.forEach(breakItem => {
+  breakItem.startDate = formatDateForServer(breakItem.startDate);
+  breakItem.endDate = formatDateForServer(breakItem.endDate);
+});
+
+// Log dates after formatting
+console.log('Dates after formatting:', allBreaks.map(breakItem => ({ startDate: breakItem.startDate, endDate: breakItem.endDate })));
 
 // Add a log to check the value of wypadkoweRate before calling calculateSalary
 console.log('wypadkoweRate before calling calculateSalary:', wypadkoweRate);
