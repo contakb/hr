@@ -1369,12 +1369,12 @@ if (newBreaks.length > 0) {
 if (updatedBreaks.length > 0) {
   try {
     const responseUpdate = await axios.put('http://localhost:3001/api/update-health-breaks', { breaksData: updatedBreaks });
-    if (responseUpdate.status === 200) {
+    if (responseUpdate.status === 200 && responseUpdate.data.updatedBreaksData.length > 0) {
       console.log("Breaks updated successfully.");
       toast.success("Breaks updated successfully.");
     } else {
-      console.error("Failed to update breaks. Response status:", responseUpdate.status);
-      toast.error("Failed to update breaks.");
+      console.log("No new updates were made to breaks.");
+      toast.info("No new updates were made to breaks.");
     }
   } catch (error) {
     console.error("Error during breaks update:", error);
@@ -1386,11 +1386,13 @@ if (updatedBreaks.length > 0) {
 }
 
 
+
 if (deletedBreakIds.length > 0) {
   try {
     const responseDelete = await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: deletedBreakIds } });
     if (responseDelete.status === 200) {
       console.log("Breaks deleted successfully.");
+      setAreBreaksSaved(true);
       toast.success("Breaks deleted successfully.");
       // Additional logic if needed post-deletion
     } else {

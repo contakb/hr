@@ -286,9 +286,8 @@ app.delete('/api/delete-health-breaks', async (req, res) => {
 });
 
 app.put('/api/update-health-breaks', async (req, res) => {
-  console.log("Received request to update breaks:", req.body);
   const breaksData = req.body.breaksData;
-  let updatesMade = false;
+  let updatedBreaksData = [];
 
   try {
     for (const breakEntry of breaksData) {
@@ -300,24 +299,29 @@ app.put('/api/update-health-breaks', async (req, res) => {
           break_end_date: breakEntry.break_end_date,
           break_days: breakEntry.break_days
         })
-        .match({ id: breakEntry.id });
+        .match({ id: breakEntry.id })
+        .select(); // Retrieve the updated records
 
       if (error) {
         throw error;
       }
 
-      // Check if data is non-empty, indicating updates were made
       if (data && data.length > 0) {
-        updatesMade = true;
+        updatedBreaksData.push(...data);
       }
     }
 
-    res.status(200).json({ message: "Breaks processed successfully.", updatesMade });
+    if (updatedBreaksData.length > 0) {
+      res.status(200).json({ message: "Breaks updated successfully.", updatedBreaksData });
+    } else {
+      res.status(200).json({ message: "No new updates were made to breaks.", updatedBreaksData });
+    }
   } catch (error) {
     console.error("Error updating breaks:", error);
     res.status(500).send("Error occurred while updating breaks.");
   }
 });
+
 
 
 
