@@ -265,8 +265,15 @@ const fetchValidContracts = async () => {
       const employeesData = response.data.employees;
       console.log("Valid contracts fetched:", employeesData);
 
+     // Add default health breaks to each employee and create a new array
+    const employeesWithDefaults = employeesData.map(employee => ({
+      ...employee,
+      healthBreaks: employee.healthBreaks && employee.healthBreaks.length > 0 
+                     ? employee.healthBreaks 
+                     : [{ startDate: null, endDate: null, days: 0, type: '' }] // default health breaks
+    }));
       console.log('Fetching and updating parameters for each employee...');
-      const updatedValidContracts = await Promise.all(employeesData.map(fetchAllParameters));
+      const updatedValidContracts = await Promise.all(employeesWithDefaults.map(fetchAllParameters));
       console.log('Updated valid contracts with parameters:', updatedValidContracts);
 
       setValidContracts(updatedValidContracts);
@@ -1292,37 +1299,40 @@ const prepareBreaksData = () => {
     }
 
     // Process allBreaks within each contract
-    employee.contracts.forEach(contract => {
-      if (contract.allBreaks && Array.isArray(contract.allBreaks)) {
-        contract.allBreaks.forEach(breakItem => {
-          const totalBreakDays = (breakItem.days || 0) + (breakItem.additionalDays || 0);
-          if (!breakItem.startDate || !breakItem.endDate || breakItem.type === 'brak') return;
+    if (employee.contracts && Array.isArray(employee.contracts)) {
+      employee.contracts.forEach(contract => {
+        if (contract.allBreaks && Array.isArray(contract.allBreaks)) {
+          contract.allBreaks.forEach(breakItem => {
+            const totalBreakDays = (breakItem.days || 0) + (breakItem.additionalDays || 0);
+            if (!breakItem.startDate || !breakItem.endDate || breakItem.type === 'brak') return;
 
-          if (typeof breakItem.id === 'number' && !breakItem.isDeleted) {
-            updatedBreaks.push({
-              id: breakItem.id,
-              employee_id: employee.employee_id,
-              break_type: breakItem.type,
-              break_start_date: formatDateForServer(breakItem.startDate),
-              break_end_date: formatDateForServer(breakItem.endDate),
-              break_days: totalBreakDays
-            });
-          } else if (typeof breakItem.id !== 'number') {
-            newBreaks.push({
-              employee_id: employee.employee_id,
-              break_type: breakItem.type,
-              break_start_date: formatDateForServer(breakItem.startDate),
-              break_end_date: formatDateForServer(breakItem.endDate),
-              break_days: totalBreakDays
-            });
-          }
-        });
-      }
-    });
+            if (typeof breakItem.id === 'number' && !breakItem.isDeleted) {
+              updatedBreaks.push({
+                id: breakItem.id,
+                employee_id: employee.employee_id,
+                break_type: breakItem.type,
+                break_start_date: formatDateForServer(breakItem.startDate),
+                break_end_date: formatDateForServer(breakItem.endDate),
+                break_days: totalBreakDays
+              });
+            } else if (typeof breakItem.id !== 'number') {
+              newBreaks.push({
+                employee_id: employee.employee_id,
+                break_type: breakItem.type,
+                break_start_date: formatDateForServer(breakItem.startDate),
+                break_end_date: formatDateForServer(breakItem.endDate),
+                break_days: totalBreakDays
+              });
+            }
+          });
+        }
+      });
+    }
   });
 
   return { newBreaks, updatedBreaks, deletedBreakIds };
 };
+
 
 
 
@@ -1336,8 +1346,8 @@ const handleSaveBreaksData = async () => {
   let employeesWithIncompleteBreaks = [];
 
   calculatedContracts.forEach(employee => {
-    // Check if allBreaks exists before proceeding
-    if (employee.contracts[0].allBreaks && Array.isArray(employee.contracts[0].allBreaks)) {
+    // Check if the employee has contracts and the first contract has allBreaks
+    if (employee.contracts && employee.contracts.length > 0 && employee.contracts[0].allBreaks && Array.isArray(employee.contracts[0].allBreaks)) {
       const hasIncompleteBreaks = employee.contracts[0].allBreaks.some(breakItem => 
         (breakItem.startDate || breakItem.endDate) && (!breakItem.type || breakItem.type === 'brak'));
 
