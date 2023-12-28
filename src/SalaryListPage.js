@@ -113,6 +113,7 @@ function SalaryListPage() {
               type: hb.break_type,
               id: hb.id,
               employee_id: salary.employee_id,
+              isEdited: false
 
               // Add other break details if necessary
             };

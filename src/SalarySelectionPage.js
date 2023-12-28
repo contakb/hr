@@ -59,6 +59,7 @@ const [koszty, setKoszty] = useState(null);
 const [ulga, setUlga] = useState(null);
 const [transformedBreakData, setTransformedBreakData] = useState([]);
 const [breaksToDelete, setBreaksToDelete] = useState([]);
+const [isAllSalaryCalculated, setIsAllSalaryCalculated] = useState(false);
 
 
 
@@ -80,7 +81,8 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
           endDate: breakData.endDate ? new Date(breakData.endDate) : null,
           type: breakData.type || '',
           additionalDays: breakData.additionalDays || 0,
-          id: breakData.id
+          id: breakData.id,
+          isEdited: false
         }));
   
         updatedBreaksByEmployee[employee.employee_id] = additionalBreaks;
@@ -1188,6 +1190,8 @@ allBreaks,
 });
 
 setCalculatedContracts(updatedContracts); // Update the state with new values
+// After successfully calculating for all employees
+setIsAllSalaryCalculated(true);
 console.log('Updated Contracts:', updatedContracts);
 };
 
@@ -1286,6 +1290,14 @@ if (employee.contracts && employee.contracts.length > 0) {
 return employee;
 });
 
+// Function to check if a break has been changed
+const hasBreakChanged = (originalBreak, updatedBreak) => {
+  return originalBreak.startDate !== updatedBreak.startDate ||
+         originalBreak.endDate !== updatedBreak.endDate ||
+         originalBreak.type !== updatedBreak.type;
+         // Add any other comparisons for different properties
+};
+
 const prepareBreaksData = () => {
   let newBreaks = [];
   let updatedBreaks = [];
@@ -1347,6 +1359,7 @@ const handleSaveBreaksData = async () => {
   console.log("Break IDs to Delete:", deletedBreakIds);
 
   let employeesWithIncompleteBreaks = [];
+  let isAnyOperationPerformed = false;
 
   calculatedContracts.forEach(employee => {
     // Check if the employee has contracts and the first contract has allBreaks
@@ -1371,6 +1384,7 @@ if (employeesWithIncompleteBreaks.length > 0) {
 // Proceed with sending data only if there's something to send
 // Saving New Breaks
 if (newBreaks.length > 0) { 
+  isAnyOperationPerformed = true;
   try {
     const response = await axios.post('http://localhost:3001/api/save-health-breaks', {
        breaksData: newBreaks });
@@ -1380,7 +1394,6 @@ if (newBreaks.length > 0) {
     if (response.status === 200) {
       console.log("Breaks data saved successfully.", response.data);
       toast.success("Breaks data saved successfully.");
-      setAreBreaksSaved(true); // Update the state variable
     } else {
       console.error("Failed to save breaks data. Response status:", response.status);
       toast.error("Failed to save breaks data.");
@@ -1394,6 +1407,7 @@ if (newBreaks.length > 0) {
   toast.info("No any new valid breaks data to save.");
 }
 if (updatedBreaks.length > 0) {
+  isAnyOperationPerformed = true;
   try {
     const responseUpdate = await axios.put('http://localhost:3001/api/update-health-breaks', { breaksData: updatedBreaks });
     if (responseUpdate.status === 200 && responseUpdate.data.updatedBreaksData.length > 0) {
@@ -1415,11 +1429,11 @@ if (updatedBreaks.length > 0) {
 
 
 if (deletedBreakIds.length > 0) {
+  isAnyOperationPerformed = true;
   try {
     const responseDelete = await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: deletedBreakIds } });
     if (responseDelete.status === 200) {
       console.log("Breaks deleted successfully.");
-      setAreBreaksSaved(true);
       toast.success("Breaks deleted successfully.");
       // Additional logic if needed post-deletion
     } else {
@@ -1434,9 +1448,25 @@ if (deletedBreakIds.length > 0) {
   console.log("No any breaks to delete.");
   toast.info("No any breaks to delete.");
 }
+if (isAnyOperationPerformed) {
+  setAreBreaksSaved(true);
+} else {
+  console.log("No break operations to perform.");
+  toast.info("No break operations to perform.");
+}
 };
 
 const handleSaveSalaryData = async () => {
+  console.log("Attempting to save salary data. Are breaks saved:", areBreaksSaved);
+  if (!isAllSalaryCalculated) {
+    toast.warn("Please calculate salary for all employees before saving.");
+    return;
+  }
+  // If breaks are not saved, prevent proceeding
+  if (!areBreaksSaved) {
+    toast.warn("Please save or discard changes to health breaks before saving salary data.");
+    return;
+  }
 // Check if the salary date is not set
 if (!salaryDate) {
   toast.warn("Please pick a salary date before saving.");
@@ -1539,11 +1569,11 @@ return (
       onChange={(e) => setSalaryDate(e.target.value)}
     />
     <button onClick={calculateSalaryForAll}>Calculate Salary for All</button>
-    <button onClick={handleSaveBreaksData} disabled={areBreaksSaved}>
+    <button onClick={handleSaveBreaksData} >
       
   Save Breaks Data
 </button>
-<button onClick={handleSaveSalaryData} disabled={areBreaksSaved}>
+<button onClick={handleSaveSalaryData} >
 {isEditMode ? "Update Salary" : "Save Salary Data"}
 </button>
     {notification.show && 
