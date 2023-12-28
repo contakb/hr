@@ -380,6 +380,55 @@ app.post('/api/save-salary-data', async (req, res) => {
   }
 });
 
+// Endpoint to update existing salary data
+app.put('/api/update-salary-data', async (req, res) => {
+  const salaryDataToUpdate = req.body;
+
+  try {
+    for (const salary of salaryDataToUpdate) {
+      const { data, error } = await supabase
+        .from('salaries')
+        .update({
+      gross_total: salary.gross_total,
+      social_base: salary.social_base,
+      emeryt_ub: salary.emeryt_ub,
+      emeryt_pr: salary.emeryt_pr,
+      rent_ub: salary.rent_ub,
+      rent_pr: salary.rent_pr,
+      chorobowe: salary.chorobowe,
+      wypadkowe: salary.wypadkowe,
+      fp: salary.fp,
+      fgsp: salary.fgsp,
+      health_base: salary.health_base,
+      heath_amount: salary.heath_amount,
+      tax_base: salary.tax_base,
+      tax: salary.tax,
+      ulga: salary.ulga,
+      koszty: salary.koszty,
+      net_amount: salary.net_amount,
+      salary_date: formatDate(salary.salary_date), // Convert salary_date to a valid date format using formatDate()
+      created_at: formatTimestamp(salary.created_at), // Convert created_at to a valid date format using formatTimestamp()
+      updated_at: formatTimestamp(salary.updated_at), // Convert updated_at to a valid date format using formatTimestamp()
+      zal_2021: salary.zal_2021,
+      wyn_chorobowe: salary.wyn_chorobowe,
+      bonus: salary.bonus,
+      })
+        .match({ id: salary.salary_id }); // Use salary_id to match records
+
+      if (error) {
+        console.error('Error updating salary data:', error);
+        throw error; // Throw error to be caught by the catch block
+      }
+    }
+    
+    console.log('Successfully updated salary data');
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ success: false, error: 'Error updating salary data' });
+  }
+});
+
 
 
 app.get('/salary-list', async (req, res) => {

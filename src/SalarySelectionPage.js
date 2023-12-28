@@ -65,7 +65,8 @@ const [breaksToDelete, setBreaksToDelete] = useState([]);
 const [notification, setNotification] = useState({ show: false, employeeId: null });
 const [isSalarySaved, setIsSalarySaved] = useState(false);
 const [areBreaksSaved, setAreBreaksSaved] = useState(false);
-  const { editYear, editMonth } = location.state || {};
+  const { editYear, editMonth, editSalary_date } = location.state || {};
+  
 
 
   const handleInitialBreaks = (editableData) => {
@@ -99,6 +100,7 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
     if (isEditMode && editableData) {
       setYear(editYear);
       setMonth(editMonth);
+      setSalaryDate(editSalary_date);
   
       const mappedData = editableData.map(ed => {
         // Map contract details as before
@@ -111,6 +113,7 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
   
         return {
           employee_id: ed.employee_id, 
+          salary_id: ed.salary_id,
           name: ed.name,
           surname: ed.surname,
           gross_amount: ed.gross_amount,
@@ -1433,13 +1436,14 @@ if (deletedBreakIds.length > 0) {
 }
 };
 
-const handleSaveSalaryData = () => {
+const handleSaveSalaryData = async () => {
 // Check if the salary date is not set
 if (!salaryDate) {
   toast.warn("Please pick a salary date before saving.");
   return; // Stop the function execution
 }
-const salaryData = [];
+const newSalaryData = [];
+  const salaryDataToUpdate = [];
 
 calculatedContracts.forEach(employee => {
   // Use the first contract for the employee, assuming it's the most relevant
@@ -1475,23 +1479,40 @@ calculatedContracts.forEach(employee => {
       updated_at: new Date().toISOString(),
     };
 
-    salaryData.push(salary);
+    // Check if this is a new entry or an update
+    if (employee.salary_id) { // Assuming salary_id exists for updates
+      salaryDataToUpdate.push({ ...salary, salary_id: employee.salary_id });
+    } else {
+      newSalaryData.push(salary);
+    }
   }
 });
 
-// Send the salary data to the server
-axios.post('http://localhost:3001/api/save-salary-data', salaryData)
-.then(response => {
-  // Handle successful response
-  console.log('Salary data saved successfully!');
-  toast.success("Salary data saved successfully!");
+ // Update existing salary records
+ if (salaryDataToUpdate.length > 0) {
+  try {
+    await axios.put('http://localhost:3001/api/update-salary-data', salaryDataToUpdate);
+    console.log('Salary data updated successfully!');
+    toast.success("Salary data updated successfully!");
+  } catch (error) {
+    console.error('Error updating salary data:', error);
+    toast.error("Error occurred while updating salary data.");
+  }
+}
+
+// Save new salary data
+  if (newSalaryData.length > 0) {
+    try {
+      await axios.post('http://localhost:3001/api/save-salary-data', newSalaryData);
+      console.log('Salary data saved successfully!');
+      toast.success("Salary data saved successfully!");
+    } catch (error) {
+      console.error('Error saving salary data:', error);
+      toast.error("Error occurred while saving salary data.");
+    }
+  }
+
   setIsSalarySaved(true); // Update the state variable
-})
-.catch(error => {
-  // Handle error
-  console.error('Error saving salary data:', error);
-  toast.error("Error occurred while saving salary data.");
-});
 };
 
 
@@ -1523,7 +1544,7 @@ return (
   Save Breaks Data
 </button>
 <button onClick={handleSaveSalaryData} disabled={areBreaksSaved}>
-Save Salary Data
+{isEditMode ? "Update Salary" : "Save Salary Data"}
 </button>
     {notification.show && 
       <Notification 

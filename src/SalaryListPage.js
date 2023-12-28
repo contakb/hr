@@ -89,6 +89,7 @@ function SalaryListPage() {
     const formattedData = salaryListByMonthYear.map(salary => {
       return {
         employee_id: salary.employee_id,
+        salary_id: salary.id,
         name: salary.employees.name,
         surname: salary.employees.surname,
         employee_koszty: salary.koszty,
@@ -134,7 +135,8 @@ function SalaryListPage() {
         isEditMode: true,
         editableData: formattedData,
         editYear: salaryListByMonthYear[0].salary_year,
-        editMonth: salaryListByMonthYear[0].salary_month
+        editMonth: salaryListByMonthYear[0].salary_month,
+        editSalary_date: salaryListByMonthYear[0].salary_date
       }
     });
 };
