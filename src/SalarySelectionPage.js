@@ -4,6 +4,7 @@ import DatePicker from 'react-datepicker'; // Import DatePicker
 import { toast } from 'react-toastify';
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
 import { set } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { parseISO } from 'date-fns';
 import moment from 'moment-timezone';
@@ -144,8 +145,11 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
   }, [isEditMode, editableData, editYear, editMonth, defaultHealthBreak]);
   
 
-  
-  
+  const navigate = useNavigate();
+
+const handleBack = () => {
+  navigate('/salary-list'); // Replace '/salary-list' with the actual path to your salary list page
+};
   
   
   
@@ -247,6 +251,19 @@ const handleYearChange = (event) => {
 
 
 const fetchValidContracts = async () => {
+  console.log("Checking for existing salary list...");
+
+  const selectedPeriodMonth = String(month).padStart(2, '0');
+  const selectedPeriodYear = year.toString();
+
+  try {
+    // Check if a salary list for this month and year already exists
+    const savedsalaryresponse = await axios.get(`http://localhost:3001/salary-list?month=${selectedPeriodMonth}&year=${selectedPeriodYear}`);
+    if (savedsalaryresponse.data && savedsalaryresponse.data.length > 0) {
+      alert(`A salary list for ${selectedPeriodMonth}/${selectedPeriodYear} already exists.`);
+      return;
+    }
+      // If no existing list, proceed to fetch valid contracts
   console.log("Fetching valid contracts...");
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -258,7 +275,6 @@ const fetchValidContracts = async () => {
 
   console.log("Dates:", startDate, endDate);
 
-  try {
       console.log("About to make axios request...");
 
       const response = await axios.post('http://localhost:3001/api/valid-employees', {
@@ -290,6 +306,7 @@ const fetchValidContracts = async () => {
       setCalculatedContracts([]); // Resetting calculatedContracts too
       setLoading(false);
   }
+
 };
 
 // Place these functions outside of your component
@@ -1595,6 +1612,10 @@ return (
 <button onClick={handleSaveSalaryData} disabled={isSalarySaved} >
 {isEditMode ? "Update Salary" : "Save Salary Data"}
 </button>
+<button onClick={handleBack}>
+  Back to Salary List
+</button>
+
     {notification.show && 
       <Notification 
         employeeId={notification.employeeId}
@@ -2008,6 +2029,10 @@ return (
       <input type="text" value={year} onChange={handleYearChange} />
     </label>
     <button onClick={fetchValidContracts}>Fetch Valid Contracts</button>
+    <button onClick={handleBack}>
+  Back to Salary List
+</button>
+
   </div>)}
   <div className="employee-list-container">{renderEmployeeTable()}</div>
 </div>
