@@ -1291,12 +1291,19 @@ return employee;
 });
 
 // Function to check if a break has been changed
+// Function to check if a break has been changed
 const hasBreakChanged = (originalBreak, updatedBreak) => {
-  return originalBreak.startDate !== updatedBreak.startDate ||
-         originalBreak.endDate !== updatedBreak.endDate ||
+  const formattedOriginalStartDate = formatDateForServer(originalBreak.startDate);
+  const formattedOriginalEndDate = formatDateForServer(originalBreak.endDate);
+  const formattedUpdatedStartDate = formatDateForServer(updatedBreak.startDate);
+  const formattedUpdatedEndDate = formatDateForServer(updatedBreak.endDate);
+
+  return formattedOriginalStartDate !== formattedUpdatedStartDate ||
+         formattedOriginalEndDate !== formattedUpdatedEndDate ||
          originalBreak.type !== updatedBreak.type;
-         // Add any other comparisons for different properties
+         // Add other comparisons if necessary
 };
+
 
 const prepareBreaksData = () => {
   let newBreaks = [];
@@ -1304,7 +1311,7 @@ const prepareBreaksData = () => {
   let deletedBreakIds = [];
 
   calculatedContracts.forEach(employee => {
-    // Process healthBreaks at the employee level
+    // Process healthBreaks at the employee level for deletion
     if (employee.healthBreaks && Array.isArray(employee.healthBreaks)) {
       employee.healthBreaks.forEach(breakItem => {
         if (breakItem.isDeleted && typeof breakItem.id === 'number') {
@@ -1312,6 +1319,9 @@ const prepareBreaksData = () => {
         }
       });
     }
+
+    // Retrieve original breaks for comparison
+    const originalBreaks = employee.healthBreaks || [];
 
     // Process allBreaks within each contract
     if (employee.contracts && Array.isArray(employee.contracts)) {
@@ -1322,15 +1332,22 @@ const prepareBreaksData = () => {
             if (!breakItem.startDate || !breakItem.endDate || breakItem.type === 'brak') return;
 
             if (typeof breakItem.id === 'number' && !breakItem.isDeleted) {
-              updatedBreaks.push({
-                id: breakItem.id,
-                employee_id: employee.employee_id,
-                break_type: breakItem.type,
-                break_start_date: formatDateForServer(breakItem.startDate),
-                break_end_date: formatDateForServer(breakItem.endDate),
-                break_days: totalBreakDays
-              });
+              // Find the corresponding original break
+              const originalBreak = originalBreaks.find(ob => ob.id === breakItem.id);
+
+              // Add to updatedBreaks only if there's a change
+              if (originalBreak && hasBreakChanged(originalBreak, breakItem)) {
+                updatedBreaks.push({
+                  id: breakItem.id,
+                  employee_id: employee.employee_id,
+                  break_type: breakItem.type,
+                  break_start_date: formatDateForServer(breakItem.startDate),
+                  break_end_date: formatDateForServer(breakItem.endDate),
+                  break_days: totalBreakDays
+                });
+              }
             } else if (typeof breakItem.id !== 'number') {
+              // Handling new breaks
               newBreaks.push({
                 employee_id: employee.employee_id,
                 break_type: breakItem.type,
@@ -1379,6 +1396,8 @@ if (employeesWithIncompleteBreaks.length > 0) {
   toast.warn(`Please select a valid break type for all breaks of the following employees: ${employeeDetails}`);
   return;
 }
+// Set areBreaksSaved to true here, after the check for incomplete breaks
+setAreBreaksSaved(true);
 
 
 // Proceed with sending data only if there's something to send
@@ -1569,11 +1588,11 @@ return (
       onChange={(e) => setSalaryDate(e.target.value)}
     />
     <button onClick={calculateSalaryForAll}>Calculate Salary for All</button>
-    <button onClick={handleSaveBreaksData} >
+    <button onClick={handleSaveBreaksData} disabled={areBreaksSaved}>
       
   Save Breaks Data
 </button>
-<button onClick={handleSaveSalaryData} >
+<button onClick={handleSaveSalaryData} disabled={isSalarySaved} >
 {isEditMode ? "Update Salary" : "Save Salary Data"}
 </button>
     {notification.show && 
