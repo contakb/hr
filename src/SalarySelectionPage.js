@@ -28,8 +28,9 @@ function SalarySelectionPage() {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [month, setMonth] = useState('');
-  const [year, setYear] = useState('');
+  const [month, setMonth] = useState(new Date().getMonth() + 1); // JavaScript months are 0-indexed
+const [year, setYear] = useState(new Date().getFullYear());
+
   const location = useLocation();
 const { isEditMode, editableData } = location.state || {};
    // Initialize state based on whether you are in edit mode or not
@@ -61,6 +62,8 @@ const [ulga, setUlga] = useState(null);
 const [transformedBreakData, setTransformedBreakData] = useState([]);
 const [breaksToDelete, setBreaksToDelete] = useState([]);
 const [isAllSalaryCalculated, setIsAllSalaryCalculated] = useState(false);
+const [toastShown, setToastShown] = useState(false);
+
 
 
 
@@ -68,6 +71,10 @@ const [notification, setNotification] = useState({ show: false, employeeId: null
 const [isSalarySaved, setIsSalarySaved] = useState(false);
 const [areBreaksSaved, setAreBreaksSaved] = useState(false);
   const { editYear, editMonth, editSalary_date } = location.state || {};
+  const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1); // Months from 1 to 12
+const currentYear = new Date().getFullYear();
+const yearOptions = Array.from({ length: 51 }, (_, i) => currentYear - 25 + i); // Last 25 years to next 25 years
+
   
 
 
@@ -151,7 +158,7 @@ const handleBack = () => {
   navigate('/salary-list'); // Replace '/salary-list' with the actual path to your salary list page
 };
   
-  
+
   
   
   
@@ -256,12 +263,15 @@ const fetchValidContracts = async () => {
   const selectedPeriodMonth = String(month).padStart(2, '0');
   const selectedPeriodYear = year.toString();
 
+
   try {
+      // Check for existing salary list only if the selected date is different from the current date
     // Check if a salary list for this month and year already exists
     const savedsalaryresponse = await axios.get(`http://localhost:3001/salary-list?month=${selectedPeriodMonth}&year=${selectedPeriodYear}`);
     if (savedsalaryresponse.data && savedsalaryresponse.data.length > 0) {
-      alert(`A salary list for ${selectedPeriodMonth}/${selectedPeriodYear} already exists.`);
-      return;
+      toast.warn(`A salary list for ${selectedPeriodMonth}/${selectedPeriodYear} already exists.`);
+            setToastShown(true); // Set the flag to true
+            return;
     }
       // If no existing list, proceed to fetch valid contracts
   console.log("Fetching valid contracts...");
@@ -308,6 +318,7 @@ const fetchValidContracts = async () => {
   }
 
 };
+
 
 // Place these functions outside of your component
 function isWeekend(date) {
@@ -1613,7 +1624,8 @@ return (
 {isEditMode ? "Update Salary" : "Save Salary Data"}
 </button>
 <button onClick={handleBack}>
-  Back to Salary List
+{isEditMode ? "Back to Salary List" : ""}
+  
 </button>
 
     {notification.show && 
@@ -2016,26 +2028,36 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
 
 
 return (
-<div className="salary-selection-page">
-  <h1>{isEditMode ? "Edit Salary" : "Salary Selection"}</h1>
-  {!isEditMode && (
-  <div className="filter-container">
-    <label>
-      Month:
-      <input type="text" value={month} onChange={handleMonthChange} />
-    </label>
-    <label>
-      Year:
-      <input type="text" value={year} onChange={handleYearChange} />
-    </label>
-    <button onClick={fetchValidContracts}>Fetch Valid Contracts</button>
-    <button onClick={handleBack}>
-  Back to Salary List
-</button>
-
-  </div>)}
-  <div className="employee-list-container">{renderEmployeeTable()}</div>
-</div>
+  <div className="salary-selection-page">
+    <h1>{isEditMode ? "Edit Salary" : "Salary Selection"}</h1>
+    {!isEditMode && (
+      <div className="filter-container">
+        <label>
+          Month:
+          <select value={month} onChange={handleMonthChange}>
+            {monthOptions.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Year:
+          <select value={year} onChange={handleYearChange}>
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button onClick={fetchValidContracts}>Fetch Valid Contracts</button>
+        <button onClick={handleBack}>Back to Salary List</button>
+      </div>
+    )}
+    <div className="employee-list-container">{renderEmployeeTable()}</div>
+  </div>
 );
 }
 export default SalarySelectionPage;
