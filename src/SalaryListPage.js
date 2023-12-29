@@ -12,12 +12,17 @@ function SalaryListPage() {
   const [selectedMonthYear, setSelectedMonthYear] = useState('');
   const [selectedSalaryList, setSelectedSalaryList] = useState(null);
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+
+
 
   useEffect(() => {
     fetchSalaryList();
   }, []);
 
   const fetchSalaryList = async () => {
+    setIsLoading(true);
+  setError(null);
     try {
       const response = await axios.get('http://localhost:3001/salary-list');
       let salaryData = response.data;
@@ -45,11 +50,12 @@ function SalaryListPage() {
       }
   
       setSalaryList(salaryData);
-      setLoading(false);
+      console.log("Data fetched, setting loading to false");
+      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching salary list:', error);
       setError('Error fetching salary list. Please try again later.');
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
@@ -142,14 +148,23 @@ function SalaryListPage() {
     });
 };
 
-  
+
+
   
 
   
 
   return (
     <div className="salary-list-container">
-      <div>
+      
+
+      <div style={{ marginTop: '10px' }}>
+        <button onClick={handleCreateNewSalaryList}>Create New Salary List</button>
+      </div>
+
+      <div className="salary-list-title">
+  <h1>Salary List</h1>
+  <div>
         <label>
           Filter by Month/Year:
           <select
@@ -168,63 +183,63 @@ function SalaryListPage() {
           </select>
         </label>
       </div>
+</div>
 
-      <div style={{ marginTop: '10px' }}>
-        <button onClick={handleCreateNewSalaryList}>Create New Salary List</button>
-      </div>
-
-      <div className="salary-list-title">
-        <h1>Salary List</h1>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Year</th>
-            <th>Salary Date</th>
-            <th>Wiecej</th>
+{isLoading ? (
+  <div>Loading data...</div> // Loading indicator inside your component
+) : (
+  <table>
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th>Year</th>
+        <th>Salary Date</th>
+        <th>Więcej</th>
+      </tr>
+    </thead>
+    <tbody>
+      {uniqueMonthYearCombinations.map((combination) => {
+        const salaryListByMonthYear = salaryList.filter(
+          (salary) => `${salary.salary_month}/${salary.salary_year}` === combination
+        );
+        return (
+          <tr key={combination}>
+            <td>{salaryListByMonthYear[0].salary_month}</td>
+            <td>{salaryListByMonthYear[0].salary_year}</td>
+            <td>{new Date(salaryListByMonthYear[0].salary_date).toLocaleDateString()}</td>
+            <td>
+              <button onClick={() => handleViewDetails(combination)}>Szczegóły</button>
+              <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edit</button>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {uniqueMonthYearCombinations.map((combination) => {
-            const salaryListByMonthYear = salaryList.filter(
-              (salary) => `${salary.salary_month}/${salary.salary_year}` === combination
-            );
-            return (
-              <tr key={combination}>
-                <td>{salaryListByMonthYear[0].salary_month}</td>
-                <td>{salaryListByMonthYear[0].salary_year}</td>
-                <td>{new Date(salaryListByMonthYear[0].salary_date).toLocaleDateString()}</td>
-                <td>
-                  <button onClick={() => handleViewDetails(combination)}>Szczegóły</button>
-                  <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edit</button>
+        );
+      })}
+    </tbody>
+  </table>
+)}
 
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+{selectedSalaryList && (
+  <SalaryListDetails salaryList={selectedSalaryList}  monthYear={selectedMonthYear}/>
+)}
 
-      {selectedSalaryList && (
-        <SalaryListDetails salaryList={selectedSalaryList} />
-      )}
     </div>
   );
 }
 
-function SalaryListDetails({ salaryList }) {
+function SalaryListDetails({ salaryList, monthYear }) {
+  // Split the monthYear string to get month and year
+  const [month, year] = monthYear ? monthYear.split('/') : ['-', '-'];
   return (
     <div className="salary-details-container">
-      <h2>Salary List Details</h2>
+      <h2>Salary List Details for {month}/{year}</h2>
       <table>
         <thead>
           <tr>
+          <th>Month</th>
+            <th>Year</th>
             <th>EMP.ID</th>
             <th>Name</th>
             <th>Surname</th>
-            <th>Month</th>
-            <th>Year</th>
             <th>Salary Date</th>
 			<th>Brutto</th>
       <th>Podstawa zus</th>
@@ -245,11 +260,11 @@ function SalaryListDetails({ salaryList }) {
         <tbody>
           {salaryList.map((salary) => (
             <tr key={salary.id}>
-              <td>{salary.employee_id}</td>
-              <td>{salary.employees.name}</td> {/* Display employee name */}
-              <td>{salary.employees.surname}</td> {/* Display employee surname */}
               <td>{salary.salary_month}</td>
               <td>{salary.salary_year}</td>
+              <td>{salary.employee_id}</td>
+              <td>{salary.employees.name}</td> {/* Display employee name */}
+              <td>{salary.employees.surname}</td> {/* Display employee surname */}  
               <td>{new Date(salary.salary_date).toLocaleDateString()}</td>
 			  <td>{salary.gross_total}</td>
         <td>{salary.social_base}</td> 
