@@ -434,6 +434,8 @@ app.put('/api/update-salary-data', async (req, res) => {
 app.get('/salary-list', async (req, res) => {
   const { month, year } = req.query;
 
+
+
   try {
     // Define the base query for retrieving salary data
     let baseQuery = supabase
@@ -491,6 +493,27 @@ app.get('/salary-list', async (req, res) => {
 });
 
 
+app.get('/salary-list-basic', async (req, res) => {
+  try {
+    // Fetch only the basic salary data
+    const { data: salaryList, error } = await supabase
+      .from('salaries')
+      .select('id, employee_id, salary_month, salary_year, salary_date')
+      .order('salary_date', { ascending: false });
+
+    if (error) {
+      console.error('Error retrieving salary list data', error);
+      res.status(500).send('Error occurred while retrieving salary data.');
+      return;
+    }
+
+    // Send the basic data as the response
+    res.json(salaryList);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error occurred while retrieving data.');
+  }
+});
 
 
 

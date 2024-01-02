@@ -10,6 +10,7 @@ function SalaryListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedMonthYear, setSelectedMonthYear] = useState('');
+  const [selectedSalaryDate, setSelectedSalaryDate] = useState('');
   const [selectedSalaryList, setSelectedSalaryList] = useState(null);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +87,10 @@ function SalaryListPage() {
     const selectedSalaryList = salaryList.filter(
       (salary) => `${salary.salary_month}/${salary.salary_year}` === monthYear
     );
+    // Assuming the salary date is the same for all entries in selectedSalaryList
+  const salaryDate = selectedSalaryList.length > 0 ? selectedSalaryList[0].salary_date : null;
     setSelectedSalaryList(selectedSalaryList);
+    setSelectedSalaryDate(salaryDate); // You'll need to manage this state
   };
 
   const handleEditSalary = (salaryListByMonthYear) => {
@@ -219,19 +223,19 @@ function SalaryListPage() {
 )}
 
 {selectedSalaryList && (
-  <SalaryListDetails salaryList={selectedSalaryList}  monthYear={selectedMonthYear}/>
+  <SalaryListDetails salaryList={selectedSalaryList}  monthYear={selectedMonthYear} salaryDate={selectedSalaryDate}/>
 )}
 
     </div>
   );
 }
 
-function SalaryListDetails({ salaryList, monthYear }) {
+function SalaryListDetails({ salaryList, monthYear, salaryDate }) {
   // Split the monthYear string to get month and year
   const [month, year] = monthYear ? monthYear.split('/') : ['-', '-'];
   return (
     <div className="salary-details-container">
-      <h2>Salary List Details for {month}/{year}</h2>
+      <h2>Salary List Details for {month}/{year}, Salary Date: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
       <table>
         <thead>
           <tr>
