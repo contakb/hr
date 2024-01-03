@@ -515,6 +515,45 @@ app.get('/salary-list-basic', async (req, res) => {
   }
 });
 
+app.delete('/api/delete-salary/:salaryId', async (req, res) => {
+  const { salaryId } = req.params;
+
+  try {
+    const { error } = await supabase
+      .from('salaries')
+      .delete()
+      .match({ id: salaryId });
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).send('Salary record successfully deleted.');
+  } catch (error) {
+    console.error('Error deleting salary record:', error);
+    res.status(500).send('Error occurred while deleting salary record.');
+  }
+});
+
+app.delete('/api/delete-salary-by-month', async (req, res) => {
+  const { month, year } = req.query;
+
+  try {
+    const { error } = await supabase
+      .from('salaries')
+      .delete()
+      .match({ salary_month: month, salary_year: year });
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).send('Salary records for the specified month and year successfully deleted.');
+  } catch (error) {
+    console.error('Error deleting salary records:', error);
+    res.status(500).send('Error occurred while deleting salary records.');
+  }
+});
 
 
 

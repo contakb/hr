@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
+import { toast } from 'react-toastify';
 
 
 
@@ -152,6 +152,44 @@ function SalaryListPage() {
     });
 };
 
+const handleDeleteSalaryByMonthYear = async (monthYear) => {
+  if (window.confirm(`Are you sure you want to delete all salary records for ${monthYear}?`)) {
+    try {
+      setIsLoading(true);
+      const [month, year] = monthYear.split('/');
+      await axios.delete(`http://localhost:3001/api/delete-salary-by-month?month=${month}&year=${year}`);
+      fetchSalaryList();
+      toast.success(`Salary records for ${monthYear} successfully deleted.`);
+    } catch (error) {
+      console.error('Error deleting salary records:', error);
+      setError('Error deleting salary records. Please try again later.');
+      toast.error('Error deleting salary records.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+};
+
+
+const handleDeleteIndividualSalary = async (salaryId) => {
+  if (window.confirm('Are you sure you want to delete this salary entry?')) {
+    try {
+      setIsLoading(true);
+      await axios.delete(`http://localhost:3001/api/delete-salary/${salaryId}`);
+      toast.success('Salary entry successfully deleted.');
+
+      // Refresh the details list to reflect the deletion
+      const updatedSalaryList = salaryList.filter(salary => salary.id !== salaryId);
+      setSelectedSalaryList(updatedSalaryList);
+    } catch (error) {
+      console.error('Error deleting salary entry:', error);
+      setError('Error deleting salary entry. Please try again later.');
+      toast.error('Error deleting salary entry.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+};
 
 
   
@@ -214,6 +252,7 @@ function SalaryListPage() {
             <td>
               <button onClick={() => handleViewDetails(combination)}>Szczegóły</button>
               <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edit</button>
+              <button onClick={() => handleDeleteSalaryByMonthYear(combination)}>Delete Month/Year</button>
             </td>
           </tr>
         );
@@ -223,14 +262,14 @@ function SalaryListPage() {
 )}
 
 {selectedSalaryList && (
-  <SalaryListDetails salaryList={selectedSalaryList}  monthYear={selectedMonthYear} salaryDate={selectedSalaryDate}/>
+  <SalaryListDetails salaryList={selectedSalaryList}  monthYear={selectedMonthYear} salaryDate={selectedSalaryDate} handleDeleteIndividualSalary={handleDeleteIndividualSalary}/>
 )}
 
     </div>
   );
 }
 
-function SalaryListDetails({ salaryList, monthYear, salaryDate }) {
+function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndividualSalary }) {
   // Split the monthYear string to get month and year
   const [month, year] = monthYear ? monthYear.split('/') : ['-', '-'];
   return (
@@ -258,7 +297,7 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate }) {
 			<th>Netto</th>
       <th>wyn.chorobowe</th>
       <th>przerwy</th>
-            {/* Add additional details here if needed */}
+
           </tr>
         </thead>
         <tbody>
@@ -286,7 +325,10 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate }) {
                 {salary.healthBreaks.map(breakItem => 
                   `${breakItem.break_type} (${breakItem.break_start_date} - ${breakItem.break_end_date}, Days: ${breakItem.break_days}`).join('\n')}
               </td>
-              {/* Add additional details here if needed */}
+              <td>
+              <button onClick={() => handleDeleteIndividualSalary(salary.id)}>Delete</button>
+              </td>
+              
             </tr>
           ))}
         </tbody>
