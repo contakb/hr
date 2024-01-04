@@ -587,6 +587,23 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
   }
 };
 
+const calculateAverageForChorobowe = (historicalSalaries) => {
+  // Check for breaks and availability of chorobowe_base in the last three months
+  const lastThreeMonths = historicalSalaries.slice(-3); // Last 3 records
+  const hasBreaks = lastThreeMonths.some(salary => salary.chorobowe_base != null);
+
+  if (hasBreaks) {
+      // Use chorobowe_base values if available, otherwise use social_base
+      const total = lastThreeMonths.reduce((sum, record) => sum + parseFloat(record.chorobowe_base || record.social_base), 0);
+      return total / lastThreeMonths.length;
+  } else {
+      // Standard average calculation using social_base
+      const total = historicalSalaries.reduce((sum, record) => sum + parseFloat(record.social_base), 0);
+      return total / historicalSalaries.length;
+  }
+};
+
+
 const renderHistoricalSalariesTable = () => {
   if (!showHistoricalSalaries || historicalSalaries.length === 0) return null;
 
@@ -630,8 +647,9 @@ const handleSalaryChange = (event, index) => {
   setHistoricalSalaries(updatedSalaries);
 
   // Recalculate the average
-  const total = updatedSalaries.reduce((sum, record) => sum + parseFloat(record.social_base), 0);
-  setAverageSalary(total / updatedSalaries.length);
+  // Recalculate the average using calculateAverageForChorobowe
+  const average = calculateAverageForChorobowe(updatedSalaries);
+  setAverageSalary(average);
 };
 
 
@@ -1090,7 +1108,8 @@ if (!Array.isArray(additionalBreakTypesArray)) {
 // Use proRatedGross if available, otherwise use grossAmountValue
 let customGrossAmount = proRatedGross ? parseFloat(proRatedGross) : parseFloat(grossAmountValue);
 
-
+// Use averageSalary if the condition is met, otherwise use grossAmountValue
+const salaryForCalculation =  averageSalary ? averageSalary : customGrossAmount;
 // Debug log
 
 let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
@@ -1144,13 +1163,13 @@ for (let i = 0; i < allBreakTypes.length; i++) {
 
     if (currentBreakType === 'zwolnienie') {
         customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
-        wynChorobowe += ((averageSalary - 0.1371 * averageSalary) / 30) * (currentBreakDays * 0.8);
+        wynChorobowe += ((salaryForCalculation - 0.1371 * salaryForCalculation) / 30) * (currentBreakDays * 0.8);
     } else if ((currentBreakType === 'bezpłatny' || currentBreakType === 'nieobecność' || currentBreakType === 'wychowawczy') && hasZwolnienie) {
       // Your code here
         customGrossAmount -= (dailyRate * currentBreakDays * 8);
     } else if (currentBreakType === 'ciąża') {
       customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
-        wynChorobowe += ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays);
+        wynChorobowe += ((averageSalary - 0.1371 * averageSalary) / 30) * (currentBreakDays);
     } else if (currentBreakType === 'rodzicielski') {
       // For 'rodzicielski', apply the same deduction as 'zwolnienie' but set wyn_chorobowe to 0
       customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
@@ -1167,6 +1186,8 @@ console.log("customGrossAmount before adding bonus:", customGrossAmount);
 
  // Add the bonus after all other adjustments to customGrossAmount
 customGrossAmount += parseFloat(bonus || 0);
+
+customGrossAmount = customGrossAmount > 0 ? customGrossAmount: "0";
 
 console.log("customGrossAmount after adding bonus:", customGrossAmount);
 
@@ -1207,6 +1228,7 @@ const calculatedValues = {
     koszty:employeeKoszty,// Use employeeKoszty
     bonus,
     social_base: customGrossAmount,  // This now includes the bonus
+    averageSalary: averageSalary.toFixed(2),
     additionalDays: additionalDaysArray.reduce((acc, val) => acc + val, 0)  // Sum of all additional days
 };
 
@@ -1624,6 +1646,7 @@ calculatedContracts.forEach(employee => {
       net_amount: parseFloat(contract.netAmount),
       bonus: parseFloat(contract.bonus),
       wyn_chorobowe: parseFloat(contract.wyn_chorobowe),
+      chorobowe_base: parseFloat (contract.averageSalary),
       salary_month: month, // From state
       salary_year: year, // From state
       salary_date: salaryDate, // From state
@@ -1983,11 +2006,10 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
     const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
     setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
 
-    // Calculate and set the average salary
+    // Calculate and set the average salary using calculateAverageForChorobowe
     if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
-        const total = employeeWithHistoricalSalaries.historicalSalaries.reduce((sum, record) => sum + parseFloat(record.social_base), 0);
-        const average = total / employeeWithHistoricalSalaries.historicalSalaries.length;
-        setAverageSalary(average);
+        const recalculatedAverage = calculateAverageForChorobowe(employeeWithHistoricalSalaries.historicalSalaries);
+        setAverageSalary(recalculatedAverage);
     }
             
   const daysOfBreak = healthBreak.days;

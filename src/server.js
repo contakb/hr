@@ -411,6 +411,7 @@ app.put('/api/update-salary-data', async (req, res) => {
       updated_at: formatTimestamp(salary.updated_at), // Convert updated_at to a valid date format using formatTimestamp()
       zal_2021: salary.zal_2021,
       wyn_chorobowe: salary.wyn_chorobowe,
+      chorobowe_base: salary.chorobowe_base,
       bonus: salary.bonus,
       })
         .match({ id: salary.salary_id }); // Use salary_id to match records
@@ -558,31 +559,31 @@ app.delete('/api/delete-salary-by-month', async (req, res) => {
 app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
   const { employeeId, year, month } = req.params;
 
-  // Calculate the date range for the last 12 months
-  const startYear = month === '01' ? parseInt(year) - 1 : year; // Adjust the year if month is January
-  const startMonth = month === '01' ? '12' : String(month - 1).padStart(2, '0'); // Calculate the start month
+  // Calculate the start and end dates for the 12-month period
+  const endDate = new Date(year, month - 1, 1); // Start of the selected month
+  endDate.setMonth(endDate.getMonth() + 1); // Move to the next month
+  endDate.setDate(endDate.getDate() - 1); // Go back one day to get the last day of the selected month
+
+  const startDate = new Date(endDate);
+  startDate.setFullYear(startDate.getFullYear() - 1); // Go back one year
+
+  console.log(`Fetching historical salaries from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} for employee ${employeeId}`);
 
   try {
       const { data, error } = await supabase
-          .from('salaries') // Target the salaries table
-          .select('social_base, salary_date') // Select relevant columns
-          .eq('employee_id', employeeId) // Filter by employee_id
-          // Use salary_year and salary_month for filtering
-          .gte('salary_year', startYear)
-          .gte('salary_month', startMonth)
-          .lte('salary_year', year)
-          .lte('salary_month', month);
+          .from('salaries')
+          .select('social_base, salary_date, chorobowe_base')
+          .eq('employee_id', employeeId)
+          .gte('salary_date', startDate.toISOString().split('T')[0])
+          .lte('salary_date', endDate.toISOString().split('T')[0]);
 
       if (error) {
           console.error('Error fetching historical salaries:', error);
           res.status(500).json({ error: 'Internal Server Error' });
       } else {
-          const historicalSalaries = data; // You may receive an array of records
-          if (historicalSalaries.length > 0) {
-              res.json(historicalSalaries);
-          } else {
-              res.status(404).json({ error: 'Historical salaries not found for the given employee' });
-          }
+          const historicalSalaries = data;
+          console.log('Historical salaries data:', historicalSalaries);
+          res.json(historicalSalaries);
       }
   } catch (error) {
       console.error('Error:', error);
