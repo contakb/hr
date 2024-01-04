@@ -63,6 +63,10 @@ const [transformedBreakData, setTransformedBreakData] = useState([]);
 const [breaksToDelete, setBreaksToDelete] = useState([]);
 const [isAllSalaryCalculated, setIsAllSalaryCalculated] = useState(false);
 const [toastShown, setToastShown] = useState(false);
+const [historicalSalaries, setHistoricalSalaries] = useState([]);
+const [averageSalary, setAverageSalary] = useState(0);
+const [showHistoricalSalaries, setShowHistoricalSalaries] = useState(false);
+
 
 
 
@@ -568,8 +572,67 @@ try {
 };
 
 
+const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) => {
+  try {
+      console.log(`Fetching historical salaries for employee ${employee.employee_id}`);
+      const response = await axios.get(`http://localhost:3001/api/salary/historical/${employee.employee_id}/${selectedYear}/${selectedMonth}`);
+      const historicalSalaries = response.data || [];
 
+      console.log(`Historical salaries fetched for employee ${employee.employee_id}:`, historicalSalaries);
 
+      return { ...employee, historicalSalaries };
+  } catch (error) {
+      console.error(`Error fetching historical salaries for employee ${employee.employee_id}:`, error);
+      return { ...employee, historicalSalaries: [] }; // Return employee with empty historical salaries in case of error
+  }
+};
+
+const renderHistoricalSalariesTable = () => {
+  if (!showHistoricalSalaries || historicalSalaries.length === 0) return null;
+
+  return (
+      <div>
+          <h3>Historical Salaries</h3>
+          <table>
+              <thead>
+                  <tr>
+                      <th>Data wyplaty</th>
+                      <th>Podstawa brutto</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {historicalSalaries.map((salary, index) => (
+                      <tr key={index}>
+                          <td>{salary.salary_date}</td>
+                          <td>
+                <input 
+                    type="number" 
+                    value={salary.social_base} 
+                    onChange={(e) => handleSalaryChange(e, index)}
+                />
+            </td>
+                      </tr>
+                  ))}
+              </tbody>
+          </table>
+          <p>Average Salary: {averageSalary.toFixed(2)}</p>
+      </div>
+  );
+};
+
+const handleSalaryChange = (event, index) => {
+  const updatedSalaries = [...historicalSalaries];
+  updatedSalaries[index] = {
+      ...updatedSalaries[index],
+      social_base: event.target.value
+  };
+
+  setHistoricalSalaries(updatedSalaries);
+
+  // Recalculate the average
+  const total = updatedSalaries.reduce((sum, record) => sum + parseFloat(record.social_base), 0);
+  setAverageSalary(total / updatedSalaries.length);
+};
 
 
 
@@ -689,6 +752,9 @@ toast.info(`Break type changed. Please recalculate the salary.`, {
   draggable: true,
   theme: "colored",
 });
+// Update the display of historical salaries
+checkAndSetZwolnienieDisplay(updatedBreaks, additionalBreaksByEmployee);
+
 };
 
 // Define the handleAdditionalBreakStartDateChange function
@@ -760,6 +826,10 @@ toast.info(`Break type changed for employee ID ${employeeId}. Please recalculate
   draggable: true,
   theme: "colored",
 });
+// Update the display of historical salaries
+checkAndSetZwolnienieDisplay(healthBreaks, { ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+
+
 };
 
 
@@ -817,7 +887,14 @@ const addAdditionalBreak = (employeeId) => {
   };
   
   
-  
+  const checkAndSetZwolnienieDisplay = (healthBreaks, additionalBreaks) => {
+    const isBreakSelected = healthBreaks.some(breakItem => breakItem.type === 'zwolnienie' || breakItem.type === 'ciąża') ||
+        Object.values(additionalBreaks).flat().some(breakItem => breakItem.type === 'zwolnienie' || breakItem.type === 'ciąża');
+
+    setShowHistoricalSalaries(isBreakSelected);
+};
+
+
   
   
   
@@ -956,7 +1033,7 @@ console.log("Updated Bonuses after change:", updatedBonuses); // Log the updated
 
 
 
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, employeeId) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, averageSalary, employeeId) => {
 
 console.log(`Calculating salary for employee ID ${employeeId}`);
 console.log(`Calculating salary for employee ID ${employeeId} with koszty=${koszty}, ulga=${ulga}`);
@@ -993,6 +1070,7 @@ console.log("Received bonus in calculateSalary:", bonus);  // This log should sh
 console.log('wypadkoweRatee:', wypadkoweRate);
 // Calling calculateSalary for an individual employee
 console.log("State before individual calculation:", employeeBonuses);
+console.log("Average Salary inside calculateSalary:", averageSalary);
 
 
 
@@ -1018,9 +1096,6 @@ let customGrossAmount = proRatedGross ? parseFloat(proRatedGross) : parseFloat(g
 let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
 let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
 let wynChorobowe = 0;
-
-
-
 
 // Summing up additional days for each break type
 for(let i = 0; i < additionalDaysArray.length; i++) {
@@ -1069,7 +1144,7 @@ for (let i = 0; i < allBreakTypes.length; i++) {
 
     if (currentBreakType === 'zwolnienie') {
         customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
-        wynChorobowe += ((grossAmountValue - 0.1371 * grossAmountValue) / 30) * (currentBreakDays * 0.8);
+        wynChorobowe += ((averageSalary - 0.1371 * averageSalary) / 30) * (currentBreakDays * 0.8);
     } else if ((currentBreakType === 'bezpłatny' || currentBreakType === 'nieobecność' || currentBreakType === 'wychowawczy') && hasZwolnienie) {
       // Your code here
         customGrossAmount -= (dailyRate * currentBreakDays * 8);
@@ -1607,7 +1682,7 @@ if (validContracts.length === 0) {
 return (
   <div className="table-responsive">
      <h2>Lista płac za {month} {year}</h2>
-     
+     {renderHistoricalSalariesTable()}
     <label htmlFor="salaryDate">Salary Date:</label>
     <input
       type="date"
@@ -1903,6 +1978,17 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
           <button onClick={async () => {
       const updatedEmployee = await fetchAllParameters(employee);
       console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
+
+      // Fetch historical salaries for the selected month and year
+    const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
+    setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
+
+    // Calculate and set the average salary
+    if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
+        const total = employeeWithHistoricalSalaries.historicalSalaries.reduce((sum, record) => sum + parseFloat(record.social_base), 0);
+        const average = total / employeeWithHistoricalSalaries.historicalSalaries.length;
+        setAverageSalary(average);
+    }
             
   const daysOfBreak = healthBreak.days;
   const breakType = healthBreak.type;
@@ -1982,6 +2068,7 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
     updatedEmployee.koszty, // Use updated koszty
     updatedEmployee.ulga,
     allBreaks,
+    averageSalary, // pass the historical salaries array
     employee.employee_id,
     employeeBonuses[employee.employee_id] || 0
      // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee

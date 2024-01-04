@@ -555,6 +555,42 @@ app.delete('/api/delete-salary-by-month', async (req, res) => {
   }
 });
 
+app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
+  const { employeeId, year, month } = req.params;
+
+  // Calculate the date range for the last 12 months
+  const startYear = month === '01' ? parseInt(year) - 1 : year; // Adjust the year if month is January
+  const startMonth = month === '01' ? '12' : String(month - 1).padStart(2, '0'); // Calculate the start month
+
+  try {
+      const { data, error } = await supabase
+          .from('salaries') // Target the salaries table
+          .select('social_base, salary_date') // Select relevant columns
+          .eq('employee_id', employeeId) // Filter by employee_id
+          // Use salary_year and salary_month for filtering
+          .gte('salary_year', startYear)
+          .gte('salary_month', startMonth)
+          .lte('salary_year', year)
+          .lte('salary_month', month);
+
+      if (error) {
+          console.error('Error fetching historical salaries:', error);
+          res.status(500).json({ error: 'Internal Server Error' });
+      } else {
+          const historicalSalaries = data; // You may receive an array of records
+          if (historicalSalaries.length > 0) {
+              res.json(historicalSalaries);
+          } else {
+              res.status(404).json({ error: 'Historical salaries not found for the given employee' });
+          }
+      }
+  } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 
 
 
