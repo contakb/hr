@@ -688,20 +688,22 @@ const handleSalaryChange = (event, index) => {
 
 // Define the handleHealthBreakStartDateChange function
 const handleHealthBreakStartDateChange = (date, index) => {
-  console.log("New Start Date Selected:", date);
   const updatedBreaks = [...healthBreaks];
   const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  console.log("Formatted Start Date:", formattedDate);
-
-  updatedBreaks[index] = {
-    ...updatedBreaks[index],
-    startDate: formattedDate,
-  };
-
-  setHealthBreaks(updatedBreaks);
-  calculateDays(index, updatedBreaks);
+  if (isDateInSelectedMonth(date, month, year) && isStartDateValid(date, updatedBreaks[index].endDate)) {
+    updatedBreaks[index] = {
+      ...updatedBreaks[index],
+      startDate: formattedDate,
+    };
+    setHealthBreaks(updatedBreaks);
+    calculateDays(index, updatedBreaks);
+  } else {
+    toast.error("Please pick start dates within the selected month and before the end date.");
+  }
 };
+
+
 
 
 
@@ -709,16 +711,34 @@ const handleHealthBreakStartDateChange = (date, index) => {
 // Define the handleHealthBreakEndDateChange function
 const handleHealthBreakEndDateChange = (date, index) => {
   const updatedBreaks = [...healthBreaks];
-  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;  // Convert to ISO string in Warsaw time zone
+  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  updatedBreaks[index] = {
-    ...updatedBreaks[index],
-    endDate: formattedDate,
-  };
-
-  setHealthBreaks(updatedBreaks);
-  calculateDays(index, updatedBreaks);
+  if (isDateInSelectedMonth(date, month, year) && isEndDateValid(date, updatedBreaks[index].startDate)) {
+    updatedBreaks[index] = {
+      ...updatedBreaks[index],
+      endDate: formattedDate,
+    };
+    setHealthBreaks(updatedBreaks);
+    calculateDays(index, updatedBreaks);
+  } else {
+    toast.error("Please pick end dates within the selected month and after the start date.");
+  }
 };
+
+const isDateInSelectedMonth = (date, month, year) => {
+  return date && date.getMonth() + 1 === parseInt(month) && date.getFullYear() === parseInt(year);
+};
+
+const isStartDateValid = (startDate, endDate) => {
+  if (!startDate) return false;
+  return !endDate || startDate <= new Date(endDate);
+};
+
+const isEndDateValid = (endDate, startDate) => {
+  if (!endDate) return false;
+  return !startDate || endDate >= new Date(startDate);
+};
+
 
 
 // Function to calculate the number of days between start and end dates and update the state
@@ -780,12 +800,17 @@ const handleAdditionalBreakStartDateChange = (date, employeeId, breakIndex) => {
   const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
   const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  breaksForEmployee[breakIndex].startDate = formattedDate;
-  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
-  console.log(`Start Date Changed: ${formattedDate}`);
+  console.log(`Start Date Changed: ${formattedDate} for employee ID ${employeeId}`);
 
-  calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
-  console.log("Updated additionalBreaksByEmployee after Start Date change:", additionalBreaksByEmployee);
+  if (isDateInSelectedMonth(date, month, year) && isStartDateValid(date, breaksForEmployee[breakIndex].endDate)) {
+    breaksForEmployee[breakIndex].startDate = formattedDate;
+    setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+    calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+    console.log("Updated additionalBreaksByEmployee after Start Date change:", additionalBreaksByEmployee);
+  } else {
+    console.error("Invalid start date selection.");
+    toast.error("Please pick start dates within the selected month and before the end date.");
+  }
 };
 
 
@@ -794,13 +819,17 @@ const handleAdditionalBreakEndDateChange = (date, employeeId, breakIndex) => {
   const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
   const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  breaksForEmployee[breakIndex].endDate = formattedDate;
-  setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
-  console.log(`End Date Changed: ${formattedDate}`);
+  console.log(`End Date Changed: ${formattedDate} for employee ID ${employeeId}`);
 
-  // Calculate the number of days and update the state
-  calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
-  console.log("Updated additionalBreaksByEmployee after End Date change:", additionalBreaksByEmployee);
+  if (isDateInSelectedMonth(date, month, year) && isEndDateValid(date, breaksForEmployee[breakIndex].startDate)) {
+    breaksForEmployee[breakIndex].endDate = formattedDate;
+    setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+    calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+    console.log("Updated additionalBreaksByEmployee after End Date change:", additionalBreaksByEmployee);
+  } else {
+    console.error("Invalid end date selection.");
+    toast.error("Please pick end dates within the selected month and after the start date.");
+  }
 };
 
 
@@ -1307,6 +1336,7 @@ allBreaks.forEach(breakItem => {
     employee.koszty, // Pass koszty from the employee object
 employee.ulga,  
 allBreaks,
+averageSalary,
     employee.employee_id // Pass the employee's ID here
      // Ensure this is correctly positioned in the parameter list
   );
@@ -1647,7 +1677,7 @@ calculatedContracts.forEach(employee => {
       net_amount: parseFloat(contract.netAmount),
       bonus: parseFloat(contract.bonus),
       wyn_chorobowe: parseFloat(contract.wyn_chorobowe),
-      chorobowe_base: parseFloat (contract.averageSalary),
+      chorobowe_base: parseFloat(contract.wyn_chorobowe) > 0 ? parseFloat(contract.averageSalary) : null, // Conditionally assign chorobowe_base
       salary_month: month, // From state
       salary_year: year, // From state
       salary_date: salaryDate, // From state

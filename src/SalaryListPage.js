@@ -189,6 +189,21 @@ const handleDeleteIndividualSalary = async (salaryId) => {
   if (window.confirm('Are you sure you want to delete this salary entry?')) {
     try {
       setIsLoading(true);
+
+      // Find the salary record and extract employee ID, month, and year
+      const salaryRecord = salaryList.find(salary => salary.id === salaryId);
+      const { employee_id, salary_month, salary_year } = salaryRecord;
+
+      // Filter health breaks for the employee for the specific month/year
+      const healthBreakIdsToDelete = salaryRecord.healthBreaks.map(hb => hb.id);
+
+      // Delete health breaks if any
+      if (healthBreakIdsToDelete.length > 0) {
+        await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: healthBreakIdsToDelete } });
+      }
+
+      // Delete the individual salary record
+      
       await axios.delete(`http://localhost:3001/api/delete-salary/${salaryId}`);
       toast.success('Salary entry successfully deleted.');
 
