@@ -1247,6 +1247,7 @@ return (
 const calculateSalaryForAll = () => {
 
 const updatedContracts = calculatedContracts.map((employee, index) => {
+  
   const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
   const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
   const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);

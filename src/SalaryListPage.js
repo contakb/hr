@@ -157,9 +157,23 @@ const handleDeleteSalaryByMonthYear = async (monthYear) => {
     try {
       setIsLoading(true);
       const [month, year] = monthYear.split('/');
+      // Filter health breaks for the specified month/year
+      const healthBreakIdsToDelete = salaryList.reduce((ids, salary) => {
+        if (`${salary.salary_month}/${salary.salary_year}` === monthYear) {
+          const breakIds = salary.healthBreaks.map(hb => hb.id);
+          return ids.concat(breakIds);
+        }
+        return ids;
+      }, []);
+
+      // Delete health breaks if any
+      if (healthBreakIdsToDelete.length > 0) {
+        await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: healthBreakIdsToDelete } });
+      }
+       // Delete salary records
       await axios.delete(`http://localhost:3001/api/delete-salary-by-month?month=${month}&year=${year}`);
       fetchSalaryList();
-      toast.success(`Salary records for ${monthYear} successfully deleted.`);
+      toast.success(`Salary records and associated health breaks for ${monthYear} successfully deleted.`);
     } catch (error) {
       console.error('Error deleting salary records:', error);
       setError('Error deleting salary records. Please try again later.');

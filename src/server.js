@@ -357,6 +357,7 @@ app.post('/api/save-salary-data', async (req, res) => {
       updated_at: formatTimestamp(salary.updated_at), // Convert updated_at to a valid date format using formatTimestamp()
       zal_2021: salary.zal_2021,
       wyn_chorobowe: salary.wyn_chorobowe,
+      chorobowe_base: salary.chorobowe_base,
       bonus: salary.bonus,
     }));
 
