@@ -573,7 +573,7 @@ app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
   try {
       const { data, error } = await supabase
           .from('salaries')
-          .select('social_base, salary_date, chorobowe_base')
+          .select('social_base, salary_date, chorobowe_base, employee_id')
           .eq('employee_id', employeeId)
           .gte('salary_date', startDate.toISOString().split('T')[0])
           .lte('salary_date', endDate.toISOString().split('T')[0]);

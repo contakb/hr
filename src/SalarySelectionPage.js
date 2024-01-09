@@ -67,6 +67,8 @@ const [historicalSalaries, setHistoricalSalaries] = useState([]);
 const [averageSalary, setAverageSalary] = useState(0);
 const [showHistoricalSalaries, setShowHistoricalSalaries] = useState(false);
 const MINIMUM_SALARY = 4242; // Define minimum salary
+const [isUsingMinimumSalary, setIsUsingMinimumSalary] = useState(false);
+
 
 
 
@@ -605,9 +607,11 @@ const calculateAverageForChorobowe = (historicalSalaries) => {
   // Check if the average is less than the minimum salary
   if (average < MINIMUM_SALARY) {
       // Show a toast notification
+      setIsUsingMinimumSalary(true);
       toast.warn(`Average salary (${average.toFixed(2)} zł) is below the minimum (${MINIMUM_SALARY} zł). Using the minimum salary.`);
       return MINIMUM_SALARY;
   } else {
+    setIsUsingMinimumSalary(false); // Set the state to false otherwise
       return average;
   }
 };
@@ -618,9 +622,11 @@ const calculateAverageForChorobowe = (historicalSalaries) => {
 const renderHistoricalSalariesTable = () => {
   if (!showHistoricalSalaries || historicalSalaries.length === 0) return null;
 
+  const employeeId = historicalSalaries[0]?.employee_id || 'N/A';
+
   return (
       <div>
-          <h3>Historical Salaries for</h3>
+          <h3>Historical Salaries for Employee ID: {employeeId}</h3>
           <table>
               <thead>
                   <tr>
@@ -643,7 +649,12 @@ const renderHistoricalSalariesTable = () => {
                   ))}
               </tbody>
           </table>
-          <p>Average Salary: {averageSalary.toFixed(2)}</p>
+          <p>Average Salary: {averageSalary.toFixed(2)} </p>
+          {isUsingMinimumSalary && (
+                <p className="minimum-salary-warning">
+                    Note: The calculated average was below the minimum salary. The minimum salary of {MINIMUM_SALARY} zł is being used.
+                </p>
+            )}
       </div>
   );
 };
@@ -705,18 +716,23 @@ const handleSalaryChange = (event, index) => {
 
 
 // Define the handleHealthBreakStartDateChange function
+// Define the handleHealthBreakStartDateChange function
 const handleHealthBreakStartDateChange = (date, index) => {
   const updatedBreaks = [...healthBreaks];
 
-  // Check if the index is valid and if the break type is selected
   if (updatedBreaks[index] && updatedBreaks[index].type) {
+    const breakType = updatedBreaks[index].type;
+    const isWeekendDisabled = breakType === 'bezpłatny' || breakType === 'nieobecność';
+
+    if (isWeekendDisabled && (isWeekend(date) || isHolidayOnDate(holidays, date))) {
+      toast.error('Weekends and holidays are not allowed for this break type.');
+      return;
+    }
+
     const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
     if (isDateInSelectedMonth(date, month, year) && isStartDateValid(date, updatedBreaks[index].endDate)) {
-      updatedBreaks[index] = {
-        ...updatedBreaks[index],
-        startDate: formattedDate,
-      };
+      updatedBreaks[index].startDate = formattedDate;
       setHealthBreaks(updatedBreaks);
       calculateDays(index, updatedBreaks);
     } else {
@@ -731,15 +747,19 @@ const handleHealthBreakStartDateChange = (date, index) => {
 const handleHealthBreakEndDateChange = (date, index) => {
   const updatedBreaks = [...healthBreaks];
 
-  // Check if the index is valid and if the break type is selected
   if (updatedBreaks[index] && updatedBreaks[index].type) {
+    const breakType = updatedBreaks[index].type;
+    const isWeekendDisabled = breakType === 'bezpłatny' || breakType === 'nieobecność';
+
+    if (isWeekendDisabled && (isWeekend(date) || isHolidayOnDate(holidays, date))) {
+      toast.error('Weekends and holidays are not allowed for this break type.');
+      return;
+    }
+
     const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
     if (isDateInSelectedMonth(date, month, year) && isEndDateValid(date, updatedBreaks[index].startDate)) {
-      updatedBreaks[index] = {
-        ...updatedBreaks[index],
-        endDate: formattedDate,
-      };
+      updatedBreaks[index].endDate = formattedDate;
       setHealthBreaks(updatedBreaks);
       calculateDays(index, updatedBreaks);
     } else {
@@ -749,6 +769,7 @@ const handleHealthBreakEndDateChange = (date, index) => {
     toast.error("Please select a break type first.");
   }
 };
+
 
 
 const isDateInSelectedMonth = (date, month, year) => {
@@ -765,34 +786,49 @@ const isEndDateValid = (endDate, startDate) => {
   return !startDate || endDate >= new Date(startDate);
 };
 
+function calculateBreakDuration(startDate, endDate, holidays) {
+  let workingDayCount = 0;
+  let currentDay = new Date(startDate);
+
+  while (currentDay <= endDate) {
+      const isWeekday = !isWeekend(currentDay);
+      const isNotHoliday = !isHolidayOnDate(holidays, currentDay);
+
+      if (isWeekday && isNotHoliday) {
+          workingDayCount++;
+      }
+
+      currentDay.setDate(currentDay.getDate() + 1);
+  }
+
+  return workingDayCount;
+}
+
 
 
 // Function to calculate the number of days between start and end dates and update the state
 const calculateDays = (index, updatedBreaks) => {
-  const startDate = updatedBreaks[index].startDate 
-                      ? moment(updatedBreaks[index].startDate).tz("Europe/Warsaw").toDate() 
-                      : null;
-  const endDate = updatedBreaks[index].endDate 
-                    ? moment(updatedBreaks[index].endDate).tz("Europe/Warsaw").toDate() 
-                    : null;
+  const breakItem = updatedBreaks[index];
+  if (breakItem && breakItem.startDate && breakItem.endDate) {
+      const startDate = new Date(breakItem.startDate);
+      const endDate = new Date(breakItem.endDate);
+      const breakType = breakItem.type;
 
-  if (startDate && endDate) {
-    const timeDifference = endDate.getTime() - startDate.getTime();
-    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24)) +1;
-    updatedBreaks[index].days = daysDiff;
-
-    console.log("Start Date:", startDate);
-console.log("End Date:", endDate);
-console.log("Days Difference:", daysDiff);
-
+      if (breakType === 'bezpłatny' || breakType === 'nieobecność') {
+          // Only count working days
+          breakItem.days = calculateBreakDuration(startDate, endDate, holidays);
+      } else {
+          // Count all days
+          const timeDifference = endDate.getTime() - startDate.getTime();
+          breakItem.days = Math.round(timeDifference / (1000 * 60 * 60 * 24)) + 1;
+      }
   } else {
-    updatedBreaks[index].days = 0;
-    
+      breakItem.days = 0;
   }
 
   setHealthBreaks(updatedBreaks);
-  
 };
+
 
 
 
@@ -822,64 +858,88 @@ checkAndSetZwolnienieDisplay(updatedBreaks, additionalBreaksByEmployee);
 };
 
 // Define the handleAdditionalBreakStartDateChange function
+// Define the handleAdditionalBreakStartDateChange function
 const handleAdditionalBreakStartDateChange = (date, employeeId, breakIndex) => {
   const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
-  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  console.log(`Start Date Changed: ${formattedDate} for employee ID ${employeeId}`);
+  if (breaksForEmployee[breakIndex] && breaksForEmployee[breakIndex].type) {
+    const breakType = breaksForEmployee[breakIndex].type;
+    const isWeekendDisabled = breakType === 'bezpłatny' || breakType === 'nieobecność';
 
-  if (isDateInSelectedMonth(date, month, year) && isStartDateValid(date, breaksForEmployee[breakIndex].endDate)) {
-    breaksForEmployee[breakIndex].startDate = formattedDate;
-    setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
-    calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
-    console.log("Updated additionalBreaksByEmployee after Start Date change:", additionalBreaksByEmployee);
+    if (isWeekendDisabled && (isWeekend(date) || isHolidayOnDate(holidays, date))) {
+      toast.error('Weekends and holidays are not allowed for this break type.');
+      return;
+    }
+
+    const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
+
+    if (isDateInSelectedMonth(date, month, year) && isStartDateValid(date, breaksForEmployee[breakIndex].endDate)) {
+      breaksForEmployee[breakIndex].startDate = formattedDate;
+      setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+      calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+    } else {
+      toast.error("Please pick start dates within the selected month and before the end date.");
+    }
   } else {
-    console.error("Invalid start date selection.");
-    toast.error("Please pick start dates within the selected month and before the end date.");
+    toast.error("Please select a break type first.");
   }
 };
-
 
 // Define the handleAdditionalBreakEndDateChange function
 const handleAdditionalBreakEndDateChange = (date, employeeId, breakIndex) => {
   const breaksForEmployee = [...(additionalBreaksByEmployee[employeeId] || [])];
-  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  console.log(`End Date Changed: ${formattedDate} for employee ID ${employeeId}`);
+  if (breaksForEmployee[breakIndex] && breaksForEmployee[breakIndex].type) {
+    const breakType = breaksForEmployee[breakIndex].type;
+    const isWeekendDisabled = breakType === 'bezpłatny' || breakType === 'nieobecność';
 
-  if (isDateInSelectedMonth(date, month, year) && isEndDateValid(date, breaksForEmployee[breakIndex].startDate)) {
-    breaksForEmployee[breakIndex].endDate = formattedDate;
-    setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
-    calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
-    console.log("Updated additionalBreaksByEmployee after End Date change:", additionalBreaksByEmployee);
+    if (isWeekendDisabled && (isWeekend(date) || isHolidayOnDate(holidays, date))) {
+      toast.error('Weekends and holidays are not allowed for this break type.');
+      return;
+    }
+
+    const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
+
+    if (isDateInSelectedMonth(date, month, year) && isEndDateValid(date, breaksForEmployee[breakIndex].startDate)) {
+      breaksForEmployee[breakIndex].endDate = formattedDate;
+      setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
+      calculateAdditionalDays(employeeId, breakIndex, breaksForEmployee);
+    } else {
+      toast.error("Please pick end dates within the selected month and after the start date.");
+    }
   } else {
-    console.error("Invalid end date selection.");
-    toast.error("Please pick end dates within the selected month and after the start date.");
+    toast.error("Please select a break type first.");
   }
 };
+
+
 
 
 
 // Function to calculate the number of days between start and end dates for additional breaks and update the state
 // Function to calculate the number of days between start and end dates for additional breaks and update the state
 const calculateAdditionalDays = (employeeId, breakIndex, breaksForEmployee) => {
-  const startDate = breaksForEmployee[breakIndex].startDate 
-                      ? moment(breaksForEmployee[breakIndex].startDate).tz("Europe/Warsaw").toDate() 
-                      : null;
-  const endDate = breaksForEmployee[breakIndex].endDate 
-                    ? moment(breaksForEmployee[breakIndex].endDate).tz("Europe/Warsaw").toDate() 
-                    : null;
+  const breakItem = breaksForEmployee[breakIndex];
+  if (breakItem && breakItem.startDate && breakItem.endDate) {
+    const startDate = new Date(breakItem.startDate);
+    const endDate = new Date(breakItem.endDate);
+    const breakType = breakItem.type;
 
-  if (startDate && endDate) {
-    const timeDifference = endDate.getTime() - startDate.getTime();
-    const daysDiff = Math.round(timeDifference / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
-    breaksForEmployee[breakIndex].additionalDays = daysDiff;
+    if (breakType === 'bezpłatny' || breakType === 'nieobecność') {
+      // Only count working days for bezpłatny or nieobecność
+      breakItem.additionalDays = calculateBreakDuration(startDate, endDate, holidays);
+    } else {
+      // Count all days for other types of breaks
+      const timeDifference = endDate.getTime() - startDate.getTime();
+      breakItem.additionalDays = Math.round(timeDifference / (1000 * 60 * 60 * 24)) + 1;
+    }
   } else {
-    breaksForEmployee[breakIndex].additionalDays = 0;
+    breakItem.additionalDays = 0;
   }
 
   setAdditionalBreaksByEmployee({ ...additionalBreaksByEmployee, [employeeId]: breaksForEmployee });
 };
+
 
 
 
@@ -1200,10 +1260,14 @@ console.log('Custom Gross Amount before reduction:', customGrossAmount);
 // Determine the daily rate based on working hours
 const dailyRate = grossAmountValue / workingHours;
 console.log("Daily Rate:", dailyRate);
+console.log("Working hours:", workingHours);
 
 // Calculate deduction for not worked days
 const notWorkedDaysDeduction = totalDaysNotWorked > 0 ? dailyRate * totalDaysNotWorked * 8 : 0;
 console.log("Not Worked Days Deduction:", notWorkedDaysDeduction);
+console.log("total days not worked:", totalDaysNotWorked);
+console.log("total days bezpłatny:", totalDaysBezplatny);
+
 
 // Special handling for combined 'bezpłatny' and 'zwolnienie':
 if (hasBezplatny && !hasZwolnienie) {
@@ -1215,6 +1279,7 @@ if (hasBezplatny && !hasZwolnienie) {
 for (let i = 0; i < allBreakTypes.length; i++) {
     const currentBreakType = allBreakTypes[i];
     const currentBreakDays = allBreakDays[i];
+    console.log("Current break days and type:", currentBreakDays, currentBreakType);
 
     if (currentBreakType === 'zwolnienie') {
         customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
@@ -1231,6 +1296,7 @@ for (let i = 0; i < allBreakTypes.length; i++) {
       wynChorobowe = 0; // This leave is covered by ZUS, not included in the salary calculation
   }
 }
+
 
 // Apply the not worked days deduction
 customGrossAmount -= notWorkedDaysDeduction;
@@ -1284,6 +1350,7 @@ const calculatedValues = {
     bonus,
     social_base: customGrossAmount,  // This now includes the bonus
     averageSalary: averageSalary.toFixed(2),
+    workingdays: workingHours/8,
     additionalDays: additionalDaysArray.reduce((acc, val) => acc + val, 0)  // Sum of all additional days
 };
 
