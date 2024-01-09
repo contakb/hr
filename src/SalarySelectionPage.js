@@ -1294,6 +1294,8 @@ for (let i = 0; i < allBreakTypes.length; i++) {
       // For 'rodzicielski', apply the same deduction as 'zwolnienie' but set wyn_chorobowe to 0
       customGrossAmount -= (grossAmountValue / 30 * currentBreakDays);
       wynChorobowe = 0; // This leave is covered by ZUS, not included in the salary calculation
+  }else if (currentBreakType === 'nieobecność') {
+    customGrossAmount -= (dailyRate * currentBreakDays * 8);
   }
 }
 
