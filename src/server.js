@@ -1168,7 +1168,7 @@ app.post('/api/valid-employees', async (req, res) => {
   if (validEmployeeIds.length > 0) {
       const { data, error } = await supabase
           .from('employees')
-          .select('id, name, surname, contracts(gross_amount, contract_from_date, contract_to_date)')
+          .select('id, name, surname, contracts(gross_amount, contract_from_date, contract_to_date, etat)')
           .in('id', validEmployeeIds);
 
       if (error) {
@@ -1183,7 +1183,8 @@ app.post('/api/valid-employees', async (req, res) => {
               .map(contract => ({
                 gross_amount: contract.gross_amount.toFixed(2),
                 contract_from_date: contract.contract_from_date,
-                contract_to_date: contract.contract_to_date
+                contract_to_date: contract.contract_to_date,
+                etat: contract.etat
               }));
           
             // Merge the contract details with the gross amount

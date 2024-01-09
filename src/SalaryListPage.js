@@ -111,6 +111,7 @@ function SalaryListPage() {
             gross_amount: contract.gross_amount,
             contract_from_date: contract.contract_from_date,
             contract_to_date: contract.contract_to_date,
+            etat: contract.etat,
             // Add other contract details if necessary
           };
         }),
