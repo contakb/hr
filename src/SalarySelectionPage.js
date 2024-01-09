@@ -66,7 +66,7 @@ const [toastShown, setToastShown] = useState(false);
 const [historicalSalaries, setHistoricalSalaries] = useState([]);
 const [averageSalary, setAverageSalary] = useState(0);
 const [showHistoricalSalaries, setShowHistoricalSalaries] = useState(false);
-
+const MINIMUM_SALARY = 4242; // Define minimum salary
 
 
 
@@ -587,21 +587,32 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
   }
 };
 
+
+
 const calculateAverageForChorobowe = (historicalSalaries) => {
-  // Check for breaks and availability of chorobowe_base in the last three months
-  const lastThreeMonths = historicalSalaries.slice(-3); // Last 3 records
+  const lastThreeMonths = historicalSalaries.slice(-3);
   const hasBreaks = lastThreeMonths.some(salary => salary.chorobowe_base != null);
 
+  let average;
   if (hasBreaks) {
-      // Use chorobowe_base values if available, otherwise use social_base
       const total = lastThreeMonths.reduce((sum, record) => sum + parseFloat(record.chorobowe_base || record.social_base), 0);
-      return total / lastThreeMonths.length;
+      average = total / lastThreeMonths.length;
   } else {
-      // Standard average calculation using social_base
       const total = historicalSalaries.reduce((sum, record) => sum + parseFloat(record.social_base), 0);
-      return total / historicalSalaries.length;
+      average = total / historicalSalaries.length;
+  }
+
+  // Check if the average is less than the minimum salary
+  if (average < MINIMUM_SALARY) {
+      // Show a toast notification
+      toast.warn(`Average salary (${average.toFixed(2)} zł) is below the minimum (${MINIMUM_SALARY} zł). Using the minimum salary.`);
+      return MINIMUM_SALARY;
+  } else {
+      return average;
   }
 };
+
+
 
 
 const renderHistoricalSalariesTable = () => {
@@ -638,6 +649,7 @@ const renderHistoricalSalariesTable = () => {
 };
 
 const handleSalaryChange = (event, index) => {
+  
   const updatedSalaries = [...historicalSalaries];
   updatedSalaries[index] = {
       ...updatedSalaries[index],
@@ -648,8 +660,14 @@ const handleSalaryChange = (event, index) => {
 
   // Recalculate the average
   // Recalculate the average using calculateAverageForChorobowe
-  const average = calculateAverageForChorobowe(updatedSalaries);
-  setAverageSalary(average);
+  
+    // Recalculate the average
+    const calculatedAverage = calculateAverageForChorobowe(updatedSalaries);
+    
+    // Ensure the average is not less than the minimum salary
+    const finalAverage = calculatedAverage < MINIMUM_SALARY ? MINIMUM_SALARY : calculatedAverage;
+
+    setAverageSalary(finalAverage);
 };
 
 
