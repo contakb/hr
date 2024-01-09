@@ -609,7 +609,7 @@ const renderHistoricalSalariesTable = () => {
 
   return (
       <div>
-          <h3>Historical Salaries</h3>
+          <h3>Historical Salaries for</h3>
           <table>
               <thead>
                   <tr>
@@ -689,41 +689,49 @@ const handleSalaryChange = (event, index) => {
 // Define the handleHealthBreakStartDateChange function
 const handleHealthBreakStartDateChange = (date, index) => {
   const updatedBreaks = [...healthBreaks];
-  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  if (isDateInSelectedMonth(date, month, year) && isStartDateValid(date, updatedBreaks[index].endDate)) {
-    updatedBreaks[index] = {
-      ...updatedBreaks[index],
-      startDate: formattedDate,
-    };
-    setHealthBreaks(updatedBreaks);
-    calculateDays(index, updatedBreaks);
+  // Check if the index is valid and if the break type is selected
+  if (updatedBreaks[index] && updatedBreaks[index].type) {
+    const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
+
+    if (isDateInSelectedMonth(date, month, year) && isStartDateValid(date, updatedBreaks[index].endDate)) {
+      updatedBreaks[index] = {
+        ...updatedBreaks[index],
+        startDate: formattedDate,
+      };
+      setHealthBreaks(updatedBreaks);
+      calculateDays(index, updatedBreaks);
+    } else {
+      toast.error("Please pick start dates within the selected month and before the end date.");
+    }
   } else {
-    toast.error("Please pick start dates within the selected month and before the end date.");
+    toast.error("Please select a break type first.");
   }
 };
-
-
-
-
-
 
 // Define the handleHealthBreakEndDateChange function
 const handleHealthBreakEndDateChange = (date, index) => {
   const updatedBreaks = [...healthBreaks];
-  const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
 
-  if (isDateInSelectedMonth(date, month, year) && isEndDateValid(date, updatedBreaks[index].startDate)) {
-    updatedBreaks[index] = {
-      ...updatedBreaks[index],
-      endDate: formattedDate,
-    };
-    setHealthBreaks(updatedBreaks);
-    calculateDays(index, updatedBreaks);
+  // Check if the index is valid and if the break type is selected
+  if (updatedBreaks[index] && updatedBreaks[index].type) {
+    const formattedDate = date ? moment(date).tz("Europe/Warsaw").format() : null;
+
+    if (isDateInSelectedMonth(date, month, year) && isEndDateValid(date, updatedBreaks[index].startDate)) {
+      updatedBreaks[index] = {
+        ...updatedBreaks[index],
+        endDate: formattedDate,
+      };
+      setHealthBreaks(updatedBreaks);
+      calculateDays(index, updatedBreaks);
+    } else {
+      toast.error("Please pick end dates within the selected month and after the start date.");
+    }
   } else {
-    toast.error("Please pick end dates within the selected month and after the start date.");
+    toast.error("Please select a break type first.");
   }
 };
+
 
 const isDateInSelectedMonth = (date, month, year) => {
   return date && date.getMonth() + 1 === parseInt(month) && date.getFullYear() === parseInt(year);
