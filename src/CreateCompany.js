@@ -418,7 +418,7 @@ const handleUpdateCompany = (event, companyId) => {
 
   return (
       <div>
-            <h1>Company Form</h1>
+            <h1>Dane firmy:</h1>
             {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
             {updateMessage && <div style={{ color: 'green' }}>{updateMessage}</div>}
             {isLoading ? (

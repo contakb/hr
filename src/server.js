@@ -359,6 +359,13 @@ app.post('/api/save-salary-data', async (req, res) => {
       wyn_chorobowe: salary.wyn_chorobowe,
       chorobowe_base: salary.chorobowe_base,
       bonus: salary.bonus,
+      workingdays: salary.workingdays,
+      break_zwolnienie: salary.break_zwolnienie,
+      break_bezplatny: salary.break_bezplatny,
+      break_nieobecnosc: salary.break_nieobecnosc,
+      break_rodzicielski: salary.break_rodzicielski,
+      break_ciaza: salary.break_ciaza,
+      break_wychowawczy: salary.break_wychowawczy,
     }));
 
     // Insert all salary records into the 'salaries' table using Supabase
@@ -414,6 +421,13 @@ app.put('/api/update-salary-data', async (req, res) => {
       wyn_chorobowe: salary.wyn_chorobowe,
       chorobowe_base: salary.chorobowe_base,
       bonus: salary.bonus,
+      workingdays: salary.workingdays,
+      break_zwolnienie: salary.break_zwolnienie,
+      break_bezplatny: salary.break_bezplatny,
+      break_nieobecnosc: salary.break_nieobecnosc,
+      break_rodzicielski: salary.break_rodzicielski,
+      break_ciaza: salary.break_ciaza,
+      break_wychowawczy: salary.break_wychowawczy,
       })
         .match({ id: salary.salary_id }); // Use salary_id to match records
 

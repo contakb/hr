@@ -68,6 +68,8 @@ const [averageSalary, setAverageSalary] = useState(0);
 const [showHistoricalSalaries, setShowHistoricalSalaries] = useState(false);
 const MINIMUM_SALARY = 4242; // Define minimum salary
 const [isUsingMinimumSalary, setIsUsingMinimumSalary] = useState(false);
+const [showRecalculateButton, setShowRecalculateButton] = useState(false);
+
 
 
 
@@ -655,6 +657,7 @@ const renderHistoricalSalariesTable = () => {
                     Note: The calculated average was below the minimum salary. The minimum salary of {MINIMUM_SALARY} zł is being used.
                 </p>
             )}
+            
       </div>
   );
 };
@@ -1025,6 +1028,8 @@ const addAdditionalBreak = (employeeId) => {
         Object.values(additionalBreaks).flat().some(breakItem => breakItem.type === 'zwolnienie' || breakItem.type === 'ciąża');
 
     setShowHistoricalSalaries(isBreakSelected);
+    // Additionally, set the visibility of the recalculate button
+    setShowRecalculateButton(isBreakSelected);
 };
 
 
@@ -1229,18 +1234,43 @@ const salaryForCalculation =  averageSalary ? averageSalary : customGrossAmount;
 
 let totalDaysZwolnienie = breakType === 'zwolnienie' ? daysOfBreak : 0;
 let totalDaysBezplatny = breakType === 'bezpłatny' ? daysOfBreak : 0;
+let totalDaysNieobecnosc = 0;
+let totalDaysRodzicielski = 0;
+let totalDaysCiaza = 0;
+let totalDaysWychowawczy = 0;
 let wynChorobowe = 0;
 
 // Summing up additional days for each break type
-for(let i = 0; i < additionalDaysArray.length; i++) {
-    if(additionalBreakTypesArray[i] === 'zwolnienie') {
-        totalDaysZwolnienie += additionalDaysArray[i];
-    } else if(additionalBreakTypesArray[i] === 'bezpłatny') {
-        totalDaysBezplatny += additionalDaysArray[i];
+for (let i = 0; i < additionalDaysArray.length; i++) {
+    switch (additionalBreakTypesArray[i]) {
+        case 'zwolnienie':
+            totalDaysZwolnienie += additionalDaysArray[i];
+            break;
+        case 'bezpłatny':
+            totalDaysBezplatny += additionalDaysArray[i];
+            break;
+        case 'nieobecność':
+            totalDaysNieobecnosc += additionalDaysArray[i];
+            break;
+        case 'rodzicielski':
+            totalDaysRodzicielski += additionalDaysArray[i];
+            break;
+        case 'ciąża':
+            totalDaysCiaza += additionalDaysArray[i];
+            break;
+        case 'wychowawczy':
+            totalDaysWychowawczy += additionalDaysArray[i];
+            break;
     }
 }
-// Logging the total number of days for 'bezpłatny' break
+
+// Logging the total number of days for different break types
 console.log('Total Days Bezplatny:', totalDaysBezplatny);
+console.log('Total Days Zwolnienie:', totalDaysZwolnienie);
+// ... log for other break types ...
+
+// Continue with the rest of your calculation logic
+
 
 const allBreakTypes = [breakType, ...additionalBreakTypesArray];
 const allBreakDays = [daysOfBreak, ...additionalDaysArray];
@@ -1353,6 +1383,12 @@ const calculatedValues = {
     social_base: customGrossAmount,  // This now includes the bonus
     averageSalary: averageSalary.toFixed(2),
     workingdays: workingHours/8,
+    break_zwolnienie: totalDaysZwolnienie,
+    break_bezplatny: totalDaysBezplatny,
+    break_nieobecnosc: totalDaysNieobecnosc,
+    break_rodzicielski: totalDaysRodzicielski,
+    break_ciaza: totalDaysCiaza,
+    break_wychowawczy: totalDaysWychowawczy,
     additionalDays: additionalDaysArray.reduce((acc, val) => acc + val, 0)  // Sum of all additional days
 };
 
@@ -1369,6 +1405,8 @@ return (
 }
 
 const calculateSalaryForAll = () => {
+
+  
 
 const updatedContracts = calculatedContracts.map((employee, index) => {
   
@@ -1446,53 +1484,140 @@ setIsAllSalaryCalculated(true);
 console.log('Updated Contracts:', updatedContracts);
 };
 
-const handleCalculateSalary = () => {
-console.log("Calculating salary...");
-console.log("handleCalculateSalary triggered");
+const recalculateSalaryWithNewAverage = (employee, grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, employeeProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, averageSalary) => {
+  // Assuming you have access to all necessary data from state or context
+  const calculatedValues = calculateSalary(
+    grossAmountValue, // from state or context
+    daysOfBreak, // from state or context
+    breakType, // from state or context
+    additionalDaysArray, // from state or context
+    additionalBreakTypesArray, // from state or context
+    workingHours, // from state or context
+    totalDaysNotWorked, // from state or context
+    employeeProRatedGross, // from state or context
+    bonus, // from state or context
+    wypadkoweRate, // from state or context
+    koszty, // from state or context
+    ulga, // from state or context
+    allBreaks, // from state or context
+    averageSalary, // already updated from the table
+    employee.employee_id, // from state or context
+    employeeBonuses[employee.employee_id] || 0 // from state or context
+  );
 
-const updatedContracts = validContracts.map((employee, index) => {
-    const normalizedGrossAmount = Array.isArray(employee.gross_amount) 
-        ? employee.gross_amount.map(gross => parseFloat(gross))
-        : [parseFloat(employee.gross_amount)];
+  // Update the employee's calculated contract data
+  const updatedEmployees = [...calculatedContracts];
+  const employeeIndex = calculatedContracts.findIndex(emp => emp.employee_id === employee.employee_id);
+  if (employeeIndex !== -1) {
+    updatedEmployees[employeeIndex] = { ...updatedEmployees[employeeIndex], contracts: [calculatedValues] };
+    setCalculatedContracts(updatedEmployees);
+  }
+};
 
-    const updatedEmployeeContracts = normalizedGrossAmount.map((grossAmount, index) => {
-        const daysOfBreak = parseInt(healthBreaks[index]?.days, 10) || 0;
-        const breakType = healthBreaks[index]?.type || '';
-        const additionalDays = [parseInt(additionalBreaks[index]?.additionalDays, 10) || 0];
-        const additionalBreakType = [additionalBreaks[index]?.type || ''];
-        const totalDaysNotWorked = daysNotWorkedSummary[employee.employee_id] || 0;
-        const proRatedGross = employee.proRatedGross;
-        const bonus = employeeBonuses[employee.employee_id] || 0;
-        
-        
-        console.log("Days Not Worked Summary State:", daysNotWorkedSummary);
-        console.log(`Total Days Not Worked for Employee ID ${employee.employee_id}:`, totalDaysNotWorked);
-        console.log("Inside handleCalculateSalary. Type of additionalDays:", typeof additionalDays, "Value:", additionalDays);
+const handleCalculateSalary_1 = async (employee, index) => {
+  const updatedEmployee = await fetchAllParameters(employee);
+  console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
 
-        const calculatedValues = calculateSalary(
-          employee.employee_id,
-          grossAmount, 
-          daysOfBreak, 
-          breakType, 
-          additionalDays, 
-          additionalBreakType,
-          workingHours,
-          totalDaysNotWorked,
-          proRatedGross,
-          bonus,
-          wypadkoweRate // Pass the proRatedGross value here
-        );
-        console.log("Calculate Salary Result for Employee:", employee.employee_id, "is:", calculatedValues);
+  // Fetch historical salaries for the selected month and year
+const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
+setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
 
-        return { ...employee, contracts: calculatedValues };
-    });
+if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
+// Calculate and update the average salary
+const newAverageSalary = calculateAverageForChorobowe(employeeWithHistoricalSalaries.historicalSalaries);
+setAverageSalary(newAverageSalary);}
 
-    return updatedEmployeeContracts;
+const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
+const daysOfBreak = healthBreak.days;
+const breakType = healthBreak.type;
+const employeeProRatedGross = proRatedGrossSummary[employee.employee_id]; // Retrieve pro-rated gross for the employee
+const grossAmountValue = employeeProRatedGross ? employeeProRatedGross : employee.gross_amount; // Use pro-rated gross if available, otherwise use standard gross amount
+
+// Construct the arrays here, based on the additionalBreaks structure.
+// Extract the arrays for the specific employee from the additionalBreaksByEmployee structure.
+const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
+// Filter out breaks that are marked for deletion
+const validBreaksForEmployee = breaksForEmployee.filter(breakItem => !breakItem.isDeleted);
+
+const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
+const additionalBreakTypesArray = breaksForEmployee.map(breakItem => breakItem.type || '');
+// Extract total days not worked for this employee
+const employeeNotWorkedDetails = daysNotWorkedSummary[employee.employee_id] || [];
+const totalDaysNotWorked = employeeNotWorkedDetails.reduce((total, detail) => total + detail.daysNotWorked, 0);
+const bonus = employeeBonuses[employee.employee_id] || 0;
+
+const bonusValue = employeeBonuses[employee.employee_id] || 0;
+
+
+
+const allBreaks = [
+{ 
+  startDate: healthBreak.startDate,
+  endDate: healthBreak.endDate,
+  days: healthBreak.days, 
+  type: healthBreak.type,
+  id:healthBreak.id
+},
+...breaksForEmployee
+];
+
+// Log dates before formatting
+console.log('Dates before formatting:', allBreaks.map(breakItem => ({ startDate: breakItem.startDate, endDate: breakItem.endDate })));
+// Format the dates for all breaks using formatDateForServer
+allBreaks.forEach(breakItem => {
+breakItem.startDate = formatDateForServer(breakItem.startDate);
+breakItem.endDate = formatDateForServer(breakItem.endDate);
 });
 
-console.log(updatedContracts);
-setCalculatedContracts(updatedContracts);
-};
+// Log dates after formatting
+console.log('Dates after formatting:', allBreaks.map(breakItem => ({ startDate: breakItem.startDate, endDate: breakItem.endDate })));
+
+// Add a log to check the value of wypadkoweRate before calling calculateSalary
+console.log('wypadkoweRate before calling calculateSalary:', wypadkoweRate);
+
+console.log("Individual Current state of employeeBonuses:", employeeBonuses);
+console.log(`Individual calculation - Bonus for employee ${employee.employee_id}:`, bonusValue);
+console.log(`Bonus for individual calculation for employee ${employee.employee_id}:`, bonus);
+
+
+console.log(`Days Not Worked for Employee (from button click) ${employee.employee_id}:`, totalDaysNotWorked);
+console.log(`proRatedGross (from button click) ${employee.employee_id}:`,employeeProRatedGross);
+console.log(`proRatedGross for Employee ID (click) ${employee.employee_id}:`, employeeProRatedGross);
+console.log(`Button clicked for employee ${employee.employee_id}`);
+
+// Add logs to check the values before calling the function
+console.log('Employee Data:', employee);
+console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
+
+const calculatedValues = calculateSalary(
+grossAmountValue, 
+daysOfBreak, 
+breakType, 
+additionalDaysArray,  // pass the entire array
+additionalBreakTypesArray,
+workingHours,  // pass the entire array
+totalDaysNotWorked,
+employeeProRatedGross,
+bonus,
+bonusValue,
+wypadkoweRate,
+updatedEmployee.koszty, // Use updated koszty
+updatedEmployee.ulga,
+allBreaks,
+averageSalary, // pass the historical salaries array
+employee.employee_id,
+employeeBonuses[employee.employee_id] || 0
+ // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
+);
+
+// Update this specific employee's data in the state:
+const updatedEmployees = [...calculatedContracts];
+updatedEmployees[index] = { ...updatedEmployee, contracts: [calculatedValues] };
+setCalculatedContracts(updatedEmployees);
+
+
+console.log(`Updated employee data for ID ${employee.employee_id}:`, updatedEmployees[index]);
+};  
 
 const formatDateForServer = (dateInput) => {
   // If dateInput is a Date object, convert it to an ISO string
@@ -1778,6 +1903,13 @@ calculatedContracts.forEach(employee => {
       salary_date: salaryDate, // From state
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      workingdays: contract.workingdays,
+      break_zwolnienie: contract.break_zwolnienie,
+      break_bezplatny: contract.break_bezplatny,
+      break_nieobecnosc: contract.break_nieobecnosc,
+      break_rodzicielski: contract.break_rodzicielski,
+      break_ciaza: contract.break_ciaza,
+      break_wychowawczy: contract.break_wychowawczy,
     };
 
     // Check if this is a new entry or an update
@@ -2122,22 +2254,26 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
               </tr>
               
     ))}
-
-          <tr>
+   <div style={{ display: 'flex', alignItems: 'center' }}>
+{showRecalculateButton && (
+    <button onClick={() => handleCalculateSalary_1(employee, index)} style={{ marginRight: '10px' }}>
+        Pobierz dane z tabeli {employee.name}
+    </button>
+)}
+          
           <button onClick={async () => {
       const updatedEmployee = await fetchAllParameters(employee);
       console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
 
       // Fetch historical salaries for the selected month and year
-    const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
-    setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
+  const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
+  setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
 
-    // Calculate and set the average salary using calculateAverageForChorobowe
-    if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
-        const recalculatedAverage = calculateAverageForChorobowe(employeeWithHistoricalSalaries.historicalSalaries);
-        setAverageSalary(recalculatedAverage);
-    }
-            
+  if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
+    // Calculate and update the average salary
+    const newAverageSalary = calculateAverageForChorobowe(employeeWithHistoricalSalaries.historicalSalaries);
+    setAverageSalary(newAverageSalary);}
+    
   const daysOfBreak = healthBreak.days;
   const breakType = healthBreak.type;
   const employeeProRatedGross = proRatedGrossSummary[employee.employee_id]; // Retrieve pro-rated gross for the employee
@@ -2200,7 +2336,8 @@ console.log('Employee Data:', employee);
 console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
 
 
-
+ // Wait for the state to update before calculating salary
+ setTimeout(() => {
   const calculatedValues = calculateSalary(
     grossAmountValue, 
     daysOfBreak, 
@@ -2232,11 +2369,13 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
 
 
   console.log(`Updated employee data for ID ${employee.employee_id}:`, updatedEmployees[index]);
+}, 0);
 
 }}>
-  Calculate
+  Przelicz wynagrodzenie
   
 </button>
+</div>
 
 
 
@@ -2245,7 +2384,8 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
 
 
 
-          </tr>
+          
+          
       </React.Fragment>
                               )
 })}
