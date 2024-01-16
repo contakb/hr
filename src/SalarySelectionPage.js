@@ -582,6 +582,19 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
       const response = await axios.get(`http://localhost:3001/api/salary/historical/${employee.employee_id}/${selectedYear}/${selectedMonth}`);
       const historicalSalaries = response.data || [];
 
+      // Calculate actualWorkedDays for each salary record
+      historicalSalaries.forEach((salary) => {
+        if (salary.workingdays !== null) {
+            salary.actualWorkedDays = salary.workingdays - (salary.break_bezplatny + salary.break_nieobecnosc);
+        } else {
+            salary.actualWorkedDays = "N/A";
+        }
+    
+
+    // Calculate combined breaks for zwolnienie and ciąża
+    salary.combinedBreaks = (salary.break_zwolnienie || 0) + (salary.break_ciaza || 0);
+  });
+
       console.log(`Historical salaries fetched for employee ${employee.employee_id}:`, historicalSalaries);
 
       return { ...employee, historicalSalaries };
@@ -590,6 +603,25 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
       return { ...employee, historicalSalaries: [] }; // Return employee with empty historical salaries in case of error
   }
 };
+
+const getDaysInMonth = (year, month) => {
+  if (month === 2) { // Check for February
+    const isLeapYear = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0));
+    return isLeapYear ? 29 : 28;
+  }
+  return new Date(year, month, 0).getDate();
+};
+
+const shouldHideColumn = (columnName) => {
+  return historicalSalaries.every(salary => 
+    salary[columnName] === null || salary[columnName] === 0
+  );
+};
+
+const hideBreakBezplatny = shouldHideColumn('break_bezplatny');
+const hideBreakNieobecnosc = shouldHideColumn('break_nieobecnosc');
+const hideBreakZwolnienie = shouldHideColumn('break_zwolnienie');
+const hideCombinedBreaks = shouldHideColumn('combinedBreaks');
 
 
 
@@ -619,49 +651,6 @@ const calculateAverageForChorobowe = (historicalSalaries) => {
 };
 
 
-
-
-const renderHistoricalSalariesTable = () => {
-  if (!showHistoricalSalaries || historicalSalaries.length === 0) return null;
-
-  const employeeId = historicalSalaries[0]?.employee_id || 'N/A';
-
-  return (
-      <div>
-          <h3>Historical Salaries for Employee ID: {employeeId}</h3>
-          <table>
-              <thead>
-                  <tr>
-                      <th>Data wyplaty</th>
-                      <th>Podstawa brutto</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  {historicalSalaries.map((salary, index) => (
-                      <tr key={index}>
-                          <td>{salary.salary_date}</td>
-                          <td>
-                <input 
-                    type="number" 
-                    value={salary.social_base} 
-                    onChange={(e) => handleSalaryChange(e, index)}
-                />
-            </td>
-                      </tr>
-                  ))}
-              </tbody>
-          </table>
-          <p>Average Salary: {averageSalary.toFixed(2)} </p>
-          {isUsingMinimumSalary && (
-                <p className="minimum-salary-warning">
-                    Note: The calculated average was below the minimum salary. The minimum salary of {MINIMUM_SALARY} zł is being used.
-                </p>
-            )}
-            
-      </div>
-  );
-};
-
 const handleSalaryChange = (event, index) => {
   
   const updatedSalaries = [...historicalSalaries];
@@ -669,6 +658,7 @@ const handleSalaryChange = (event, index) => {
       ...updatedSalaries[index],
       social_base: event.target.value
   };
+
 
   setHistoricalSalaries(updatedSalaries);
 
@@ -683,6 +673,69 @@ const handleSalaryChange = (event, index) => {
 
     setAverageSalary(finalAverage);
 };
+
+
+const renderHistoricalSalariesTable = () => {
+  if (!showHistoricalSalaries || historicalSalaries.length === 0) return null;
+
+  const employeeId = historicalSalaries[0]?.employee_id || 'N/A';
+
+  return (
+      <div>
+          <h3>Historical Salaries for Employee ID: {employeeId}</h3>
+          <table>
+              <thead>
+                  <tr>
+                  <th>Okres</th>
+                      <th>Data wyplaty</th>
+                      <th>Podstawa brutto</th>
+                      <th>Dni miesiąca</th>
+                      <th>Dni pracy</th>
+                      <th>Dni przepracowane</th>
+                      {!hideBreakBezplatny && <th>Dni bezpłatny</th>}
+                      {!hideBreakNieobecnosc && <th>Dni nieobecność</th>}
+    {!hideBreakZwolnienie && <th>Dni zwolnienia</th>}
+    {!hideCombinedBreaks && <th>Dni zwolnienia</th>}
+                  </tr>
+              </thead>
+              <tbody>
+                  {historicalSalaries.map((salary, index) => {
+                    const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month); // subtract 1 as JS months are 0-indexed
+                    return (
+                      <tr key={index}>
+                       <td>{salary.salary_month}/{salary.salary_year} ({daysInMonth} days)</td>
+                          <td>{salary.salary_date}</td>
+                          <td>
+                              <input 
+                                  type="number" 
+                                  value={salary.social_base} 
+                                  onChange={(e) => handleSalaryChange(e, index)}
+                              />
+                          </td>
+                          <td> {daysInMonth}</td>
+                          <td>{salary.workingdays}</td>
+                          <td>{salary.actualWorkedDays}</td>
+                          {!hideBreakBezplatny && <td>{salary.break_bezplatny}</td>}
+                          {!hideBreakNieobecnosc && <td>{salary.break_nieobecnosc}</td>}
+      {!hideBreakZwolnienie && <td>{salary.break_zwolnienie}</td>}
+      {!hideCombinedBreaks && <td>{salary.combinedBreaks}</td>}
+                      </tr>
+                    );
+                    })}
+              </tbody>
+          </table>
+          <p>Average Salary: {averageSalary.toFixed(2)} </p>
+          {isUsingMinimumSalary && (
+              <p className="minimum-salary-warning">
+                  Note: The calculated average was below the minimum salary. The minimum salary of {MINIMUM_SALARY} zł is being used.
+              </p>
+          )}
+      </div>
+  );
+};
+
+
+
 
 
 
