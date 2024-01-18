@@ -589,10 +589,18 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
         } else {
             salary.actualWorkedDays = "N/A";
         }
-    
-
+        
     // Calculate combined breaks for zwolnienie and ciąża
     salary.combinedBreaks = (salary.break_zwolnienie || 0) + (salary.break_ciaza || 0);
+    const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
+
+  // Calculate total breaks
+  const totalBreaks = (salary.break_bezplatny || 0) + (salary.break_nieobecnosc || 0) + (salary.combinedBreaks || 0);
+
+  // Calculate calendar worked days
+  salary.calendarWorkedDays = daysInMonth - totalBreaks;
+    
+
   });
 
       console.log(`Historical salaries fetched for employee ${employee.employee_id}:`, historicalSalaries);
@@ -690,6 +698,7 @@ const renderHistoricalSalariesTable = () => {
                       <th>Data wyplaty</th>
                       <th>Podstawa brutto</th>
                       <th>Dni miesiąca</th>
+                      <th>Dni miesiąca przepracowane</th>
                       <th>Dni pracy</th>
                       <th>Dni przepracowane</th>
                       {!hideBreakBezplatny && <th>Dni bezpłatny</th>}
@@ -713,6 +722,7 @@ const renderHistoricalSalariesTable = () => {
                               />
                           </td>
                           <td> {daysInMonth}</td>
+                          <td>{salary.calendarWorkedDays}</td>
                           <td>{salary.workingdays}</td>
                           <td>{salary.actualWorkedDays}</td>
                           {!hideBreakBezplatny && <td>{salary.break_bezplatny}</td>}
