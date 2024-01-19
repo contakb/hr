@@ -701,6 +701,7 @@ const renderHistoricalSalariesTable = () => {
                       <th>Dni miesiąca przepracowane</th>
                       <th>Dni pracy</th>
                       <th>Dni przepracowane</th>
+                      <th>Dni zwolnienia/ciąży robocze</th> 
                       {!hideBreakBezplatny && <th>Dni bezpłatny</th>}
                       {!hideBreakNieobecnosc && <th>Dni nieobecność</th>}
     {!hideBreakZwolnienie && <th>Dni zwolnienia</th>}
@@ -725,6 +726,7 @@ const renderHistoricalSalariesTable = () => {
                           <td>{salary.calendarWorkedDays}</td>
                           <td>{salary.workingdays}</td>
                           <td>{salary.actualWorkedDays}</td>
+                          <td>({salary.break_zwolnienie_wd}+{salary.break_ciaza_wd})</td>
                           {!hideBreakBezplatny && <td>{salary.break_bezplatny}</td>}
                           {!hideBreakNieobecnosc && <td>{salary.break_nieobecnosc}</td>}
       {!hideBreakZwolnienie && <td>{salary.break_zwolnienie}</td>}
@@ -1541,6 +1543,17 @@ const updatedContracts = calculatedContracts.map((employee, index) => {
     },
     ...breaksForEmployee
 ];
+// Example: Calculate working days for all breaks of 'zwolnienie' and 'ciąża'
+let workingDaysZwolnienie = 0;
+let workingDaysCiaza = 0;
+
+allBreaks.forEach(breakItem => {
+  if (breakItem.type === 'zwolnienie') {
+    workingDaysZwolnienie += calculateWorkingDaysForDefaultBreak(breakItem, holidays);
+  } else if (breakItem.type === 'ciąża') {
+    workingDaysCiaza += calculateWorkingDaysForDefaultBreak(breakItem, holidays);
+  }
+});
 
 // Log dates before formatting
 console.log('Dates before formatting:', allBreaks.map(breakItem => ({ startDate: breakItem.startDate, endDate: breakItem.endDate })));
@@ -1579,6 +1592,8 @@ allBreaks.forEach(breakItem => {
 employee.ulga,  
 allBreaks,
 averageSalary,
+workingDaysZwolnienie, // Now defined
+    workingDaysCiaza, // Now defined
     employee.employee_id // Pass the employee's ID here
      // Ensure this is correctly positioned in the parameter list
   );
@@ -1670,6 +1685,18 @@ const allBreaks = [
 ...breaksForEmployee
 ];
 
+// Example: Calculate working days for all breaks of 'zwolnienie' and 'ciąża'
+let workingDaysZwolnienie = 0;
+let workingDaysCiaza = 0;
+
+allBreaks.forEach(breakItem => {
+  if (breakItem.type === 'zwolnienie') {
+    workingDaysZwolnienie += calculateWorkingDaysForDefaultBreak(breakItem, holidays);
+  } else if (breakItem.type === 'ciąża') {
+    workingDaysCiaza += calculateWorkingDaysForDefaultBreak(breakItem, holidays);
+  }
+});
+
 // Log dates before formatting
 console.log('Dates before formatting:', allBreaks.map(breakItem => ({ startDate: breakItem.startDate, endDate: breakItem.endDate })));
 // Format the dates for all breaks using formatDateForServer
@@ -1714,6 +1741,8 @@ updatedEmployee.koszty, // Use updated koszty
 updatedEmployee.ulga,
 allBreaks,
 averageSalary, // pass the historical salaries array
+workingDaysZwolnienie, // Now defined
+workingDaysCiaza, // Now defined
 employee.employee_id,
 employeeBonuses[employee.employee_id] || 0
  // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
@@ -2019,6 +2048,8 @@ calculatedContracts.forEach(employee => {
       break_rodzicielski: contract.break_rodzicielski,
       break_ciaza: contract.break_ciaza,
       break_wychowawczy: contract.break_wychowawczy,
+      break_zwolnienie_wd: contract.working_days_zwolnienie,
+      break_ciaza_wd: contract.working_days_ciaza,
     };
 
     // Check if this is a new entry or an update

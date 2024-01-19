@@ -428,6 +428,9 @@ app.put('/api/update-salary-data', async (req, res) => {
       break_rodzicielski: salary.break_rodzicielski,
       break_ciaza: salary.break_ciaza,
       break_wychowawczy: salary.break_wychowawczy,
+      break_zwolnienie_wd: salary.break_zwolnienie_wd,
+      break_ciaza_wd: salary.break_ciaza_wd,
+
       })
         .match({ id: salary.salary_id }); // Use salary_id to match records
 
@@ -587,7 +590,7 @@ app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
   try {
       const { data, error } = await supabase
           .from('salaries')
-          .select('gross_total, social_base, salary_date, salary_month, salary_year, chorobowe_base, workingdays, break_zwolnienie, break_bezplatny, break_nieobecnosc, break_rodzicielski, break_ciaza, break_wychowawczy, employee_id')
+          .select('gross_total, social_base, salary_date, salary_month, salary_year, chorobowe_base, workingdays, break_zwolnienie, break_bezplatny, break_nieobecnosc, break_rodzicielski, break_ciaza, break_wychowawczy, break_zwolnienie_wd, break_ciaza_wd, employee_id')
           .eq('employee_id', employeeId)
           .gte('salary_date', startDate.toISOString().split('T')[0])
           .lte('salary_date', endDate.toISOString().split('T')[0]);
