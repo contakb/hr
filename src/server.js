@@ -366,6 +366,8 @@ app.post('/api/save-salary-data', async (req, res) => {
       break_rodzicielski: salary.break_rodzicielski,
       break_ciaza: salary.break_ciaza,
       break_wychowawczy: salary.break_wychowawczy,
+      break_zwolnienie_wd: salary.break_zwolnienie_wd,
+      break_ciaza_wd: salary.break_ciaza_wd,
     }));
 
     // Insert all salary records into the 'salaries' table using Supabase

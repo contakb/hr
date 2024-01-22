@@ -69,6 +69,7 @@ const [showHistoricalSalaries, setShowHistoricalSalaries] = useState(false);
 const MINIMUM_SALARY = 4242; // Define minimum salary
 const [isUsingMinimumSalary, setIsUsingMinimumSalary] = useState(false);
 const [showRecalculateButton, setShowRecalculateButton] = useState(false);
+const [isAverageManuallySet, setIsAverageManuallySet] = useState(false);
 
 
 
@@ -592,6 +593,7 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
         
     // Calculate combined breaks for zwolnienie and ciąża
     salary.combinedBreaks = (salary.break_zwolnienie || 0) + (salary.break_ciaza || 0);
+    salary.combinedBreaks_wd = (salary.break_zwolnienie_wd || 0) + (salary.break_ciaza_wd || 0);
     const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
 
   // Calculate total breaks
@@ -634,53 +636,83 @@ const hideCombinedBreaks = shouldHideColumn('combinedBreaks');
 
 
 const calculateAverageForChorobowe = (historicalSalaries) => {
+  let totalAmount = 0;
+  let count = 0;
+
   const lastThreeMonths = historicalSalaries.slice(-3);
   const hasBreaks = lastThreeMonths.some(salary => salary.chorobowe_base != null);
 
-  let average;
   if (hasBreaks) {
-      const total = lastThreeMonths.reduce((sum, record) => sum + parseFloat(record.chorobowe_base || record.social_base), 0);
-      average = total / lastThreeMonths.length;
+    console.log('Calculating average based on chorobowe_base or social_base for the last three months');
+    totalAmount = lastThreeMonths.reduce((sum, record) => {
+      console.log(`Month: ${record.salary_month}/${record.salary_year}, Amount Used: ${record.chorobowe_base || record.social_base}`);
+      return sum + parseFloat(record.chorobowe_base || record.social_base);
+    }, 0);
+    count = lastThreeMonths.length;
   } else {
-      const total = historicalSalaries.reduce((sum, record) => sum + parseFloat(record.social_base), 0);
-      average = total / historicalSalaries.length;
+    console.log('Calculating average based on gross_total or social_base for all historical salaries');
+    historicalSalaries.forEach(salary => {
+      const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
+      const totalBreakDays = salary.break_zwolnienie_wd + salary.break_ciaza_wd + salary.break_bezplatny + salary.break_nieobecnosc;
+      const totalWorkedDays = salary.workingdays - totalBreakDays;
+      const isFullMonthWorked = totalWorkedDays === salary.workingdays;
+      const isMoreThanHalfMonthWorked = totalWorkedDays > (salary.workingdays / 2);
+
+      console.log(`Month: ${salary.salary_month}/${salary.salary_year}, Total Worked Days: ${totalWorkedDays}, Days in Month: ${daysInMonth}, Full Month: ${isFullMonthWorked}, More Than Half Month: ${isMoreThanHalfMonthWorked}`);
+
+      if (isFullMonthWorked) {
+        totalAmount += parseFloat(salary.social_base);
+        console.log(`Including full month worked using social_base: ${salary.social_base}`);
+      } else if (isMoreThanHalfMonthWorked) {
+        totalAmount += parseFloat(salary.gross_total);
+        console.log(`Including more than half month worked using gross_total: ${salary.gross_total}`);
+      }
+      // Months with less than half worked are not counted
+      if (isFullMonthWorked || isMoreThanHalfMonthWorked) {
+        count++;
+      }
+    });
   }
 
-  // Check if the average is less than the minimum salary
+  const average = count > 0 ? totalAmount / count : 0;
+  console.log(`Total Amount for Average Calculation: ${totalAmount}, Count of Months Considered: ${count}, Calculated Average: ${average}`);
+
   if (average < MINIMUM_SALARY) {
-      // Show a toast notification
-      setIsUsingMinimumSalary(true);
-      toast.warn(`Average salary (${average.toFixed(2)} zł) is below the minimum (${MINIMUM_SALARY} zł). Using the minimum salary.`);
-      return MINIMUM_SALARY;
+    setIsUsingMinimumSalary(true);
+    console.warn(`Average salary (${average.toFixed(2)} zł) is below the minimum (${MINIMUM_SALARY} zł). Using the minimum salary.`);
+    return MINIMUM_SALARY;
   } else {
-    setIsUsingMinimumSalary(false); // Set the state to false otherwise
-      return average;
+    setIsUsingMinimumSalary(false);
+    return average;
   }
 };
 
 
-const handleSalaryChange = (event, index) => {
-  
+
+
+
+
+const handleSalaryChange = (event, index, field) => {
+  const updatedValue = parseFloat(event.target.value) || 0; // Convert to number and handle non-numeric inputs
   const updatedSalaries = [...historicalSalaries];
   updatedSalaries[index] = {
       ...updatedSalaries[index],
-      social_base: event.target.value
+      [field]: updatedValue // Update the specified field
   };
-
 
   setHistoricalSalaries(updatedSalaries);
 
-  // Recalculate the average
-  // Recalculate the average using calculateAverageForChorobowe
-  
-    // Recalculate the average
-    const calculatedAverage = calculateAverageForChorobowe(updatedSalaries);
-    
-    // Ensure the average is not less than the minimum salary
-    const finalAverage = calculatedAverage < MINIMUM_SALARY ? MINIMUM_SALARY : calculatedAverage;
-
-    setAverageSalary(finalAverage);
+  // Recalculate the average salary
+  const calculatedAverage = calculateAverageForChorobowe(updatedSalaries);
+  const finalAverage = calculatedAverage < MINIMUM_SALARY ? MINIMUM_SALARY : calculatedAverage;
+  setAverageSalary(finalAverage);
 };
+
+const handleAverageSalaryChange = (event) => {
+  setIsAverageManuallySet(true);
+  setAverageSalary(parseFloat(event.target.value) || 0);
+};
+
 
 
 const renderHistoricalSalariesTable = () => {
@@ -694,9 +726,12 @@ const renderHistoricalSalariesTable = () => {
           <table>
               <thead>
                   <tr>
+                  <th></th>
                   <th>Okres</th>
                       <th>Data wyplaty</th>
                       <th>Podstawa brutto</th>
+                      <th>Uzupełnione Wynagrodzenie</th>
+                      <th>Amount Used for Average</th>
                       <th>Dni miesiąca</th>
                       <th>Dni miesiąca przepracowane</th>
                       <th>Dni pracy</th>
@@ -710,23 +745,47 @@ const renderHistoricalSalariesTable = () => {
               </thead>
               <tbody>
                   {historicalSalaries.map((salary, index) => {
-                    const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month); // subtract 1 as JS months are 0-indexed
+                    const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
+                    const halfMonthDays = salary.workingdays / 2;
+                    const totalBreakDays = salary.break_zwolnienie_wd + salary.break_ciaza_wd + salary.break_bezplatny + salary.break_nieobecnosc;
+                    const totalWorkedDays = salary.actualWorkedDays - totalBreakDays;
+                    const isFullMonthWorked = totalWorkedDays === daysInMonth;
+                    const isMoreThanHalfMonthWorked = totalWorkedDays > halfMonthDays;
+
+                    // Define the amount used for average calculation
+                    let amountUsedForAverage = '---';
+                    if (isFullMonthWorked) {
+                        amountUsedForAverage = parseFloat(salary.social_base).toFixed(2);
+                    } else if (isMoreThanHalfMonthWorked) {
+                        amountUsedForAverage = parseFloat(salary.gross_total).toFixed(2);
+                    }
+
                     return (
                       <tr key={index}>
+                          <td>{isMoreThanHalfMonthWorked ? "More than half month worked" : "Less than half month worked"}</td>
                        <td>{salary.salary_month}/{salary.salary_year} ({daysInMonth} days)</td>
                           <td>{salary.salary_date}</td>
                           <td>
-                              <input 
-                                  type="number" 
-                                  value={salary.social_base} 
-                                  onChange={(e) => handleSalaryChange(e, index)}
-                              />
-                          </td>
+                                <input 
+                                    type="number"
+                                    value={salary.social_base}
+                                    onChange={(e) => handleSalaryChange(e, index, 'social_base')}
+                                   
+                                />
+                            </td>
+                            <td>
+                                    <input 
+                                        type="number"
+                                        value={salary.gross_total}
+                                        onChange={(e) => handleSalaryChange(e, index, 'gross_total')}
+                                    />
+                                </td>
+                                <td>{amountUsedForAverage}</td>
                           <td> {daysInMonth}</td>
                           <td>{salary.calendarWorkedDays}</td>
                           <td>{salary.workingdays}</td>
                           <td>{salary.actualWorkedDays}</td>
-                          <td>({salary.break_zwolnienie_wd}+{salary.break_ciaza_wd})</td>
+                          <td>{salary.combinedBreaks_wd}</td>
                           {!hideBreakBezplatny && <td>{salary.break_bezplatny}</td>}
                           {!hideBreakNieobecnosc && <td>{salary.break_nieobecnosc}</td>}
       {!hideBreakZwolnienie && <td>{salary.break_zwolnienie}</td>}
@@ -742,6 +801,15 @@ const renderHistoricalSalariesTable = () => {
                   Note: The calculated average was below the minimum salary. The minimum salary of {MINIMUM_SALARY} zł is being used.
               </p>
           )}
+          <div>
+    <label htmlFor="manualAverage">Manual Average Salary:</label>
+    <input 
+        id="manualAverage"
+        type="number"
+        value={averageSalary}
+        onChange={handleAverageSalaryChange}
+    />
+</div>
       </div>
   );
 };
