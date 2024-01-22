@@ -653,24 +653,26 @@ const calculateAverageForChorobowe = (historicalSalaries) => {
     console.log('Calculating average based on gross_total or social_base for all historical salaries');
     historicalSalaries.forEach(salary => {
       const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
+      const hasNieobecnosc = salary.break_nieobecnosc > 0; // Check for 'nieobecność' break
       const totalBreakDays = salary.break_zwolnienie_wd + salary.break_ciaza_wd + salary.break_bezplatny + salary.break_nieobecnosc;
       const totalWorkedDays = salary.workingdays - totalBreakDays;
       const isFullMonthWorked = totalWorkedDays === salary.workingdays;
       const isMoreThanHalfMonthWorked = totalWorkedDays > (salary.workingdays / 2);
 
-      console.log(`Month: ${salary.salary_month}/${salary.salary_year}, Total Worked Days: ${totalWorkedDays}, Days in Month: ${daysInMonth}, Full Month: ${isFullMonthWorked}, More Than Half Month: ${isMoreThanHalfMonthWorked}`);
+      console.log(`Month: ${salary.salary_month}/${salary.salary_year}, Total Worked Days: ${totalWorkedDays}, Days in Month: ${salary.workingdays}, Full Month: ${isFullMonthWorked}, More Than Half Month: ${isMoreThanHalfMonthWorked}`);
 
-      if (isFullMonthWorked) {
-        totalAmount += parseFloat(salary.social_base);
+      if (hasNieobecnosc || isFullMonthWorked) {
+            // Always use social_base if there is 'nieobecność' or the full month is worked
+            totalAmount += parseFloat(salary.social_base);
         console.log(`Including full month worked using social_base: ${salary.social_base}`);
       } else if (isMoreThanHalfMonthWorked) {
         totalAmount += parseFloat(salary.gross_total);
         console.log(`Including more than half month worked using gross_total: ${salary.gross_total}`);
       }
-      // Months with less than half worked are not counted
-      if (isFullMonthWorked || isMoreThanHalfMonthWorked) {
-        count++;
-      }
+     // Increment the count if there's 'nieobecność', the month is fully worked, or more than half the month is worked
+     if (hasNieobecnosc || isFullMonthWorked || isMoreThanHalfMonthWorked) {
+      count++;
+  }
     });
   }
 
@@ -802,11 +804,11 @@ const renderHistoricalSalariesTable = () => {
               </p>
           )}
           <div>
-    <label htmlFor="manualAverage">Manual Average Salary:</label>
+    <label htmlFor="manualAverage">Manual adjustment to Average Salary:</label>
     <input 
         id="manualAverage"
         type="number"
-        value={averageSalary}
+        value={averageSalary.toFixed(2)}
         onChange={handleAverageSalaryChange}
     />
 </div>
