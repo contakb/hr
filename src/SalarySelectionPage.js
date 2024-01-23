@@ -2356,6 +2356,7 @@ const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
                   <option value="nieobecność">Nieobecność</option>
                   <option value="wychowawczy">wychowawczy</option>
                   <option value="rodzicielski">rodzicielski</option>
+                  <option value="zasiłek">zasiłek ZUS</option>
               </select>
               
               <button onClick={() => addAdditionalBreak(employee.employee_id)}>Add Przerwa</button>
@@ -2482,6 +2483,7 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
                                   <option value="nieobecność">Nieobecność</option>
                                   <option value="wychowawczy">wychowawczy</option>
                                   <option value="rodzicielski">rodzicielski</option>
+                                  <option value="zasiłek">zasiłek ZUS</option>
                               </select>
                               <button onClick={() => deleteAdditionalBreak(employee.employee_id, breakIndex)}>Remove</button>
 
@@ -2503,13 +2505,8 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
       const updatedEmployee = await fetchAllParameters(employee);
       console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
 
-      const currentYear = new Date().getFullYear();
-    const currentContract = employee.contracts[0]; // Assuming the current contract is the first one
-
-    const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(employee, year, month);
-
-    // Adjust break days and categorize excess as zasiłek ZUS
-    adjustBreakDaysAndCategorizeExcess(employeeWithHistoricalSalaries.historicalSalaries, currentContract, currentYear, message => toast.warn(message));
+       // Fetch historical salaries for the selected month and year
+    const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
 
       // Fetch historical salaries for the selected month and year
   // Only fetch historical salaries and recalculate the average if it has NOT been manually set
@@ -2626,6 +2623,19 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
   updatedEmployees[index] = { ...updatedEmployee, contracts: [calculatedValues] };
   setCalculatedContracts(updatedEmployees);
   
+  // Perform the 33-day limit check after updating the state
+  const currentYear = new Date().getFullYear();
+  const currentContract = calculatedValues; // Assuming this contains the current month's break data
+
+  // Call the function to adjust breaks and categorize excess days
+  adjustBreakDaysAndCategorizeExcess(
+      employeeWithHistoricalSalaries.historicalSalaries,
+      currentContract,
+      currentYear,
+      message => toast.warn(message)
+  );
+
+  console.log('33-day limit check performed after updating state.');
 
    
 
