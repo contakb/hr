@@ -710,6 +710,7 @@ const handleSalaryChange = (event, index, field) => {
   setAverageSalary(finalAverage);
 };
 
+// Handle manual changes to the average salary
 const handleAverageSalaryChange = (event) => {
   setIsAverageManuallySet(true);
   setAverageSalary(parseFloat(event.target.value) || 0);
@@ -764,7 +765,7 @@ const renderHistoricalSalariesTable = () => {
 
                     return (
                       <tr key={index}>
-                          <td>{isMoreThanHalfMonthWorked ? "More than half month worked" : "Less than half month worked"}</td>
+                          <td>{isMoreThanHalfMonthWorked ? "More than half month worked ujęty do średniej" : "Less than half month worked - pominięty"}</td>
                        <td>{salary.salary_month}/{salary.salary_year} ({daysInMonth} days)</td>
                           <td>{salary.salary_date}</td>
                           <td>
@@ -808,7 +809,7 @@ const renderHistoricalSalariesTable = () => {
     <input 
         id="manualAverage"
         type="number"
-        value={averageSalary.toFixed(2)}
+        value={averageSalary}
         onChange={handleAverageSalaryChange}
     />
 </div>
@@ -1719,7 +1720,9 @@ setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
 if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
 // Calculate and update the average salary
 const newAverageSalary = calculateAverageForChorobowe(employeeWithHistoricalSalaries.historicalSalaries);
-setAverageSalary(newAverageSalary);}
+setAverageSalary(newAverageSalary);
+setIsAverageManuallySet(false); // Reset manual adjustment flag
+}
 
 const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
 const daysOfBreak = healthBreak.days;
@@ -2475,14 +2478,19 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
       const updatedEmployee = await fetchAllParameters(employee);
       console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
 
-      // Fetch historical salaries for the selected month and year
-  const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
-  setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
+    
 
-  if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
-    // Calculate and update the average salary
-    const newAverageSalary = calculateAverageForChorobowe(employeeWithHistoricalSalaries.historicalSalaries);
-    setAverageSalary(newAverageSalary);}
+      // Fetch historical salaries for the selected month and year
+  // Only fetch historical salaries and recalculate the average if it has NOT been manually set
+  if (!isAverageManuallySet) {
+    const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(updatedEmployee, year, month);
+    setHistoricalSalaries(employeeWithHistoricalSalaries.historicalSalaries);
+
+    if (employeeWithHistoricalSalaries.historicalSalaries.length > 0) {
+        const newAverageSalary = calculateAverageForChorobowe(employeeWithHistoricalSalaries.historicalSalaries);
+        setAverageSalary(newAverageSalary);
+    }
+}
     
   const daysOfBreak = healthBreak.days;
   const breakType = healthBreak.type;
