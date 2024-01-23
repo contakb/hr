@@ -586,7 +586,7 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
       // Calculate actualWorkedDays for each salary record
       historicalSalaries.forEach((salary) => {
         if (salary.workingdays !== null) {
-            salary.actualWorkedDays = salary.workingdays - (salary.break_bezplatny + salary.break_nieobecnosc);
+            salary.actualWorkedDays = salary.workingdays - (salary.break_bezplatny + salary.break_nieobecnosc + salary.break_zwolnienie_wd +salary.break_ciaza_wd );
         } else {
             salary.actualWorkedDays = "N/A";
         }
@@ -654,7 +654,7 @@ const calculateAverageForChorobowe = (historicalSalaries) => {
     historicalSalaries.forEach(salary => {
       const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
       const hasNieobecnosc = salary.break_nieobecnosc > 0; // Check for 'nieobecność' break
-      const totalBreakDays = salary.break_zwolnienie_wd + salary.break_ciaza_wd + salary.break_bezplatny + salary.break_nieobecnosc;
+      const totalBreakDays = salary.break_zwolnienie_wd + salary.break_ciaza_wd + salary.break_bezplatny;
       const totalWorkedDays = salary.workingdays - totalBreakDays;
       const isFullMonthWorked = totalWorkedDays === salary.workingdays;
       const isMoreThanHalfMonthWorked = totalWorkedDays > (salary.workingdays / 2);
@@ -749,15 +749,16 @@ const renderHistoricalSalariesTable = () => {
               <tbody>
                   {historicalSalaries.map((salary, index) => {
                     const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
+                    const hasNieobecnosc = salary.break_nieobecnosc > 0; // Check for 'nieobecność' break
                     const halfMonthDays = salary.workingdays / 2;
-                    const totalBreakDays = salary.break_zwolnienie_wd + salary.break_ciaza_wd + salary.break_bezplatny + salary.break_nieobecnosc;
+                    const totalBreakDays = salary.break_zwolnienie_wd + salary.break_ciaza_wd + salary.break_bezplatny;
                     const totalWorkedDays = salary.actualWorkedDays - totalBreakDays;
-                    const isFullMonthWorked = totalWorkedDays === daysInMonth;
+                    const isFullMonthWorked = totalWorkedDays === salary.workingdays;
                     const isMoreThanHalfMonthWorked = totalWorkedDays > halfMonthDays;
 
                     // Define the amount used for average calculation
                     let amountUsedForAverage = '---';
-                    if (isFullMonthWorked) {
+                    if (hasNieobecnosc || isFullMonthWorked) {
                         amountUsedForAverage = parseFloat(salary.social_base).toFixed(2);
                     } else if (isMoreThanHalfMonthWorked) {
                         amountUsedForAverage = parseFloat(salary.gross_total).toFixed(2);
@@ -816,6 +817,30 @@ const renderHistoricalSalariesTable = () => {
       </div>
   );
 };
+
+const adjustBreakDaysAndCategorizeExcess = (historicalSalaries, currentContract, currentYear, showToast) => {
+  let totalBreakDays = currentContract.break_zwolnienie || 0;
+  totalBreakDays += currentContract.break_ciaza || 0; // Include current month's break_ciaza if applicable
+
+  // Now proceed with the historical data
+  historicalSalaries.forEach(salary => {
+      if (salary.salary_year === currentYear) {
+          totalBreakDays += (salary.break_zwolnienie || 0) + (salary.break_ciaza || 0);
+
+          if (totalBreakDays > 33) {
+              const excessDays = totalBreakDays - 33;
+              showToast(`Przekroczone 33 dni choroowego ${salary.salary_month}/${salary.salary_year}. Ostanie ${excessDays} dni należy wybrać jako 'zasiłek ZUS'.`);
+              console.log(`Month: ${salary.salary_month}/${salary.salary_year}, Excess Days: ${excessDays}`);
+              totalBreakDays = 33; // Reset total break days to 33
+          }
+      }
+  });
+
+  return historicalSalaries; // No modification needed in the array itself
+};
+
+
+
 
 
 
@@ -2478,7 +2503,13 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
       const updatedEmployee = await fetchAllParameters(employee);
       console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
 
-    
+      const currentYear = new Date().getFullYear();
+    const currentContract = employee.contracts[0]; // Assuming the current contract is the first one
+
+    const employeeWithHistoricalSalaries = await fetchHistoricalSalaries(employee, year, month);
+
+    // Adjust break days and categorize excess as zasiłek ZUS
+    adjustBreakDaysAndCategorizeExcess(employeeWithHistoricalSalaries.historicalSalaries, currentContract, currentYear, message => toast.warn(message));
 
       // Fetch historical salaries for the selected month and year
   // Only fetch historical salaries and recalculate the average if it has NOT been manually set
