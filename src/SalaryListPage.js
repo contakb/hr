@@ -319,8 +319,8 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
       <th>Bonus</th>
 			<th>Ub.emeryt</th>
 			<th>Ub.rentowe</th>
-			<th>Ub.zdrowotne</th>
-			<th>ub.chorobowe</th>
+			<th>Ub.chorobowe</th>
+			<th>ub.zdrowotne</th>
 			<th>Koszty</th>
       <th>Ulga</th>
 			<th>Podatek</th>

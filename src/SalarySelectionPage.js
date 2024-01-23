@@ -590,6 +590,9 @@ const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) =>
         } else {
             salary.actualWorkedDays = "N/A";
         }
+        salary.accumulatedTaxBase = salary.accumulatedTaxBase !== null && salary.accumulatedTaxBase !== undefined
+                                ? parseFloat(salary.accumulatedTaxBase)
+                                : 0; // Default to 0 if not present
         
     // Calculate combined breaks for zwolnienie and ciąża
     salary.combinedBreaks = (salary.break_zwolnienie || 0) + (salary.break_ciaza || 0);
@@ -839,6 +842,25 @@ const adjustBreakDaysAndCategorizeExcess = (historicalSalaries, currentContract,
   return historicalSalaries; // No modification needed in the array itself
 };
 
+const calculateTax = (currentMonthTaxBase, accumulatedTaxBase) => {
+  const taxThreshold = 120000;
+  let tax = 0;
+
+  if (accumulatedTaxBase <= taxThreshold) {
+      // If the total accumulated tax base is still within the lower tax bracket
+      tax = currentMonthTaxBase * 0.12;
+  } else if (accumulatedTaxBase - currentMonthTaxBase <= taxThreshold) {
+      // If part of this month's tax base is taxed at the lower rate and part at the higher rate
+      const lowerBracketTax = (taxThreshold - (accumulatedTaxBase - currentMonthTaxBase)) * 0.12;
+      const higherBracketTax = (currentMonthTaxBase - (taxThreshold - (accumulatedTaxBase - currentMonthTaxBase))) * 0.32;
+      tax = lowerBracketTax + higherBracketTax;
+  } else {
+      // If the entire month's tax base is taxed at the higher rate
+      tax = currentMonthTaxBase * 0.32;
+  }
+
+  return tax;
+};
 
 
 
@@ -1368,7 +1390,7 @@ console.log("Updated Bonuses after change:", updatedBonuses); // Log the updated
 
 
 
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, averageSalary, workingDaysZwolnienie, workingDaysCiaza, employeeId) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, averageSalary, workingDaysZwolnienie, workingDaysCiaza, historicalSalaries, employeeId) => {
 
 console.log(`Calculating salary for employee ID ${employeeId}`);
 console.log(`Calculating salary for employee ID ${employeeId} with koszty=${koszty}, ulga=${ulga}`);
@@ -1410,7 +1432,9 @@ console.log("Average Salary inside calculateSalary:", averageSalary);
 console.log("Average Salary inside calculateSalary:", averageSalary);
 console.log("workingDaysZwolnienie:", workingDaysZwolnienie);
 
-
+// Find the last salary record to get the most recent accumulatedTaxBase
+const lastSalary = historicalSalaries[historicalSalaries.length - 1];
+const lastAccumulatedTaxBase = lastSalary ? lastSalary.accumulatedTaxBase : 0;
 
 
 // Check if the additionalDaysArray is an array, if not, log an error and return
@@ -1553,15 +1577,45 @@ console.log("customGrossAmount after adding bonus:", customGrossAmount);
 // The rest of your logic remains unchanged
 let podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
 let pod_zal = ((customGrossAmount - (0.1371 * customGrossAmount)) + parseFloat(wynChorobowe) - employeeKoszty);
+let currentMonthTaxBase = parseFloat(pod_zal); // Assuming pod_zal is calculated
+// Calculate the new accumulatedTaxBase
+let newAccumulatedTaxBase = lastAccumulatedTaxBase + currentMonthTaxBase;
+
+console.log(`Current Month Tax Base: ${currentMonthTaxBase}`);
+console.log(`New Accumulated Tax Base: ${newAccumulatedTaxBase}`);
+
+// New tax calculation based on the accumulated tax base
+const taxThreshold = 120000;
+let tax;
+if (newAccumulatedTaxBase <= taxThreshold) {
+    tax = currentMonthTaxBase * 0.12;
+    console.log(`Tax calculated at 12% rate: ${tax}`);
+} else if (lastAccumulatedTaxBase < taxThreshold) {
+    const lowerBracketPortion = taxThreshold - lastAccumulatedTaxBase;
+    const higherBracketPortion = newAccumulatedTaxBase - taxThreshold;
+    tax = lowerBracketPortion * 0.12 + higherBracketPortion * 0.32;
+    console.log(`Tax calculated with mixed rates: ${tax}`);
+        toast.info(`Tax calculated with mixed rates: ${tax}`);
+} else {
+    tax = currentMonthTaxBase * 0.32;
+    console.log(`Tax calculated at 32% rate: ${tax}`);
+        toast.warn(`Tax calculated at 32% rate: ${tax}`);
+}
+
+// Calculate zaliczka using the new tax amount
+let zaliczka = tax - employeeUlga;
+zaliczka = zaliczka < 0 ? 0 : zaliczka.toFixed(0);
+
 pod_zal = pod_zal > 0 ? pod_zal.toFixed(0) : '0';
 
-let zaliczka = (parseFloat(pod_zal) * 0.12 - employeeUlga) < 0 ? 0 : (parseFloat(pod_zal) * 0.12 - employeeUlga).toFixed(0);
 let zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
 zal_2021 = zal_2021 > 0 ? zal_2021 : '0';
 let zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09 ? parseFloat(zal_2021) : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
 
 let netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
 let wypadkoweValue = customGrossAmount * (wypadkoweRate/100);
+
+
 
 
 const calculatedValues = {
@@ -1578,6 +1632,7 @@ const calculatedValues = {
     wyn_chorobowe: wynChorobowe.toFixed(2),
     podstawa_zdrow: podstawa_zdrow,
     podstawa_zaliczki: pod_zal,
+    accumulatedTaxBase: newAccumulatedTaxBase,
     zaliczka,
     zal_2021,
     zdrowotne,
@@ -1615,8 +1670,9 @@ const calculateSalaryForAll = () => {
 
   
 
-const updatedContracts = calculatedContracts.map((employee, index) => {
+const salaryCalculationPromises = calculatedContracts.map((employee, index) => {
   
+  return fetchHistoricalSalaries(employee, year, month).then(employeeWithHistoricalSalaries => {
   const healthBreak = healthBreaks?.[index] || defaultHealthBreak;
   const breaksForEmployee = additionalBreaksByEmployee[employee.employee_id] || [];
   const additionalDaysArray = breaksForEmployee.map(breakItem => breakItem.additionalDays || 0);
@@ -1690,6 +1746,7 @@ allBreaks,
 averageSalary,
 workingDaysZwolnienie, // Now defined
     workingDaysCiaza, // Now defined
+    employeeWithHistoricalSalaries.historicalSalaries, // Include historical salaries
     employee.employee_id // Pass the employee's ID here
      // Ensure this is correctly positioned in the parameter list
   );
@@ -1697,11 +1754,15 @@ workingDaysZwolnienie, // Now defined
   console.log(`Calculated values for employee ${employee.employee_id}:`, calculatedValues);
   return { ...employee, contracts: [calculatedValues] };
 });
-
-setCalculatedContracts(updatedContracts); // Update the state with new values
-// After successfully calculating for all employees
-setIsAllSalaryCalculated(true);
-console.log('Updated Contracts:', updatedContracts);
+});
+// Use Promise.all to wait for all salary calculations to complete
+Promise.all(salaryCalculationPromises).then(updatedContracts => {
+    setCalculatedContracts(updatedContracts); // Update the state with new values
+    setIsAllSalaryCalculated(true);
+    console.log('Updated Contracts:', updatedContracts);
+}).catch(error => {
+    console.error('Error in calculating salaries for all:', error);
+});
 };
 
 const recalculateSalaryWithNewAverage = (employee, grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, employeeProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, averageSalary) => {
@@ -1841,6 +1902,7 @@ allBreaks,
 averageSalary, // pass the historical salaries array
 workingDaysZwolnienie, // Now defined
 workingDaysCiaza, // Now defined
+employeeWithHistoricalSalaries.historicalSalaries, // Pass historical salaries for accumulatedTaxBase calculation
 employee.employee_id,
 employeeBonuses[employee.employee_id] || 0
  // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
@@ -2126,6 +2188,7 @@ calculatedContracts.forEach(employee => {
       health_base: parseFloat(contract.podstawa_zdrow),
       heath_amount: parseFloat(contract.zdrowotne),
       tax_base: parseFloat(contract.podstawa_zaliczki),
+      accumulatedTaxBase: parseFloat(contract.accumulatedTaxBase),
       tax: parseFloat(contract.zaliczka),
       ulga: parseFloat(contract.ulga),
       koszty: parseFloat(contract.koszty),
@@ -2612,7 +2675,8 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
     allBreaks,
     averageSalary, // pass the historical salaries array
     workingDaysZwolnienie, // Now defined
-      workingDaysCiaza, // Now defined
+    workingDaysCiaza, // Now defined
+    employeeWithHistoricalSalaries.historicalSalaries, // Pass historical salaries for accumulatedTaxBase calculation
     employee.employee_id,
     employeeBonuses[employee.employee_id] || 0
      // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee

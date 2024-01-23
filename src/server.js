@@ -346,6 +346,7 @@ app.post('/api/save-salary-data', async (req, res) => {
       health_base: salary.health_base,
       heath_amount: salary.heath_amount,
       tax_base: salary.tax_base,
+      accumulatedTaxBase: salary.accumulatedTaxBase,
       tax: salary.tax,
       ulga: salary.ulga,
       koszty: salary.koszty,
@@ -412,6 +413,7 @@ app.put('/api/update-salary-data', async (req, res) => {
       health_base: salary.health_base,
       heath_amount: salary.heath_amount,
       tax_base: salary.tax_base,
+      accumulatedTaxBase: salary.accumulatedTaxBase,
       tax: salary.tax,
       ulga: salary.ulga,
       koszty: salary.koszty,
@@ -592,7 +594,7 @@ app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
   try {
       const { data, error } = await supabase
           .from('salaries')
-          .select('gross_total, social_base, salary_date, salary_month, salary_year, chorobowe_base, workingdays, break_zwolnienie, break_bezplatny, break_nieobecnosc, break_rodzicielski, break_ciaza, break_wychowawczy, break_zwolnienie_wd, break_ciaza_wd, employee_id')
+          .select('gross_total, accumulatedTaxBase, social_base, salary_date, salary_month, salary_year, chorobowe_base, workingdays, break_zwolnienie, break_bezplatny, break_nieobecnosc, break_rodzicielski, break_ciaza, break_wychowawczy, break_zwolnienie_wd, break_ciaza_wd, employee_id')
           .eq('employee_id', employeeId)
           .gte('salary_date', startDate.toISOString().split('T')[0])
           .lte('salary_date', endDate.toISOString().split('T')[0]);
