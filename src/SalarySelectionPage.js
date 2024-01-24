@@ -842,24 +842,40 @@ const adjustBreakDaysAndCategorizeExcess = (historicalSalaries, currentContract,
   return historicalSalaries; // No modification needed in the array itself
 };
 
-const calculateTax = (currentMonthTaxBase, accumulatedTaxBase) => {
-  const taxThreshold = 120000;
-  let tax = 0;
+const getAgeFromPesel = (pesel) => {
+  if (pesel.length !== 11) return null;  // Basic validation for PESEL length
 
-  if (accumulatedTaxBase <= taxThreshold) {
-      // If the total accumulated tax base is still within the lower tax bracket
-      tax = currentMonthTaxBase * 0.12;
-  } else if (accumulatedTaxBase - currentMonthTaxBase <= taxThreshold) {
-      // If part of this month's tax base is taxed at the lower rate and part at the higher rate
-      const lowerBracketTax = (taxThreshold - (accumulatedTaxBase - currentMonthTaxBase)) * 0.12;
-      const higherBracketTax = (currentMonthTaxBase - (taxThreshold - (accumulatedTaxBase - currentMonthTaxBase))) * 0.32;
-      tax = lowerBracketTax + higherBracketTax;
+  let year = parseInt(pesel.substring(0, 2), 10);
+  let month = parseInt(pesel.substring(2, 4), 10);
+  let day = parseInt(pesel.substring(4, 6), 10);
+
+  // Adjust year and month based on PESEL month codes
+  if (month > 80) {
+      year += 1800;
+      month -= 80;
+  } else if (month > 60) {
+      year += 2200;
+      month -= 60;
+  } else if (month > 40) {
+      year += 2100;
+      month -= 40;
+  } else if (month > 20) {
+      year += 2000;
+      month -= 20;
   } else {
-      // If the entire month's tax base is taxed at the higher rate
-      tax = currentMonthTaxBase * 0.32;
+      year += 1900;
   }
 
-  return tax;
+  const birthDate = new Date(year, month - 1, day); // Month is zero-based in JavaScript
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+  }
+
+  return age;
 };
 
 
@@ -1390,7 +1406,7 @@ console.log("Updated Bonuses after change:", updatedBonuses); // Log the updated
 
 
 
-const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, averageSalary, workingDaysZwolnienie, workingDaysCiaza, historicalSalaries, employeeId) => {
+const calculateSalary = (grossAmountValue, daysOfBreak, breakType, additionalDaysArray, additionalBreakTypesArray, workingHours, totalDaysNotWorked, proRatedGross, totalProRatedGross, bonus, wypadkoweRate, koszty, ulga, allBreaks, averageSalary, workingDaysZwolnienie, workingDaysCiaza, historicalSalaries, employee, employeeId) => {
 
 console.log(`Calculating salary for employee ID ${employeeId}`);
 console.log(`Calculating salary for employee ID ${employeeId} with koszty=${koszty}, ulga=${ulga}`);
@@ -1573,6 +1589,11 @@ customGrossAmount = customGrossAmount > 0 ? customGrossAmount: "0";
 
 console.log("customGrossAmount after adding bonus:", customGrossAmount);
 
+// Calculate the employee's age using their PESEL number
+const age = getAgeFromPesel(employee.pesel);
+console.log(`Employee Age for ${employee.name} ${employee.surname} (ID: ${employee.employee_id}): ${age}`);
+
+
 
 // The rest of your logic remains unchanged
 let podstawa_zdrow = (roundUpToCent(customGrossAmount) - roundUpToCent(customGrossAmount * 0.0976) - roundUpToCent(customGrossAmount * 0.015) - roundUpToCent(customGrossAmount * 0.0245) + parseFloat(wynChorobowe)).toFixed(2);
@@ -1586,20 +1607,42 @@ console.log(`New Accumulated Tax Base: ${newAccumulatedTaxBase}`);
 
 // New tax calculation based on the accumulated tax base
 const taxThreshold = 120000;
+const youngEmployeeTaxThreshold = 85528;
 let tax;
-if (newAccumulatedTaxBase <= taxThreshold) {
-    tax = currentMonthTaxBase * 0.12;
-    console.log(`Tax calculated at 12% rate: ${tax}`);
-} else if (lastAccumulatedTaxBase < taxThreshold) {
-    const lowerBracketPortion = taxThreshold - lastAccumulatedTaxBase;
-    const higherBracketPortion = newAccumulatedTaxBase - taxThreshold;
-    tax = lowerBracketPortion * 0.12 + higherBracketPortion * 0.32;
-    console.log(`Tax calculated with mixed rates: ${tax}`);
-        toast.info(`Tax calculated with mixed rates: ${tax}`);
+
+if (employee.pesel && age <= 26) {
+    console.log(`Employee ${employee.name} ${employee.surname} (ID: ${employee.employee_id}) is under 26 years old.`);
+    if (newAccumulatedTaxBase <= youngEmployeeTaxThreshold) {
+        console.log('Tax set to zero for young employee under the threshold.');
+        toast.success(`Tax set to zero for young employee under the threshold: ${employee.name} ${employee.surname} (ID: ${employee.employee_id})`);
+        tax = 0;
+    } else {
+        if (newAccumulatedTaxBase <= taxThreshold) {
+            tax = (newAccumulatedTaxBase - youngEmployeeTaxThreshold) * 0.12;
+            console.log(`Tax calculated at 12% rate for amount over young employee threshold: ${tax}`);
+        } else {
+            const lowerBracketTax = (taxThreshold - youngEmployeeTaxThreshold) * 0.12;
+            const higherBracketTax = (newAccumulatedTaxBase - taxThreshold) * 0.32;
+            tax = lowerBracketTax + higherBracketTax;
+            console.log(`Tax calculated with mixed rates for young employee: ${tax}`);
+            toast.info(`Tax calculated with mixed rates for young employee: ${tax}`);
+        }
+    }
 } else {
-    tax = currentMonthTaxBase * 0.32;
-    console.log(`Tax calculated at 32% rate: ${tax}`);
+    if (newAccumulatedTaxBase <= taxThreshold) {
+        tax = currentMonthTaxBase * 0.12;
+        console.log(`Tax calculated at 12% rate: ${tax}`);
+    } else if (lastAccumulatedTaxBase < taxThreshold) {
+        const lowerBracketPortion = taxThreshold - lastAccumulatedTaxBase;
+        const higherBracketPortion = newAccumulatedTaxBase - taxThreshold;
+        tax = lowerBracketPortion * 0.12 + higherBracketPortion * 0.32;
+        console.log(`Tax calculated with mixed rates: ${tax}`);
+        toast.info(`Tax calculated with mixed rates: ${tax}`);
+    } else {
+        tax = currentMonthTaxBase * 0.32;
+        console.log(`Tax calculated at 32% rate: ${tax}`);
         toast.warn(`Tax calculated at 32% rate: ${tax}`);
+    }
 }
 
 // Calculate zaliczka using the new tax amount
@@ -1747,6 +1790,7 @@ averageSalary,
 workingDaysZwolnienie, // Now defined
     workingDaysCiaza, // Now defined
     employeeWithHistoricalSalaries.historicalSalaries, // Include historical salaries
+    employee,
     employee.employee_id // Pass the employee's ID here
      // Ensure this is correctly positioned in the parameter list
   );
@@ -1903,6 +1947,7 @@ averageSalary, // pass the historical salaries array
 workingDaysZwolnienie, // Now defined
 workingDaysCiaza, // Now defined
 employeeWithHistoricalSalaries.historicalSalaries, // Pass historical salaries for accumulatedTaxBase calculation
+employee,
 employee.employee_id,
 employeeBonuses[employee.employee_id] || 0
  // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee
@@ -2677,6 +2722,7 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
     workingDaysZwolnienie, // Now defined
     workingDaysCiaza, // Now defined
     employeeWithHistoricalSalaries.historicalSalaries, // Pass historical salaries for accumulatedTaxBase calculation
+    employee,
     employee.employee_id,
     employeeBonuses[employee.employee_id] || 0
      // Passing proRatedGross here// Pass the proRatedGross value here // Pass the proRatedGross value here // pass the total days not worked for this specific employee

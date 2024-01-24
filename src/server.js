@@ -1189,7 +1189,7 @@ app.post('/api/valid-employees', async (req, res) => {
   if (validEmployeeIds.length > 0) {
       const { data, error } = await supabase
           .from('employees')
-          .select('id, name, surname, contracts(gross_amount, contract_from_date, contract_to_date, etat)')
+          .select('id, name, surname, pesel, contracts(gross_amount, contract_from_date, contract_to_date, etat)')
           .in('id', validEmployeeIds);
 
       if (error) {
@@ -1220,6 +1220,7 @@ app.post('/api/valid-employees', async (req, res) => {
               employee_id: employee.id,
               name: employee.name,
               surname: employee.surname,
+              pesel: employee.pesel,
               gross_amount: combinedGrossAmount, // Keep the gross amount format
               contract_details: contracts // Include all the contract details
             };
