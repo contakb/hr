@@ -665,49 +665,33 @@ app.get('/distinct-salary-months-years', async (req, res) => {
 
 
 app.get('/reports', async (req, res) => {
-  const { type, month, year } = req.query;
+  const { month, year } = req.query;
 
   try {
-    if (type === 'total-gross-amount') {
-      // Query for total gross amount report
-      const { data, error } = await supabase
-        .from('salaries')
-        .select('salary_month, salary_year, SUM(gross_total) AS total_gross_amount')
-        .eq('salary_month', month)
-        .eq('salary_year', year)
-        .group('salary_month, salary_year');
+    const { data, error } = await supabase
+      .from('salaries')
+      .select('net_amount, gross_total, employee_id')
+      .eq('salary_month', month)
+      .eq('salary_year', year);
 
-      if (error) {
-        console.error('Error fetching total gross amount report:', error);
-        res.status(500).send('Error fetching report data.');
-        return;
-      }
-
-      res.send(data);
-    } else if (type === 'total-net-amount') {
-      // Query for total net amount report
-      const { data, error } = await supabase
-        .from('salaries')
-        .select('salary_month, salary_year, SUM(net_amount) AS total_net_amount')
-        .eq('salary_month', month)
-        .eq('salary_year', year)
-        .group('salary_month, salary_year');
-
-      if (error) {
-        console.error('Error fetching total net amount report:', error);
-        res.status(500).send('Error fetching report data.');
-        return;
-      }
-
-      res.send(data);
-    } else {
-      res.status(400).send('Invalid report type.');
+    if (error) {
+      console.error('Error fetching report data:', error);
+      res.status(500).send('Error fetching report data.');
+      return;
     }
+
+    res.send(data);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).send('Error fetching report data.');
   }
 });
+
+
+
+
+
+
 
 
 
