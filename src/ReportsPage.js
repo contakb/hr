@@ -17,6 +17,9 @@ function ReportsPage() {
   const [periodStart, setPeriodStart] = useState('');
 const [periodEnd, setPeriodEnd] = useState('');
 const [selectedRange, setSelectedRange] = useState(3); // Default to 3 months
+const [contracts, setContracts] = useState([]);
+
+
 
 
 
@@ -97,6 +100,92 @@ const [selectedRange, setSelectedRange] = useState(3); // Default to 3 months
     }
   };
   
+  const toggleContracts = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3001/api/contracts/${selectedEmployee}`);
+        console.log("Fetched contracts:", response.data.contracts);
+        const combinedContracts = combineContracts(response.data.contracts);
+        console.log("Combined contracts:", combinedContracts);
+        setContracts(combinedContracts);
+      } catch (error) {
+        console.error('Error fetching contracts:', error);
+        setContracts([]);
+      }
+  };
+
+  useEffect(() => {
+    if (selectedEmployee) {
+      toggleContracts();
+    }
+  }, [selectedEmployee]);  // Depend on selectedEmployee
+
+  function combineContracts(contracts) {
+    // Sort contracts by contract_from_date in ascending order
+    contracts.sort((a, b) => new Date(a.contract_from_date) - new Date(b.contract_from_date));
+    
+    let contractMap = new Map();
+  
+    contracts.forEach(contract => {
+      const originalId = contract.kontynuacja || contract.id;
+  
+      if (!contractMap.has(originalId)) {
+        contractMap.set(originalId, { original: null, aneks: [] });
+      }
+  
+      const contractData = contractMap.get(originalId);
+  
+      if (!contract.kontynuacja) {
+        // This is the original contract
+        contractData.original = contract;
+      } else {
+        // This is an aneks
+        contractData.aneks.push(contract);
+      }
+    });
+  
+    return Array.from(contractMap.values());
+  }
+  const AneksView = ({ contract, originalContract }) => {
+    
+    const changes = [];
+    
+    
+    // You may want to ensure that you're comparing numbers, as different types (string vs number) could cause issues.
+    const originalGrossAmount = Number(originalContract.gross_amount);
+    const aneksGrossAmount = Number(contract.gross_amount);
+
+    console.log("Aneks contract data:", contract);
+    console.log("Original contract data:", originalContract);
+
+    if (!originalContract) {
+      console.error('Original contract not found for aneks:', contract);
+      return <p>Original contract data missing!</p>;
+    }
+
+    if (aneksGrossAmount !== originalGrossAmount) {
+      changes.push(`Gross Amount changed from ${originalGrossAmount} to ${aneksGrossAmount}`);
+    }
+  
+    // Log the data to see if they are being passed correctly and to confirm the change is detected.
+    console.log("Original contract gross amount:", originalGrossAmount);
+    console.log("Aneks contract gross amount:", aneksGrossAmount);
+    console.log("Detected changes:", changes);
+  
+    return (
+      <div>
+        <p>Aneks details (debug):</p>
+        <p>Original Gross Amount: {originalContract.gross_amount}</p>
+        <p>New Gross Amount: {contract.gross_amount}</p>
+        {/* Render detected changes or a message if none */}
+        {changes.length > 0 ? (
+          <ul>{changes.map((change, index) => <li key={index}>{change}</li>)}</ul>
+        ) : (
+          <p>No changes were made in this aneks.</p>
+        )}
+      </div>
+    );
+  };
+  
 
   const fetchEmployees = async () => {
     try {
@@ -113,6 +202,8 @@ const [selectedRange, setSelectedRange] = useState(3); // Default to 3 months
       // Handle the error appropriately
     }
   };
+
+  
   
   useEffect(() => {
     fetchEmployees();
@@ -160,12 +251,41 @@ const [selectedRange, setSelectedRange] = useState(3); // Default to 3 months
       return (
         <>
           <h3>Zaświadczenie o Zarobkach for {selectedEmployeeData ? `${selectedEmployeeData.name} ${selectedEmployeeData.surname}` : 'Unknown'}</h3>
-          <div>
-          <p>Period: {periodStart} to {periodEnd}</p>
-            <p>Average Gross Amount (last 3 months): {totalGrossAmount.toFixed(2)}</p>
-            <p>Average Net Amount (last 3 months): {totalNetAmount.toFixed(2)}</p>
-          </div>
-          {/* Optionally, you can also list the individual salary entries here */}
+          {selectedEmployeeData && (
+            <div>
+              <p>Pesel: {selectedEmployeeData.pesel}</p>
+              <p>Adres: {selectedEmployeeData.city}</p>
+              {/* Add more details as needed */}
+            </div>
+          )}
+  <div>
+    <h3>Contracts:</h3>
+    {contracts.map(({ original, aneks }) => (
+      <div key={original.id}>
+        {/* Render Original Contract Details */}
+        <p>Original Contract ID: {original.id}</p>
+        <p>Gross Amount: {original.gross_amount}</p>
+              <p>Contract From: {new Date(original.contract_from_date).toLocaleDateString()}</p>
+              <p>Contract To: {aneks.length > 0 ? new Date(aneks[aneks.length - 1].contract_to_date).toLocaleDateString() : new Date(original.contract_to_date).toLocaleDateString()}</p>
+              <p>Typ Umowy: {original.typ_umowy}</p>
+              <p>Stanowisko: {original.stanowisko}</p>
+              <p>Etat: {original.etat}</p>
+              <p>Rozpoczęcie pracy: {new Date(original.workstart_date).toLocaleDateString()}</p>
+        {/* ...other original contract details... */}
+        
+        {/* Render Aneks Contracts */}
+        {aneks.map(aneksContract => (
+          <AneksView key={aneksContract.id} contract={aneksContract} originalContract={original} />
+        ))}
+
+        {/* Add buttons for editing contracts, creating aneks, etc. */}
+        {/* ... */}
+      </div>
+    ))}
+  </div>
+          <p>Average Gross Amount (last {selectedRange} months): {totalGrossAmount.toFixed(2)}</p>
+          <p>Average Net Amount (last {selectedRange} months): {totalNetAmount.toFixed(2)}</p>
+          {/* Optionally, list individual salary entries here */}
         </>
       );
     }
