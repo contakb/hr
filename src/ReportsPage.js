@@ -63,14 +63,19 @@ const processSocialInsuranceData = (data) => {
   const totalHealthAmount = calculateTotal(data, 'heath_amount');
 
   const totalSpołeczne = totalEmrytUb + totalEmerytPr + totalRentUb + totalRentPr + totalChorobowe + totalWypadkowe;
+  const totalemeryt = totalEmrytUb + totalEmerytPr;
+  const totalrentowe = totalRentUb + totalRentPr;
+  const totalSpołeczneUb = totalEmrytUb +  totalRentUb + totalChorobowe;
+  const totalSpołecznePr = totalEmerytPr + totalRentPr + totalWypadkowe;
+
   const totalFPFGŚP = totalFp + totalFgsp;
   const grandTotal = totalSpołeczne + totalFPFGŚP + totalHealthAmount;
-  const totalEmployeeContribution = totalEmrytUb + totalRentUb + totalChorobowe;
-  const totalEmployerContribution = totalEmerytPr + totalRentPr + totalWypadkowe;
+  const totalEmployeeContribution = totalEmrytUb + totalRentUb + totalChorobowe + totalHealthAmount;
+  const totalEmployerContribution = totalEmerytPr + totalRentPr + totalWypadkowe + totalFp + totalFgsp;
 
   return {
     totalEmrytUb, totalEmerytPr, totalRentUb, totalRentPr, totalChorobowe, totalWypadkowe,
-    totalFp, totalFgsp, totalHealthAmount, totalSpołeczne, totalFPFGŚP, grandTotal, totalEmployeeContribution, totalEmployerContribution
+    totalFp, totalFgsp, totalHealthAmount, totalSpołeczne, totalFPFGŚP, grandTotal, totalEmployeeContribution, totalEmployerContribution, totalSpołeczneUb, totalSpołecznePr,  totalemeryt,  totalrentowe,
   };
 };
 
@@ -455,7 +460,7 @@ const handlePrint = () => {
        {reportType === 'social-insurance' && (
   
     <>
-      <h3>Social Insurance Report for {month}/{year}</h3>
+      <h3>Składki ZUS za {month}/{year}</h3>
       <table>
         <thead>
           <tr>
@@ -465,10 +470,6 @@ const handlePrint = () => {
         </thead>
         <tbody>
           {/* Map through each type of insurance and its total */}
-          <tr>
-            <td>Total Emerytalne (Employee)</td>
-            <td>{reportData.totalEmrytUb.toFixed(2)}</td>
-          </tr>
           {/* Repeat for other insurance types */}
           {/* ... */}
           <tr>
@@ -489,13 +490,17 @@ const handlePrint = () => {
           </tr>
         </tbody>
       </table>
-    
+     
+
+     <div style={{ marginTop: '40px' }}></div> 
+     <div style={{ marginTop: '20px' }}></div> 
     <table>
       <thead>
         <tr>
-          <th>Type of Contribution</th>
-          <th>Employee Contribution</th>
-          <th>Employer Contribution</th>
+          <th>Składa na:</th>
+          <th>Pracownik</th>
+          <th>Pracodawca</th>
+          <th>Razem</th>
         </tr>
       </thead>
       <tbody>
@@ -503,20 +508,66 @@ const handlePrint = () => {
         <tr>
           <td>Emerytalne (Pension Insurance)</td>
           <td>{reportData.totalEmrytUb.toFixed(2)}</td>
-          <td>{reportData.totalEmrytUb.toFixed(2)}</td>
+          <td>{reportData.totalEmerytPr.toFixed(2)}</td>
+          <td>{reportData.totalemeryt.toFixed(2)}</td>
         </tr>
         {/* Similar rows for other types of insurance */}
         {/* ... */}
         <tr>
+          <td>Rentowe (Pension Insurance)</td>
+          <td>{reportData.totalRentUb.toFixed(2)}</td>
+          <td>{reportData.totalRentPr.toFixed(2)}</td>
+          <td>{reportData.totalrentowe.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td>wypadkowe (Pension Insurance)</td>
+          <td>-</td>
+          <td>{reportData.totalWypadkowe.toFixed(2)}</td>
+          <td>{reportData.totalWypadkowe.toFixed(2)}</td>
+        </tr>
+        <tr>
           <td>Chorobowe (Sickness Insurance)</td>
           <td>{reportData.totalChorobowe.toFixed(2)}</td>
           <td>-</td> {/* Assuming employer doesn't contribute */}
+          <td>{reportData.totalChorobowe.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td>Suma społeczne:</td>
+          <td>{reportData.totalSpołeczneUb.toFixed(2)}</td>
+          <td>{reportData.totalSpołecznePr.toFixed(2)}</td> {/* Assuming employer doesn't contribute */}
+          <td>{reportData.totalSpołeczne.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td>FP </td>
+          <td>-</td>
+          <td>{reportData.totalFp.toFixed(2)}</td>
+          <td>{reportData.totalFp.toFixed(2)}</td>
+        </tr>
+
+        <tr>
+          <td>FGSP</td>
+          <td>-</td>
+          <td>{reportData.totalFgsp.toFixed(2)}</td>
+          <td>{reportData.totalFgsp.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td>FP i FGŚP łącznie</td>
+          <td>-</td>
+          <td>{reportData.totalFPFGŚP.toFixed(2)}</td>
+          <td>{reportData.totalFPFGŚP.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td>Zdrowotne (Sickness Insurance)</td>
+          <td>{reportData.totalHealthAmount.toFixed(2)}</td>
+          <td>-</td> {/* Assuming employer doesn't contribute */}
+          <td>{reportData.totalHealthAmount.toFixed(2)}</td>
         </tr>
         {/* ... */}
         <tr className="total-row">
           <td>Total</td>
           <td>{reportData.totalEmployeeContribution.toFixed(2)}</td>
           <td>{reportData.totalEmployerContribution.toFixed(2)}</td>
+          <td>{reportData.grandTotal.toFixed(2)}</td>
         </tr>
       </tbody>
     </table>
