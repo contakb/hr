@@ -613,6 +613,46 @@ app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
   }
 });
 
+app.get('/api/salary/recent/:employeeId', async (req, res) => {
+  const { employeeId } = req.params;
+  const { startYear, startMonth, endYear, endMonth } = req.query;
+
+  try {
+    let query = supabase
+      .from('salaries')
+      .select('gross_total, net_amount, salary_date, salary_month, salary_year, employee_id')
+      .eq('employee_id', employeeId);
+
+    // Add condition for the start year and month
+    if (parseInt(startYear) === parseInt(endYear)) {
+      // If the same year, check within the month range in that year
+      query = query
+        .eq('salary_year', startYear)
+        .gte('salary_month', startMonth)
+        .lte('salary_month', endMonth);
+    } else {
+      // If different years, create a range spanning from start year/month to end year/month
+      query = query
+        .or(`(salary_year.eq.${startYear},salary_month.gte.${startMonth})`)
+        .or(`(salary_year.eq.${endYear},salary_month.lte.${endMonth})`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching recent salaries:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else {
+      res.json(data);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
 
 
 
