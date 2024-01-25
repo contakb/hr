@@ -727,6 +727,43 @@ app.get('/reports', async (req, res) => {
   }
 });
 
+app.get('/reports/social-insurance', async (req, res) => {
+  const { month, year } = req.query;
+
+  // Calculate the last day of the month
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+
+  try {
+    const { data, error } = await supabase
+      .from('salaries')
+      .select(`
+        emeryt_ub,
+        emeryt_pr,
+        rent_ub,
+        rent_pr,
+        chorobowe,
+        wypadkowe,
+        fp,
+        fgsp,
+        heath_amount,
+        salary_date
+      `)
+      .gte('salary_date', `${year}-${month}-01`)
+      .lte('salary_date', `${year}-${month}-${lastDayOfMonth}`);
+
+    if (error) {
+      console.error('Error fetching social insurance report data:', error);
+      res.status(500).send('Error fetching report data.');
+      return;
+    }
+
+    res.send(data);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error fetching report data.');
+  }
+});
+
 
 
 
