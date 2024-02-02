@@ -15,7 +15,7 @@ function ToDo() {
             {!showEmploySubMenu && !showManageSubMenu ? (
                 <ul>
                     <li><button onClick={() => setShowEmploySubMenu(true)}>Employ a New Person</button></li>
-                    <li><button onClick={() => navigate('/terminate')}>Terminate an Employee's Contract</button></li>
+                    <li><button onClick={() => navigate('/salary-selection')}>Przygotuj listę płac</button></li>
                     <li><button onClick={() => setShowManageSubMenu(true)}>Manage Existing Employees</button></li>
                     {/*... other main options */}
                 </ul>
@@ -37,7 +37,7 @@ function ToDo() {
                 <div>
                     <h2>Manage Existing Employees</h2>
                     <ul>
-                        <li><button onClick={() => navigate('/manage/update')}>Update Employee Details</button></li>
+                        <li><button onClick={() => navigate('/employeeList')}>Lista pracowników</button></li>
                         <li><button onClick={() => navigate('/manage/view')}>View Employee Performance</button></li>
                         {/*... other manage submenu options */}
                     </ul>

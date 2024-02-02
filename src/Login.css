@@ -390,3 +390,20 @@ input[type="text"] {
 .back-button {
   text-align: center;
 }
+.companyTodoContainer {
+  display: flex;
+  justify-content: space-between; /* Adjust based on your design */
+  align-items: flex-start; /* Align items at the top */
+  flex-wrap: wrap; /* Ensure responsiveness */
+}
+
+.companyDetails, .todoList {
+  flex: 1; /* Allow both children to grow but stay flexible */
+  min-width: 300px; /* Minimum width before wrapping, adjust as needed */
+  padding: 10px; /* Add some space inside */
+}
+
+/* Optional: Add some margin between the two divs for better spacing */
+.companyDetails {
+  margin-right: 20px; /* Adjust based on your design */
+}

@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
+import ToDo from './ToDo'; // Adjust the path as necessary
+import './Login.css';
+
 
 function CreateCompany() {
     const initialFormData = {
@@ -417,20 +420,21 @@ const handleUpdateCompany = (event, companyId) => {
   
 
   return (
-      <div>
-            <h1>Dane firmy:</h1>
-            {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
-            {updateMessage && <div style={{ color: 'green' }}>{updateMessage}</div>}
-            {isLoading ? (
-                <p>Loading...</p>
-            ) : error ? (
-              <div>
-              <p>{error}</p>
-              {/* Call renderForm function to display the form for creating a new company */}
-              {renderForm()}
-            </div>
-            ) : companyData && !isEditMode ? (
-                <div>
+    <div className="companyTodoContainer">
+    <div className="companyDetails">
+      <h1>Dane Twojej firmy:</h1>
+      {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
+      {updateMessage && <div style={{ color: 'green' }}>{updateMessage}</div>}
+      {isLoading ? (
+          <p>Loading...</p>
+      ) : error ? (
+        <div>
+          <p>{error}</p>
+          {/* Call renderForm function to display the form for creating a new company */}
+          {renderForm()}
+        </div>
+      ) : companyData && !isEditMode ? (
+          <div>
                     <p>Company Name: {companyData.company_name}</p>
         <p>street: {companyData.street}</p>
         <p>number: {companyData.number}</p>
@@ -448,12 +452,19 @@ const handleUpdateCompany = (event, companyId) => {
         <p>forma działalności: {companyData.forma}</p>
 
         <button onClick={() => toggleEditMode(true)}>Edit Company</button>
-                </div>
-            ) : (
-              renderForm()
-              )}  
+          </div>
+      ) : (
+        renderForm()
+      )}  
     </div>
-  );
+    {/* Conditionally render ToDo component if companyData exists */}
+    {companyData && (
+      <div className="todoList">
+        <ToDo />
+      </div>
+    )}
+  </div>
+);
   function renderForm() {
     return (
       <form onSubmit={handleSubmit}>
