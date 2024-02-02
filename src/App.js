@@ -24,6 +24,8 @@ import TerminateContract from './TerminateContract';
 import Aneks from './Aneks';
 import CreateCompany from './CreateCompany';
 import SetupPage from './setup';
+import { SetupProvider } from './SetupContext';
+
 
 
 function App() {
@@ -44,6 +46,7 @@ function App() {
       <Router>
 	  {/* Navigation */}
         <NavigationPage />
+        <SetupProvider>
         <Routes>
           <Route path="/" element={<Login />} />
 		  <Route path="/account/:username" element={<AccountDetails />} />
@@ -75,6 +78,7 @@ function App() {
 
 		  
         </Routes>
+        </SetupProvider>
       </Router>
     </div>
   );

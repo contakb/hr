@@ -407,3 +407,74 @@ input[type="text"] {
 .companyDetails {
   margin-right: 20px; /* Adjust based on your design */
 }
+
+.setupProcess {
+  /* Example styles */
+  padding: 20px;
+  margin-bottom: 30px; /* Add space below the setup process section */
+  background-color: #f8f8f8; /* Light background color to distinguish the section */
+  border-radius: 8px; /* Optional: rounded corners */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: slight shadow for depth */
+}
+.setupProcess > *:not(:last-child) {
+  margin-bottom: 20px; /* Adds space between child elements, excluding the last child */
+}
+
+
+.step-indicator-container {
+  display: flex;
+  justify-content: center; /* Center align the steps container */
+  align-items: center; /* Vertically align items for better visual */
+  flex-wrap: wrap; /* Wrap steps if container is too narrow */
+  gap: 20px; /* Add space between steps */
+  padding: 20px 0; /* Padding on top and bottom */
+}
+
+.step-title {
+  font-size: 14px; /* Adjust based on your design */
+  color: #333; /* Dark color for better readability */
+  margin-top: 8px; /* Adjust space between number and title */
+}
+
+.step-completed .step-number {
+  background-color: green; /* Green background for completed steps */
+  color: white; /* White text color */
+  position: relative; /* Needed for positioning the ::after content */
+}
+
+.step-completed .step-number::after {
+  content: '✔'; /* Unicode checkmark */
+  font-size: 15px; /* Adjust the size as needed */
+  color: white; /* Color of the checkmark */
+  position: absolute; /* Position the checkmark absolutely within the .step-number */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1.5); /* Center the checkmark and scale it up */
+  z-index: 1; /* Ensure it's above the step number */
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%; /* Circular shape */
+  width: 30px; /* Size of circle */
+  height: 30px; /* Size of circle */
+  transition: background-color 0.3s ease, color 0.3s ease;
+  z-index: 0; /* Lower z-index than the checkmark */
+}
+
+
+/* Style for the current step */
+.step-current .step-number {
+  background-color: white; /* White background for the current step */
+  color: black; /* Black text color */
+  border: 2px solid orange; /* Orange border */
+}
+
+/* Hover effect for interactive steps, if needed */
+.step-completed:hover .step-number,
+.step-current:hover .step-number {
+  cursor: pointer; /* Indicates the element is clickable */
+  opacity: 0.8; /* Visual feedback for hover */
+}

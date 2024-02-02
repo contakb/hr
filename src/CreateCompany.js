@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import ToDo from './ToDo'; // Adjust the path as necessary
 import './Login.css';
+import StepIndicator from './StepIndicator'; // Adjust the path as necessary
+import { useSetup } from './SetupContext'; // Adjust the path as necessary
+import { useLocation } from 'react-router-dom';
 
 
 function CreateCompany() {
@@ -42,11 +45,25 @@ const [companyData, setCompanyData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [updateMessage, setUpdateMessage] = useState('');
+  // Add a new piece of state to manage the visibility of the success message and button
+const [showNextStepButton, setShowNextStepButton] = useState(false);
+const { currentStep, setCurrentStep, nextStep } = useSetup(); // Use the context to control steps
+const location = useLocation();
 
+// Define this outside your component if these steps are used in multiple places
+const steps = [
+  { name: "Create Company", path: "/create-company" },
+  { name: "Add Employees", path: "/createEmployee" },
+  { name: "Salary Setup", path: "/salary-selection" },
+];
 
-
-
-
+useEffect(() => {
+  const currentPath = location.pathname;
+  const stepIndex = steps.findIndex(step => step.path === currentPath);
+  if (stepIndex !== -1) {
+    setCurrentStep(stepIndex + 1);
+  }
+}, [location, setCurrentStep]);
 
 
 
@@ -98,6 +115,15 @@ useEffect(() => {
   fetchCompanyData();
 }, []);
 
+ // Function to navigate to the next step
+ const navigateToNextStep = () => {
+  // Ensure currentStep is within the bounds of the steps array
+  if (currentStep < steps.length) {
+    const nextStepPath = steps[currentStep].path; // currentStep is 1-indexed, adjust if needed
+    navigate(nextStepPath);
+  }
+};
+
 
 
 
@@ -142,60 +168,59 @@ useEffect(() => {
     const regex = /^\d{2}-\d{3}$/;
     return regex.test(postcode);
   }
+
   const handleSubmit = (event) => {
     event.preventDefault();
   
     console.log('CreatedCompany Data:', companyData); // Debugging
-  
-    if (isEditMode && companyData && companyData.company_id) {
-      // When in edit mode and company data is available
-      handleUpdateCompany(event, companyData.company_id);
-  } else if (!isEditMode) {
-      // When creating a new company
-      handleCreateCompany(event);
-  } else {
-      console.error('No valid company data for update.');
+
+    // Perform validation checks
+  if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid) {
+    setValidationError("All fields must be entered!");
+    return;
   }
-};
-
-  const handleCreateCompany = (event) => {
-    event.preventDefault();
-
-    if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid) {
-      setValidationError("All fields must be entered!");  // Set the error message
-      return;
-
-    }
-    if (!isValidPostcode(postcode)) {
-      setValidationError("Invalid postcode format! It should be XX-XXX.");
-      return;
-    }
-    
-    if (!taxOffice) {
-      setValidationError("Please select a tax office from the dropdown!");
-      return;
-    }  
-    // Conditional PESEL validation only for 'osobaFizyczna'
-    if (formData.formaPrawna === 'osoba_fizyczna') {
-    if (!formData.PESEL || !isValidPESEL(formData.PESEL)) {
-      setValidationError("Invalid or missing PESEL number for Osoba Fizyczna!");
-      return;
+  if (!isValidPostcode(postcode)) {
+    setValidationError("Invalid postcode format! It should be XX-XXX.");
+    return;
+  }
+  if (!taxOffice) {
+    setValidationError("Please select a tax office from the dropdown!");
+    return;
+  }  
+  if (formData.formaPrawna === 'osoba_fizyczna' && (!formData.PESEL || !isValidPESEL(formData.PESEL))) {
+    setValidationError("Invalid or missing PESEL number for Osoba Fizyczna!");
+    return;
   }
 
   // Clear validation error if all checks pass
   setValidationError(null);
-
-  // Proceed with further processing (e.g., API call to save data)
-  // ...
+  
+    if (isEditMode && companyData && companyData.company_id) {
+      // When in edit mode and company data is available
+      handleUpdateCompany(event, companyData.company_id);
+    } else if (!isEditMode) {
+      // Call handleCreateCompany and chain with then/catch for async handling
+      handleCreateCompany()
+        .then((response) => {
+          console.log('Company created:', response.data);
+          setUpdateMessage('Company created successfully. You can now move to the next step.');
+  setShowNextStepButton(true); // Show the button to move to the next step
+  nextStep(); // Move to the next step
+  
+          // Optional: Handle post-creation logic here if needed
+        })
+        .catch((error) => {
+          console.error('Error creating company:', error);
+          // Handle errors, such as showing an error message
+        });
+    } else {
+      console.error('No valid company data for update.');
+    }
 };
-  
-   
-    
-  
 
-    // Perform create employee request to the server
-    axios
-      .post('http://localhost:3001/create-company', {
+  const handleCreateCompany = (event) => {
+    // Return the axios call directly as it returns a Promise
+  return axios.post('http://localhost:3001/create-company', {
         CompanyName,
         street,
         number,
@@ -210,10 +235,17 @@ useEffect(() => {
         wypadkowe: wypadkoweRate // Include the wypadkowe rate here
       })
       .then((response) => {
+        if (response && response.data) {
         // Handle successful create employee
   console.log('Company created:', response.data);
   // Set success message
   setUpdateMessage('Company created successfully.');
+  setUpdateMessage('Company created successfully. You can now move to the next step.');
+  setShowNextStepButton(true); // Show the button to move to the next step
+  nextStep(); // Move to the next step
+  console.log("Moving to the next step");
+  
+    // Navigate to the next page, for example, add employees
     
   // Fetch the latest company data
   fetchCompanyData(); 
@@ -255,7 +287,8 @@ setCreatedCompany(createdCompanyData);
 
 
         
-      })
+}
+})
       .catch((error) => {
         // Handle create employee error
         console.error('Error creating company:', error);
@@ -420,8 +453,15 @@ const handleUpdateCompany = (event, companyId) => {
   
 
   return (
+    <div className="setupProcess">
+  <StepIndicator steps={steps} currentStep={currentStep} />
+    
     <div className="companyTodoContainer">
     <div className="companyDetails">
+    
+
+      
+    
       <h1>Dane Twojej firmy:</h1>
       {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
       {updateMessage && <div style={{ color: 'green' }}>{updateMessage}</div>}
@@ -455,14 +495,22 @@ const handleUpdateCompany = (event, companyId) => {
           </div>
       ) : (
         renderForm()
-      )}  
-    </div>
+        )}
+        {/* Move the conditional rendering here, outside the renderForm function */}
+        {showNextStepButton && (
+          <div>
+            <p>{updateMessage}</p>
+            <button onClick={navigateToNextStep}>Go to Next Step</button>
+          </div>
+        )}
+      </div>
     {/* Conditionally render ToDo component if companyData exists */}
     {companyData && (
       <div className="todoList">
         <ToDo />
       </div>
     )}
+  </div>
   </div>
 );
   function renderForm() {
@@ -562,6 +610,8 @@ const handleUpdateCompany = (event, companyId) => {
         <button type="submit">{isEditMode ? 'Update Company' : 'Create Company'}</button>
         <button onClick={() => toggleEditMode(false)}>Cancel</button>
         <button onClick={handleClearData}>Clear Data</button>
+
+
       </form>
     );
 }
