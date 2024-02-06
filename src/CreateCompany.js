@@ -115,15 +115,13 @@ useEffect(() => {
   fetchCompanyData();
 }, []);
 
- // Function to navigate to the next step
- const navigateToNextStep = () => {
-  // Ensure currentStep is within the bounds of the steps array
-  if (currentStep < steps.length) {
-    const nextStepPath = steps[currentStep].path; // currentStep is 1-indexed, adjust if needed
+const goToNextStep = () => {
+  // Assuming steps array has a 'path' field with the route
+  const nextStepPath = steps[currentStep]?.path;
+  if (nextStepPath) {
     navigate(nextStepPath);
   }
 };
-
 
 
 
@@ -500,7 +498,7 @@ const handleUpdateCompany = (event, companyId) => {
         {showNextStepButton && (
           <div>
             <p>{updateMessage}</p>
-            <button onClick={navigateToNextStep}>Go to Next Step</button>
+            <button onClick={goToNextStep}>Go to Next Step</button>
           </div>
         )}
       </div>
