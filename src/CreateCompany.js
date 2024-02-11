@@ -116,13 +116,14 @@ useEffect(() => {
 }, []);
 
 const goToNextStep = () => {
-  // Assuming steps array has a 'path' field with the route
-  const nextStepPath = steps[currentStep]?.path;
+  // Calculate the expected next step's path without relying on the updated currentStep state
+  const expectedNextStepIndex = currentStep; // Assuming nextStep hasn't been called yet
+  const nextStepPath = steps[expectedNextStepIndex]?.path;
   if (nextStepPath) {
-    navigate(nextStepPath);
+    nextStep(); // Update the step
+    navigate(nextStepPath); // Then navigate based on the expected next step
   }
 };
-
 
 
     const [validationError, setValidationError] = useState(null);  // Add this line

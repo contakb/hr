@@ -5,7 +5,7 @@ const SetupContext = createContext();
 
 export const useSetup = () => useContext(SetupContext);
 export const steps = [
-    { name: "Create Company", path: "/create-company" },
+    { name: "Create Company", path: "/CreateCompany" },
     { name: "Add Employees", path: "/createEmployee" },
     { name: "Salary Setup", path: "/salary-selection" },
 ];

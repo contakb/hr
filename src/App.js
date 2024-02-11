@@ -26,6 +26,9 @@ import CreateCompany from './CreateCompany';
 import SetupPage from './setup';
 import { SetupProvider } from './SetupContext';
 
+import AddEmployees from './EmployeeForm';
+import SalarySetup from './SalarySelectionPage';
+
 
 
 function App() {
@@ -72,6 +75,8 @@ function App() {
       <Route path="/Aneks/:employeeId/:contractId" element={<Aneks />} />
       <Route path="/createcompany" element={<CreateCompany />} />
       <Route path="/setup" element={<SetupPage />} />
+      <Route path="/createEmployee" element={<AddEmployees />} />
+      <Route path="/salary-selection" element={<SalarySetup />} />
 
 
        
