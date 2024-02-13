@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
 import { useSetup } from './SetupContext'; // Import the context hook
 
 const StepIndicator = ({ steps }) => {
-    const { currentStep } = useSetup(); // Use the currentStep from context
-    const navigate = useNavigate(); // Hook for navigation
+    const navigate = useNavigate();
+    const { currentStep, isStepCompleted } = useSetup(); // Assuming your context provides isStepCompleted
 
     const navigateToStep = (path, stepNumber) => {
-        // Optional: You might want to allow navigation only to completed steps or the current step
-        // This check can be adjusted based on your application's requirements
         if (stepNumber <= currentStep) {
             navigate(path);
         }
@@ -18,19 +16,16 @@ const StepIndicator = ({ steps }) => {
         <div className="step-indicator-container">
             {steps.map((step, index) => {
                 const stepNumber = index + 1;
-                const isCompleted = stepNumber < currentStep;
+                const isCompleted = isStepCompleted(stepNumber); // Check if the step is marked as completed
                 const isCurrent = stepNumber === currentStep;
 
-                // Add a click handler to each step
-                // Apply cursor style through className or inline styles for better UX
                 return (
                     <div 
                         key={index} 
-                        className={`step ${isCompleted ? 'step-completed' : ''} ${isCurrent ? 'step-current' : ''}`} 
+                        className={`step ${isCompleted ? 'step-completed' : ''} ${isCurrent ? 'step-current' : ''}`}
                         onClick={() => navigateToStep(step.path, stepNumber)}
-                        style={{ cursor: 'pointer' }} // Makes it visually clear that the item is clickable
-                    >
-                        <div className="step-number">{stepNumber}</div>
+                        style={{ cursor: 'pointer' }}>
+                        <div className="step-number">{isCompleted ? '✔' : stepNumber}</div>
                         <div className="step-title">{step.name}</div>
                     </div>
                 );
@@ -38,5 +33,6 @@ const StepIndicator = ({ steps }) => {
         </div>
     );
 };
+
 
 export default StepIndicator;

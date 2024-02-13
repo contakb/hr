@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import MedicalExaminationView from './MedicalExaminationView';
+import { useLocation } from 'react-router-dom';
+import StepIndicator from './StepIndicator'; // Adjust the path as necessary
+import { useSetup } from './SetupContext'; // Import the context to use steps
 
 function EmployeeForm() {
   const [employeeName, setEmployeeName] = useState('');
@@ -19,8 +22,63 @@ function EmployeeForm() {
 const [taxOfficeName, setTaxOfficeName] = useState('');
 const [taxOffices, setTaxOffices] = useState([]);
 const [taxOffice, setTaxOffice] = useState('');
+const { currentStep, setCurrentStep, nextStep,  } = useSetup(); // Use the context to control steps
+const [employeeAdded, setEmployeeAdded] = useState(false);
+const { markStepAsCompleted } = useSetup();
+const [showNextStepButton, setShowNextStepButton] = useState(false);
+
+const { setIsInSetupProcess } = useSetup();
 
 
+const location = useLocation();
+
+const queryParams = new URLSearchParams(location.search);
+    const isInSetupProcess = queryParams.get('setup') === 'true';
+
+// Define this outside your component if these steps are used in multiple places
+const steps = [
+  { name: "Create Company", path: "/create-company" },
+  { name: "Add Employees", path: "/createEmployee?setup=true" },
+  { name: "Add Contract to Employee", path: "/add-contract/:employeeId" }, // Use placeholder
+  { name: "Add Params to Employee", path: "/employee-param/:employeeId" }, // Use placeholder
+  { name: "Salary Setup", path: "/salary-selection" },
+];
+
+useEffect(() => {
+  const currentPath = location.pathname;
+  const stepIndex = steps.findIndex(step => step.path === currentPath);
+  if (stepIndex !== -1) {
+    setCurrentStep(stepIndex + 1); // Correctly use setCurrentStep here
+  }
+}, [location, setCurrentStep, steps]); // Include 'steps' in the dependency array if it's not static
+
+const isSetupCompleted = () => {
+  const setupCompleted = localStorage.getItem('setupCompleted');
+  return setupCompleted === 'true';
+};
+
+useEffect(() => {
+  // Define paths that are part of the initial setup process
+  const setupPaths = ['/CreateCompany', '/createEmployee', '/AddContractForm', '/EmployeeParam'];
+
+  // Check if the current pathname matches any of the setup paths AND setup is not completed
+  const isInSetupProcessNow = setupPaths.some(path => location.pathname.startsWith(path)) && !isSetupCompleted();
+
+  // Update the state based on whether the current page is part of the setup process
+  setIsInSetupProcess(isInSetupProcessNow);
+}, [location.pathname]); // Depend on location.pathname to re-evaluate when the route changes
+
+
+
+
+
+
+
+// This useEffect might not be necessary if you're only logging the state change.
+// If you keep it, ensure it doesn't cause any unintended side effects.
+useEffect(() => {
+  console.log("isInSetupProcess updated:", isInSetupProcess);
+}, [isInSetupProcess]);
 
 
   useEffect(() => {
@@ -65,6 +123,32 @@ useEffect(() => {
     const regex = /^\d{2}-\d{3}$/;
     return regex.test(postcode);
   }
+
+  const goToNextStep = () => {
+    // Increment the current step.
+    nextStep();
+  
+    // Wait for the next step update to propagate.
+    setTimeout(() => {
+      // Calculate the next step based on the updated currentStep.
+      // Note: Ensure you have the latest currentStep value here. You might need to use a useEffect hook
+      // to listen to currentStep changes if this doesn't work as expected.
+      const nextStepIndex = currentStep - 1; // Adjust if your steps array is 0-indexed and currentStep is 1-indexed.
+      const nextStepPath = steps[nextStepIndex]?.path;
+  
+      if (nextStepPath) {
+        navigate(nextStepPath);
+      }
+    }, 100); // A slight delay to ensure the state update has been processed.
+  };
+  const goToPreviousStep = () => {
+    // Decrement the current step, ensuring it doesn't go below the first step
+    setCurrentStep(prevStep => Math.max(prevStep - 1, 1));
+    
+    // Logic to navigate based on the updated currentStep would typically be
+    // in a useEffect that reacts to changes in currentStep, similar to your goToNextStep setup.
+  };
+  
   
 
   const handleCreateEmployee = (event) => {
@@ -108,6 +192,9 @@ useEffect(() => {
       .then((response) => {
         // Handle successful create employee
   console.log('Employee created:', response.data);
+  markStepAsCompleted(2); // Mark the "Add Employees" step as completed
+  nextStep(); // Move to the next step
+  setEmployeeAdded(true); 
 
 // Use the returned employeeId from the server response
 const createdEmployeeData = {
@@ -120,7 +207,7 @@ const createdEmployeeData = {
   city,
   country,
   taxOffice,
-  PESEL
+  PESEL,
 };
 
 
@@ -147,6 +234,21 @@ const handleMedicalExamination = (employeeId) => {
     navigate(`/add-contract/${employeeId}`);
   }
 
+  // Assuming createdEmployee is accessible here
+const handleAddViewContractClick = () => {
+  if (isInSetupProcess) {
+    // If in setup process, move to the next step
+    nextStep();
+
+    // Optionally, navigate to the next step manually if necessary
+    // This is where you'd include logic similar to what was discussed,
+    // but directly within this click handler based on the updated currentStep
+  } else {
+    // If not in setup process, navigate directly
+    navigate(`/add-contract/${createdEmployee.employeeId}`);
+  }
+};
+
   // This function will redirect to the AddContractForm for the specific employee
   const goToAddParameters = (employeeId) => {
     navigate(`/employee-param/${employeeId}`);
@@ -155,6 +257,7 @@ const handleMedicalExamination = (employeeId) => {
 // Set the created employee data in the state
 localStorage.setItem('createdEmployee', JSON.stringify(createdEmployeeData));
 setCreatedEmployee(createdEmployeeData);
+
 
 
         // Clear form fields
@@ -226,6 +329,8 @@ const handleTaxOfficeChange = (selectedOption) => {
 
   return (
     <div>
+      {isInSetupProcess && <StepIndicator steps={steps} currentStep={currentStep} />}
+      {isInSetupProcess && <StepIndicator steps={steps} isCurrentStepCompleted={employeeAdded} />}
       <h1>Employee Form</h1>
       {/* Display validation error if present */}
       {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
@@ -273,21 +378,23 @@ const handleTaxOfficeChange = (selectedOption) => {
   <button disabled>MedicalExam</button>
 )}
 
-      {/* Conditionally render the Add Contract button */}
-    {createdEmployee ? (
-      <button onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}`)}>Add Contract</button>
-    ) : (
-      <button disabled>Add Contract</button>
-    )}
-     {/* Conditionally render the Add Contract button */}
-     {createdEmployee ? (
-      <button onClick={() => navigate(`/employee-param/${createdEmployee.employeeId}`)}>Add Params</button>
-    ) : (
-      <button disabled>Add Params</button>
-    )}
+    {/* Conditionally render the Add Contract button */}
+{createdEmployee ? (
+  <button onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}>Add/view Contract</button>
+) : (
+  <button disabled>Add Contract</button>
+)}
+
+{/* Conditionally render the Add Params button */}
+{createdEmployee ? (
+  <button onClick={() => navigate(`/employee-param/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}>Add Params</button>
+) : (
+  <button disabled>Add Params</button>
+)}
 	  {createdEmployee && (
         <div>
-          <h2>Employee Created Successfully!</h2>
+          <h2>Employee id:{createdEmployee. employeeId} Created Successfully!</h2>
+          <p>ID: {createdEmployee. employeeId}</p>
           <p>Name: {createdEmployee.employeeName}</p>
           <p>Surname: {createdEmployee.employeeSurname}</p>
           <p>Street: {createdEmployee.street}</p>
@@ -298,6 +405,16 @@ const handleTaxOfficeChange = (selectedOption) => {
           <p>Pesel: {createdEmployee.PESEL}</p>
         </div>
 		)}
+    {/* Move the conditional rendering here, outside the renderForm function */}
+    {showNextStepButton && (
+          <div>
+            <button onClick={goToNextStep}>Go to Next Step</button>
+            {/* Render the Back button only if not on the first step */}
+{currentStep > 1 && (
+  <button onClick={goToPreviousStep}>Back</button>
+)}
+          </div>
+    )}
     </div>
   );
 }

@@ -49,11 +49,15 @@ const [companyData, setCompanyData] = useState(null);
 const [showNextStepButton, setShowNextStepButton] = useState(false);
 const { currentStep, setCurrentStep, nextStep } = useSetup(); // Use the context to control steps
 const location = useLocation();
+const { markStepAsCompleted } = useSetup();
+const { setIsInSetupProcess } = useSetup();
 
 // Define this outside your component if these steps are used in multiple places
 const steps = [
   { name: "Create Company", path: "/create-company" },
-  { name: "Add Employees", path: "/createEmployee" },
+  { name: "Add Employees", path: "/createEmployee?setup=true" },
+  { name: "Add Contract to Employee", path: "/add-contract/${createdEmployee.employeeId}" }, // New step
+  { name: "Add Params to Employee", path: "/employee-param/:employeeId" }, // New step
   { name: "Salary Setup", path: "/salary-selection" },
 ];
 
@@ -65,6 +69,25 @@ useEffect(() => {
   }
 }, [location, setCurrentStep]);
 
+const isSetupCompleted = () => {
+  const setupCompleted = localStorage.getItem('setupCompleted');
+  return setupCompleted === 'true';
+};
+
+useEffect(() => {
+  // Only mark setup as started if it hasn't been completed before
+  if (!isSetupCompleted()) {
+    setIsInSetupProcess(true);
+  }
+
+  // Cleanup function to reset on component unmount, which might be optional 
+  // based on your app's flow and whether entering another setup-related component
+  // should automatically mean the setup process is ongoing.
+  return () => {
+    // Consider whether you need to reset this based on your app's logic
+    // setIsInSetupProcess(false);
+  };
+}, [setIsInSetupProcess]);
 
 
   useEffect(() => {
@@ -116,14 +139,30 @@ useEffect(() => {
 }, []);
 
 const goToNextStep = () => {
-  // Calculate the expected next step's path without relying on the updated currentStep state
-  const expectedNextStepIndex = currentStep; // Assuming nextStep hasn't been called yet
-  const nextStepPath = steps[expectedNextStepIndex]?.path;
-  if (nextStepPath) {
-    nextStep(); // Update the step
-    navigate(nextStepPath); // Then navigate based on the expected next step
-  }
+  // Increment the current step.
+  nextStep();
+
+  // Wait for the next step update to propagate.
+  setTimeout(() => {
+    // Calculate the next step based on the updated currentStep.
+    // Note: Ensure you have the latest currentStep value here. You might need to use a useEffect hook
+    // to listen to currentStep changes if this doesn't work as expected.
+    const nextStepIndex = currentStep - 1; // Adjust if your steps array is 0-indexed and currentStep is 1-indexed.
+    const nextStepPath = steps[nextStepIndex]?.path;
+
+    if (nextStepPath) {
+      navigate(nextStepPath);
+    }
+  }, 100); // A slight delay to ensure the state update has been processed.
 };
+
+
+
+
+
+
+
+
 
 
     const [validationError, setValidationError] = useState(null);  // Add this line
@@ -241,6 +280,8 @@ const goToNextStep = () => {
   setUpdateMessage('Company created successfully.');
   setUpdateMessage('Company created successfully. You can now move to the next step.');
   setShowNextStepButton(true); // Show the button to move to the next step
+  // Mark the step as completed in the context
+  markStepAsCompleted(1); // Assuming step 1 is for creating a company
   nextStep(); // Move to the next step
   console.log("Moving to the next step");
   
@@ -454,6 +495,7 @@ const handleUpdateCompany = (event, companyId) => {
   return (
     <div className="setupProcess">
   <StepIndicator steps={steps} currentStep={currentStep} />
+
     
     <div className="companyTodoContainer">
     <div className="companyDetails">

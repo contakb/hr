@@ -8,6 +8,7 @@ import html2pdf from 'html2pdf.js';
 import { useLocation } from 'react-router-dom';
 import './Login.css';
 import Select from 'react-select';
+import { useSetup } from './SetupContext'; // Adjust the import path as necessary
 
 // Employee component
 function Employee({ employee, updateEmployeeInList, taxOffices }) {
@@ -31,6 +32,7 @@ function Employee({ employee, updateEmployeeInList, taxOffices }) {
   const [updateMessage, setUpdateMessage] = useState('');
   const [taxOffice, setTaxOffice] = useState(employee.tax_office); // Assuming 'tax_office' is the property
   const [taxOfficeName, setTaxOfficeName] = useState(''); // You might need to adjust this based on how you handle tax office names
+  
   
   
 
@@ -586,6 +588,7 @@ function EmployeeList() {
   const [filter, setFilter] = useState('');
   const [taxOffices, setTaxOffices] = useState([]); // New state for tax offices
   const [filterStatus, setFilterStatus] = useState('all'); // new state for filtering by contract status
+  const { setIsInSetupProcess } = useSetup(); // Use the hook to access context methods
 
   const updateEmployeeInList = (employeeId, newDetails) => {
     setEmployees(currentEmployees => {
@@ -667,6 +670,12 @@ function EmployeeList() {
     return <div>{error}</div>;
   }
 
+  const handleCreateEmployeeClick = () => {
+    setIsInSetupProcess(false); // Set to false to indicate not in setup process
+    navigate('/createEmployee');
+  };
+
+
   return (
     <div className="employee-list-container">
       <div className="employee-list-title">
@@ -686,8 +695,8 @@ function EmployeeList() {
         <option value="active">Active Employees</option>
         <option value="terminated">Terminated Employees</option>
       </select>
-        <button className="create-employee-button" onClick={() => navigate('/createEmployee')}>
-          Create Employee
+      <button className="create-employee-button" onClick={handleCreateEmployeeClick}>
+                Create Employee
         </button>
       </div>
       <div className="employee-list">

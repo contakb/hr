@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
+import StepIndicator from './StepIndicator'; // Adjust the path as necessary
+import { useSetup } from './SetupContext'; // Import the context to use steps
 
 function EmployeeParam() {
   const { employeeId } = useParams();
@@ -22,6 +24,43 @@ const [numOfCompanies, setNumOfCompanies] = useState(1);
 const [hasDisability, setHasDisability] = useState('0'); // '0' for none, '1' for 'lekki', '2' for 'umiarkowany', '3' for 'znaczny'
 const [isRetired, setIsRetired] = useState(false); // true if the employee is retired (emerytura)
 const [hasDisabilityBenefit, setHasDisabilityBenefit] = useState(false); // true if the employee has a disability benefit (renta)
+
+const { currentStep, setCurrentStep, nextStep, steps } = useSetup(); // Use the context to control steps
+const [paramsAdded, setparamsAdded] = useState(false);
+const { markStepAsCompleted } = useSetup();
+const [showNextStepButton, setShowNextStepButton] = useState(false);
+
+const { setIsInSetupProcess } = useSetup();
+
+
+
+
+const queryParams = new URLSearchParams(location.search);
+    const isInSetupProcess = queryParams.get('setup') === 'true';
+
+useEffect(() => {
+  const currentPath = location.pathname;
+  const stepIndex = steps.findIndex(step => step.path === currentPath);
+  if (stepIndex !== -1) {
+    setCurrentStep(stepIndex + 1); // Correctly use setCurrentStep here
+  }
+}, [location, setCurrentStep, steps]); // Include 'steps' in the dependency array if it's not static
+
+const isSetupCompleted = () => {
+  const setupCompleted = localStorage.getItem('setupCompleted');
+  return setupCompleted === 'true';
+};
+
+useEffect(() => {
+  // Define paths that are part of the initial setup process
+  const setupPaths = ['/CreateCompany', '/createEmployee', '/AddContractForm', '/EmployeeParam'];
+
+  // Check if the current pathname matches any of the setup paths AND setup is not completed
+  const isInSetupProcessNow = setupPaths.some(path => location.pathname.startsWith(path)) && !isSetupCompleted();
+
+  // Update the state based on whether the current page is part of the setup process
+  setIsInSetupProcess(isInSetupProcessNow);
+}, [location.pathname]); // Depend on location.pathname to re-evaluate when the route changes [location, setCurrentStep, steps]); // Include 'steps' in the dependency array if it's not static
 
 
 useEffect(() => {
@@ -44,6 +83,25 @@ useEffect(() => {
 
   fetchParams();
 }, [employeeId]); // employeeId as a dependency
+
+const goToNextStep = () => {
+  // Increment the current step.
+  nextStep();
+
+  // Wait for the next step update to propagate.
+  setTimeout(() => {
+    // Calculate the next step based on the updated currentStep.
+    // Note: Ensure you have the latest currentStep value here. You might need to use a useEffect hook
+    // to listen to currentStep changes if this doesn't work as expected.
+    const nextStepIndex = currentStep - 1; // Adjust if your steps array is 0-indexed and currentStep is 1-indexed.
+    const nextStepPath = steps[nextStepIndex]?.path;
+
+    if (nextStepPath) {
+      navigate(nextStepPath);
+    }
+  }, 100); // A slight delay to ensure the state update has been processed.
+};
+
 
 const handleSubmit = async (event) => {
   event.preventDefault();
@@ -75,6 +133,9 @@ const handleSubmit = async (event) => {
         ...response.data.employeeParams,
         kod_ub: String(response.data.employeeParams.kod_ub).padStart(6, '0')
       });
+      markStepAsCompleted(4); // Mark the "Add Employees" step as completed
+  nextStep(); // Move to the next step
+  setparamsAdded(true); 
       // Clear form fields
       setKoszty('');
       setUlga('');
@@ -198,7 +259,9 @@ const handleSubmit = async (event) => {
   // Below is the form where you can input the parameters
   return (
     <div>
-      <h2>{hasParams ? 'Update Employee Parameters' : 'Add Employee Parameters'}</h2>
+      {isInSetupProcess &&<StepIndicator steps={steps} isCurrentStepCompleted={paramsAdded} />}
+      {isInSetupProcess &&<StepIndicator steps={steps} currentStep={currentStep} />}
+      <h2>{hasParams ? 'Update Employee Parameters' : 'Add Employee Parameters'} dla { employeeId }</h2>
       <form onSubmit={handleSubmit}>
       <label>Czy pracownik pracuje poza miejscem zamieszkania?</label>
 <div>
