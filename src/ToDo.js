@@ -7,16 +7,18 @@ function ToDo() {
     const navigate = useNavigate();
     const [showEmploySubMenu, setShowEmploySubMenu] = useState(false);
     const [showManageSubMenu, setShowManageSubMenu] = useState(false);
+    const [showReportSubMenu, setShowReportSubMenu] = useState(false);
 
     return (
         <div className="ToDo">
             <h1>What would you like to do?</h1>
             
-            {!showEmploySubMenu && !showManageSubMenu ? (
+            {!showEmploySubMenu && !showManageSubMenu && !showReportSubMenu ? (
                 <ul>
                     <li><button onClick={() => setShowEmploySubMenu(true)}>Employ a New Person</button></li>
                     <li><button onClick={() => navigate('/salary-selection')}>Przygotuj listę płac</button></li>
                     <li><button onClick={() => setShowManageSubMenu(true)}>Manage Existing Employees</button></li>
+                    <li><button onClick={() => setShowReportSubMenu(true)}>Wygeneruj raport</button></li>
                     {/*... other main options */}
                 </ul>
             ) : null}
@@ -42,6 +44,18 @@ function ToDo() {
                         {/*... other manage submenu options */}
                     </ul>
                     <button onClick={() => setShowManageSubMenu(false)}>Back</button>
+                </div>
+            ) : null}
+
+{showReportSubMenu ? (
+                <div>
+                    <h2>Wygeneruj raport</h2>
+                    <ul>
+                        <li><button onClick={() => navigate('/reports')}>Lista raportów</button></li>
+                        <li><button onClick={() => navigate('/manage/view')}>View Employee Performance</button></li>
+                        {/*... other manage submenu options */}
+                    </ul>
+                    <button onClick={() => setShowReportSubMenu(false)}>Back</button>
                 </div>
             ) : null}
         </div>
