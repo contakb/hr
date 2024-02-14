@@ -40,7 +40,7 @@ function LoginUser() {
     // Correct method to initiate password reset
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       // Optional: Specify the redirect URL to which the user should be sent after clicking the reset link.
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: `${window.location.origin}/LoginUser`
     });
   
     if (error) {
@@ -61,7 +61,7 @@ function LoginUser() {
     });
   
     return () => {
-      subscription.unsubscribe();
+      supabase.auth.updateUser();
     };
   }, []);
   
@@ -77,7 +77,7 @@ function LoginUser() {
     } else {
       alert("Your password has been updated successfully.");
       setIsPasswordRecovery(false); // Return to normal login view
-      navigate('/login'); // Redirect the user to the login page
+      navigate('/LoginUser'); // Redirect the user to the login page
     }
   };
   
