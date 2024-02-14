@@ -68,14 +68,12 @@ const handleLogout = async () => {
   if (!error) {
     console.log('Logged out successfully');
     // Reset local state here if necessary, e.g., setUsername('')
-    navigate('/login'); // Adjust as necessary for your route setup
+    navigate('/LoginUser'); // Adjust as necessary for your route setup
   } else {
     console.error('Error logging out:', error);
   }
 };
 
-
-  
 
 // Additional function to handle "Edit" button click, to prevent form submission
 const handleEditClick = (event) => {
