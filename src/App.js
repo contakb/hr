@@ -54,7 +54,7 @@ function App() {
         <SetupProvider>
         <Routes>
           <Route path="/" element={<Login />} />
-		  <Route path="/account/:username" element={<AccountDetails />} />
+          <Route path="/account-details" element={<AccountDetails />} />
           <Route path="/LoginUser" element={<LoginUser />} />
           <Route path="*" element={<Navigate to="/" />} />
 		  <Route path="/company" element={<CreateCompanyForm />} />

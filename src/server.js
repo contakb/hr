@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const bodyParser = require('body-parser');
 const { createClient } = require('@supabase/supabase-js');
 const moment = require('moment');
+const bcrypt = require('bcrypt');
+
 
 
 
@@ -21,6 +23,8 @@ const supabaseUrl = 'https://hxaxnwozubxemmygmmkw.supabase.co'; // Replace with 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXhud296dWJ4ZW1teWdtbWt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyNDk0NzAsImV4cCI6MjAxMTgyNTQ3MH0.re-MQMIldEU9bhypt54b_14IPDqjOzTQhrcMEoLeTBg'; // Replace with your Supabase API key
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+
 
 const app = express();
 
@@ -47,6 +51,8 @@ app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
 }));
+
+
 
 
 app.post('/create-employee', async (req, res) => {
@@ -1820,41 +1826,37 @@ app.post('/password-reminder', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-  const { email, password, username, companyid } = req.body;
+  const { email, password } = req.body;
 
   try {
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const { user, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-    // Store the hashed password in the database
-    const { data: newUser, error: registrationError } = await supabase
-      .from('users')
-      .upsert([{ email, password: hashedPassword, username }], { returning: 'minimal' });
-
-    if (registrationError) {
-      console.error('Error registering user:', registrationError);
-      return res.status(500).json({ error: 'Internal server error' });
+    if (signUpError) {
+      console.error('Error registering user with Supabase:', signUpError);
+      return res.status(500).json({ error: signUpError.message });
     }
 
-    const userid = newUser[0].id;
-
-    // Insert the user-company association into the user_company table
-    const { error: associationError } = await supabase
-      .from('user_companies')
-      .insert([{ userid, companyid }]);
-
-    if (associationError) {
-      console.error('Error creating user-company association:', associationError);
-      return res.status(500).json({ error: 'Internal server error' });
+    // Check if the user was created successfully
+    if (user) {
+      // Redirect or inform the client to navigate to the Account Details page
+      // The user object includes the user's ID, which can be used for further operations
+      return res.json({ message: 'Registration successful. Please complete your profile.', userId: user.id });
+    } else {
+      // This scenario is unlikely without an error, but handle just in case
+      return res.status(202).json({ message: 'Signup successful, please verify your email if required.' });
     }
-
-    // Registration successful
-    return res.json({ message: 'Registration successful' });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('An unexpected error occurred:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred', details: error.message });
   }
 });
+
+
+
+
 
 
 
@@ -1871,27 +1873,27 @@ app.post('/register', async (req, res) => {
     next();
   })
   
-  app.get('/accountById/:userid', isAuthenticated, async (req, res) => {
+  app.get('/accountById/:userid', async (req, res) => {
     const { userid } = req.params;
   
     try {
-      // Use Supabase to fetch the user's account details
+      // Adjust the select query to match your users table structure
       const { data: userAccountDetails, error } = await supabase
         .from('users')
-        .select('userid')
-        .eq('userid', userid);
+        .select('*') // Adjust to select the columns you need
+        .eq('userid', userid); // Assuming 'id' is the column name for user ID in your table
   
       if (error) {
         console.error('Error fetching user account details:', error);
         return res.status(500).json({ error: 'Internal server error' });
       }
   
-      if (!Array.isArray(userAccountDetails) || userAccountDetails.length === 0) {
+      if (!userAccountDetails || userAccountDetails.length === 0) {
         return res.status(404).json({ error: 'Account not found' });
       }
   
       const accountDetails = userAccountDetails[0];
-      console.log('Received userid from the database:', accountDetails.userid); // Log the retrieved userid
+      console.log('Received account details from the database:', accountDetails);
       return res.json(accountDetails);
     } catch (error) {
       console.error('Error:', error);
@@ -1899,55 +1901,169 @@ app.post('/register', async (req, res) => {
     }
   });
   
-  
-  
-  
-
-
-
-  app.post('/check-registration', async (req, res) => {
-    const { email, username } = req.body;
+  app.post('/accountByEmail', async (req, res) => {
+    const { email, username /*, other details */ } = req.body;
   
     try {
-      // Check if email exists in the database
-      const { data: emailExists, error: emailError } = await supabase
+      // Check if user already exists
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
-        .select('email')
-        .eq('email', email);
+        .select('*')
+        .eq('email', email)
+        .single();
   
-      if (emailError) {
-        console.error('Error checking email:', emailError);
-        return res.status(500).json({ error: 'An error occurred' });
+      if (fetchError && fetchError.message !== 'No rows found') throw fetchError;
+  
+      if (existingUser) {
+        // User exists, update their details
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ username /*, other details */ })
+          .eq('email', email);
+        if (updateError) throw updateError;
+      } else {
+        // User doesn't exist, insert new record
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([{ email, username /*, other details */ }]);
+        if (insertError) throw insertError;
       }
   
-      if (emailExists.length > 0) {
-        // Email already exists
-        return res.status(400).json({ error: 'Email already exists' });
-      }
-  
-      // Check if username exists in the database
-      const { data: usernameExists, error: usernameError } = await supabase
-        .from('users')
-        .select('username')
-        .eq('username', username);
-  
-      if (usernameError) {
-        console.error('Error checking username:', usernameError);
-        return res.status(500).json({ error: 'An error occurred' });
-      }
-  
-      if (usernameExists.length > 0) {
-        // Username already exists
-        return res.status(400).json({ error: 'Username already exists' });
-      }
-  
-      // Email and username are available
-      return res.status(200).json({ message: 'Email and username are available' });
+      res.json({ success: true, message: 'User details processed successfully.' });
     } catch (error) {
-      console.error('Error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Failed to process user details:', error);
+      res.status(500).json({ success: false, message: 'Failed to process user details.', error: error.message });
     }
   });
+  
+  
+  app.post('/insertUserDetails', async (req, res) => {
+    const { email, username } = req.body;
+    console.log('Attempting to insert details for', email, 'with username', username);
+
+    try {
+        // Directly attempt to insert the new user details
+        const insertResponse = await supabase
+            .from('users')
+            .insert([{ email, username }]); // Ensure this matches your table structure
+
+        if (insertResponse.error) {
+            throw insertResponse.error;
+        }
+
+        console.log('User details inserted successfully for:', email);
+        res.json({ success: true, message: 'User details inserted successfully.' });
+    } catch (error) {
+        console.error('Failed to insert user details:', error);
+        res.status(500).json({ success: false, message: 'Failed to insert user details.', error: error.message || error });
+    }
+});
+
+app.post('/updateUserDetails', async (req, res) => {
+  const { email, username } = req.body; // Add more fields as necessary
+  console.log('Attempting to update details for', email, 'with new username', username);
+
+  try {
+      const updateResponse = await supabase
+          .from('users')
+          .update({ username }) // Include other fields to update as necessary
+          .eq('email', email);
+
+      if (updateResponse.error) {
+          throw updateResponse.error;
+      }
+
+      console.log('User details updated successfully for:', email);
+      res.json({ success: true, message: 'User details updated successfully.' });
+  } catch (error) {
+      console.error('Failed to update user details:', error);
+      res.status(500).json({ success: false, message: 'Failed to update user details.', error: error.message || error });
+  }
+});
+
+
+
+app.get('/getUserDetails', async (req, res) => {
+  const { email } = req.query; // Assuming email is passed as a query parameter
+
+  try {
+      const { data, error } = await supabase
+          .from('users')
+          .select("*")
+          .eq('email', email)
+          .single(); // Assuming email is unique, .single() ensures you get one object instead of an array
+
+      if (error) throw error;
+
+      res.json({ success: true, data });
+  } catch (error) {
+      console.error('Failed to fetch user details:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch user details.', error: error.message });
+  }
+});
+
+
+
+
+
+
+  
+  
+  
+
+
+
+  
+  app.post('/register', async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const { user, error } = await supabase.auth.signUp({
+            email,
+            password,
+        });
+
+        if (error) {
+            console.error('Error registering user with Supabase:', error.message);
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Instead of relying on user.id, use email as a key to insert/update additional details.
+        // Insert a placeholder record in your 'users' table (assuming it's done here and not automatically by Supabase Auth hooks)
+        // Ensure your 'users' table has a unique constraint on the email column to avoid duplicate entries.
+
+        if (user) {
+          // Insert additional user details into your 'users' table.
+    const { error: insertError } = await supabase
+    .from('users')
+    .insert([{ user_id: user.id, email: user.email, username: 'placeholder' }]); // Adjust as needed
+
+if (insertError) {
+    console.error('Error inserting user details:', insertError.message);
+    return res.status(500).json({ error: insertError.message });
+}
+            // Placeholder for inserting into your users table. Adjust according to your schema.
+            // Example: INSERT INTO users (email, username) VALUES (user.email, 'placeholder') ON CONFLICT (email) DO NOTHING;
+            console.log("Registration successful, placeholder record created");
+
+            return res.json({
+                success: true,
+                message: 'Registration successful. Please complete your profile.',
+                email // Pass the email back to the client
+            });
+        } else {
+            return res.status(202).json({ message: 'Signup process started. Please check your email for verification if required.' });
+        }
+    } catch (error) {
+        console.error('An unexpected error occurred:', error);
+        return res.status(500).json({ error: 'An unexpected error occurred', details: error.message });
+    }
+});
+
+
+
+  
+  
   
 
 

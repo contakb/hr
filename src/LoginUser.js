@@ -1,51 +1,36 @@
-import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
-import AccountDetails from './AccountDetails';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { supabase } from './supabaseClient';
+import CreateCompanyForm from './CreateCompanyForm';
+import axios from 'axios'; // Assuming you're using axios for HTTP requests
 
 function LoginUser() {
-  const [identifier, setIdentifier] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { username } = useParams();
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
-  
-    // Perform login request to the server
-    axios
-      .get('http://localhost:3001/loginUser', {
-        params: { usernameOrEmail: identifier, rememberMe },
-      })
-      .then((response) => {
-        // Handle successful login
-        console.log('Logged in successfully:', response.data);
-  
-        // Log the entire response received from the server
-        console.log('Server Response:', response);
-  
-        // Redirect to account details page with user data
-        // In LoginUser.js after successful login
-const userData = response.data;
-navigate(`/account/${userData.storedUsername}`, { state: userData });
 
-      })
-      .catch((error) => {
-        // Handle login error
-        console.error('Error logging in:', error);
-        setErrorMessage('Invalid username or email');
-      });
-  };
-  
+    console.log(supabase);
+console.log(supabase.auth);
 
-  const handleIdentifierChange = (event) => {
-    setIdentifier(event.target.value);
-  };
 
-  const handleRememberMeChange = (event) => {
-    setRememberMe(event.target.checked);
+    // Attempt to log in with the provided email and password
+    const { error, user } = await supabase.auth.signIn({
+      email,
+      password,
+    });
+
+    if (error) {
+      console.error('Error logging in:', error.message);
+      setErrorMessage(error.message || 'Failed to login');
+    } else {
+      console.log('Logged in successfully:', user);
+      navigate('/account-details'); // Adjust as necessary for your routing
+    }
   };
 
   return (
@@ -53,13 +38,21 @@ navigate(`/account/${userData.storedUsername}`, { state: userData });
       <h1>Login</h1>
       {errorMessage && <p>{errorMessage}</p>}
       <form onSubmit={handleLogin}>
-        <label>Username or Email:</label>
-        <input type="text" value={identifier} onChange={handleIdentifierChange} />
-
-        <label>
-          Remember me:
-          <input type="checkbox" checked={rememberMe} onChange={handleRememberMeChange} />
-        </label>
+        <label htmlFor="email">Email:</label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        
+        <label htmlFor="password">Password:</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
         <button type="submit">Log in</button>
       </form>
