@@ -26,6 +26,9 @@ function AccountDetails() {
   const [originalData, setOriginalData] = useState({});
 
   const [userDetailsExist, setUserDetailsExist] = useState(false);
+  const [companyData, setCompanyData] = useState(null);
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   
@@ -63,6 +66,73 @@ function AccountDetails() {
 useEffect(() => {
   fetchUserDetails();
 }, [email]); // Depend on email to refetch if it changes
+
+
+useEffect(() => {
+  const handleAuthStateChange = async () => {
+    // Retrieve the current session data using Supabase v2.0 method
+    const { data: sessionData, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('Error getting session:', error.message);
+      setError('Failed to get session.');
+      // Redirect to login page if there is an error fetching the session
+      navigate('/login');
+      return;
+    }
+
+    if (!sessionData || !sessionData.session) {
+      // No session found, redirect to login page
+      navigate('/login');
+      return;
+    }
+
+    // User is logged in, proceed to fetch company data
+    setIsLoading(true);
+    try {
+      const response = await axios.get('http://localhost:3001/api/created_company', {
+        headers: {
+          'Authorization': `Bearer ${sessionData.session.access_token}` // Use access_token from sessionData
+        }
+      });
+      if (response.data && response.data.length > 0) {
+        setCompanyData(response.data[0]); // Assuming you're interested in the first item
+      } else {
+        setCompanyData(null);
+      }
+      setError('');
+    } catch (error) {
+      console.error('Error fetching company data:', error);
+      setError('Failed to fetch company data.');
+      setCompanyData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Immediately check the session state and fetch data or redirect
+  handleAuthStateChange();
+
+  // Listen for auth state changes
+  const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_OUT') {
+      setCompanyData(null);
+      navigate('/login');
+    } else if (event === 'SIGNED_IN' && session) {
+      handleAuthStateChange(); // Re-fetch company data or handle login
+    }
+  });
+
+  // Cleanup function to unsubscribe from the auth state changes
+  return () => {
+    if (authListener && authListener.subscription) {
+      authListener.subscription.unsubscribe();
+    }
+  };
+}, [navigate]);
+
+
+
 
 // Adjust handleSubmit to use userDetailsExist to decide between insert/update
 const handleSubmit = async (event) => {
@@ -125,6 +195,16 @@ const handleCancelEdit = () => {
   setPostcode(originalData.postcode || '');
   setIsEditMode(false); // Exit edit mode
 };
+
+
+
+const handleManageCompanyData = () => {
+  navigate('/CreateCompany');
+};
+
+if (isLoading) {
+  return <div>Loading...</div>;
+}
 
 return (
   <div>
@@ -211,7 +291,34 @@ return (
 
     </form>
     {updateMessage && <p>{updateMessage}</p>}
+    <div>
+            <h1>Dane firmy:</h1>
+            {error && <p className="error-message">{error}</p>}
+            {companyData ? (
+                <div>
+                    <p>Company Name: {companyData.company_name}</p>
+                    <p>Street: {companyData.street}</p>
+                    <p>Number: {companyData.number}</p>
+                    <p>Post Code: {companyData.post_code}</p>
+                    <p>City: {companyData.city}</p>
+                    <p>Country: {companyData.country}</p>
+                    <p>Tax ID: {companyData.taxid}</p>
+                    {companyData.forma === 'osoba_fizyczna' && <p>PESEL: {companyData.pesel}</p>}
+                    <p>Tax Office: {companyData.tax_office}</p>
+                    <p>ID: {companyData.company_id}</p>
+                    <p>Insurance: {companyData.wypadkowe}</p>
+                    <p>Bank Account: {companyData.bank_account}</p>
+                    <p>Business Form: {companyData.forma}</p>
+                </div>
+            ) : (
+                <p>No data available. Please add company details.</p>
+            )}
+            <button onClick={handleManageCompanyData}>
+                {companyData ? 'Update Company Data' : 'Create Company Data'}
+            </button>
+        </div>
   </div>
+  
 );
 }
 

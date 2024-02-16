@@ -81,7 +81,14 @@ axios.post('http://localhost:3001/register', { email, password })
         <input type="password" value={confirmPassword} onChange={handleConfirmPasswordChange} />
 
         <button type="submit">Register</button>
+
+        <p>Masz już konto?</p>
+          <p><button type="button" onClick={() => navigate('/LoginUser')}> Log in</button></p>
+
+
       </form>
+      
+      
       
       {showAccountDetails && <AccountDetails email={email} />}
     </div>

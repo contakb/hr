@@ -7,6 +7,8 @@ const bodyParser = require('body-parser');
 const { createClient } = require('@supabase/supabase-js');
 const moment = require('moment');
 const bcrypt = require('bcrypt');
+require('dotenv').config();
+
 
 
 
@@ -23,7 +25,9 @@ const supabaseUrl = 'https://hxaxnwozubxemmygmmkw.supabase.co'; // Replace with 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXhud296dWJ4ZW1teWdtbWt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyNDk0NzAsImV4cCI6MjAxMTgyNTQ3MH0.re-MQMIldEU9bhypt54b_14IPDqjOzTQhrcMEoLeTBg'; // Replace with your Supabase API key
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+const jwt = require('jsonwebtoken');
 
+const JWT_SECRET_KEY = 'aTePU4aap+7hVLrFL17879WtSGGp5ELReIge3TXP9bZbj/uWhVjZL3Ez2GUItyI01NlWQvxhnnjTo9jA5TxQgQ==';
 
 
 const app = express();
@@ -53,6 +57,62 @@ app.use(cors({
 }));
 
 
+app.get('/some-protected-route', (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(' ')[1]; // Bearer <token>
+
+    jwt.verify(token, JWT_SECRET_KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403); // Forbidden
+      }
+
+      req.user = user;
+      next(); // Proceed to the next middleware or route handler
+    });
+  } else {
+    res.sendStatus(401); // Unauthorized
+  }
+});
+// Mock function to demonstrate JWT verification
+app.get('/api/verify-token', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]; // Extract token from Authorization header
+
+  if (!token) {
+    return res.status(401).send('Token not provided');
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET);
+    // Proceed with your logic after verification
+    res.send(decoded);
+  } catch (err) {
+    console.error(err);
+    res.status(401).send('Invalid token');
+  }
+});
+
+app.get('/api/user', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]; // Assuming the token is sent in the Authorization header
+
+  console.log("Supabase client:", supabase);
+  console.log("Supabase auth.api methods:", Object.keys(supabase.auth.api));
+
+  if (!token) {
+      return res.status(401).send('No token provided');
+  }
+
+  try {
+      const { data, error } = await supabase.auth.api.getUser(token);
+      if (error) throw error;
+      console.log("User data:", data);
+      res.json(data);
+  } catch (error) {
+      console.error("Error fetching user data:", error);
+      res.status(500).send('Failed to fetch user data');
+  }
+});
 
 
 app.post('/create-employee', async (req, res) => {
@@ -1699,27 +1759,51 @@ app.post('/create-company', async (req, res) => {
   }
 });
 
-// Fetch company data
 app.get('/api/created_company', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the Authorization header
+
+  if (!token) {
+    return res.status(401).send('No authorization token found');
+  }
+
   try {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*'); // Fetch all columns, or specify the columns you need
+    // Verify the JWT token
+    jwt.verify(token, JWT_SECRET_KEY, (err, decoded) => {
+      if (err) {
+        console.error('Token verification error:', err);
+        return res.status(401).send('Invalid or expired token');
+      }
+      console.log("Token decoded successfully:", decoded);
+      
+      // Token is valid, proceed to fetch company data
+      // Note: The following code assumes you've correctly initialized `supabase` with the service role key for server-side operations
+      const fetchData = async () => {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*'); // Fetch all company data
 
-    if (error) {
-      throw error;
-    }
+        if (error) {
+          throw error;
+        }
 
-    if (data && data.length > 0) {
-      res.json(data[0]); // Send the first company record as response
-    } else {
-      res.status(404).send('No company data found');
-    }
+        if (data && data.length > 0) {
+          res.json(data); // Send all company records as response
+        } else {
+          res.status(404).send('No company data found');
+        }
+      };
+      
+      fetchData().catch(err => {
+        console.error('Error fetching company data:', err);
+        res.status(500).send('Server error');
+      });
+    });
   } catch (err) {
-    console.error('Error fetching company data:', err);
+    console.error('Server-side error:', err);
     res.status(500).send('Server error');
   }
 });
+
 
 app.put('/update-company/:companyId', async (req, res) => {
   const companyId = req.params.companyId; // Get the companyId from the URL parameter

@@ -119,8 +119,13 @@ function LoginUser() {
   
           <button type="submit">Log in</button>
           <button onClick={handleResetPassword} type="button">Forgot Password?</button>
+          
+
+
         </form>
+        
       )}
+      <p><button type="button" onClick={() => navigate('/Login')}>Create Account</button></p>
     </div>
   );
 }

@@ -16,8 +16,8 @@ function NavigationPage() {
         <Link to="/reports">
           <button>Reports</button>
         </Link>
-        <Link to="/settings">
-          <button>Settings</button>
+        <Link to="/account-details">
+          <button>Account</button>
         </Link>
         <Link to="/ToDo">
           <button>ToDo</button>
