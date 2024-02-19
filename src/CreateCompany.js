@@ -7,6 +7,9 @@ import './Login.css';
 import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Adjust the path as necessary
 import { useLocation } from 'react-router-dom';
+// Import your custom axios instance
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+
 
 
 function CreateCompany() {
@@ -109,16 +112,17 @@ useEffect(() => {
   }
 }, []); // Will also trigger only on the initial mount of the component
 
-const fetchCompanyData = () => {
-  axios.get('http://localhost:3001/api/created_company')
+const fetchCompanyData = async () => {
+  axiosInstance.get('http://localhost:3001/api/created_company')
     .then(response => {
-      if (response.data && response.data.company_id) {
-        setCompanyData(response.data);
-        setError(''); // Clear any previous error messages
-      } else {
-        setCompanyData(null); // Set to null if no data is returned
-      }
-      setIsLoading(false);
+        const company = response.data.length > 0 ? response.data[0] : null;
+        if (company && company.company_id) {
+            setCompanyData(company);
+            setError(''); // Clear any previous error messages
+        } else {
+            setCompanyData(null); // Set to null if no data is returned
+        }
+        setIsLoading(false);
     })
     .catch(error => {
       console.error('Error fetching company data:', error);
@@ -258,7 +262,7 @@ const goToNextStep = () => {
 
   const handleCreateCompany = (event) => {
     // Return the axios call directly as it returns a Promise
-  return axios.post('http://localhost:3001/create-company', {
+  return axiosInstance.post('http://localhost:3001/create-company', {
         CompanyName,
         street,
         number,
@@ -476,7 +480,7 @@ const handleUpdateCompany = (event, companyId) => {
 
     console.log('Updating company data:', companyData);
   
-    axios.put(`http://localhost:3001/update-company/${companyId}`, companyData)
+    axiosInstance.put(`http://localhost:3001/update-company/${companyId}`, companyData)
         .then(response => {
             console.log('Company updated successfully:', response.data);
             setUpdateMessage('Company updated successfully.');

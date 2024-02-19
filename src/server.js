@@ -93,6 +93,26 @@ app.get('/api/verify-token', (req, res) => {
   }
 });
 
+// JWT verification middleware
+const verifyJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(' ')[1]; // Bearer <token>
+    jwt.verify(token, JWT_SECRET_KEY, (err, decoded) => {
+      if (err) {
+        return res.status(403).send('Invalid or expired token'); // Forbidden
+      }
+
+      req.user = decoded; // Add decoded token payload to request object
+      next(); // Proceed to the next middleware or route handler
+    });
+  } else {
+    res.status(401).send('Authentication token required'); // Unauthorized
+  }
+};
+
+
 app.get('/api/user', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]; // Assuming the token is sent in the Authorization header
 
@@ -1759,53 +1779,28 @@ app.post('/create-company', async (req, res) => {
   }
 });
 
-app.get('/api/created_company', async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the Authorization header
-
-  if (!token) {
-    return res.status(401).send('No authorization token found');
-  }
-
+app.get('/api/created_company', verifyJWT, async (req, res) => {
   try {
-    // Verify the JWT token
-    jwt.verify(token, JWT_SECRET_KEY, (err, decoded) => {
-      if (err) {
-        console.error('Token verification error:', err);
-        return res.status(401).send('Invalid or expired token');
-      }
-      console.log("Token decoded successfully:", decoded);
-      
-      // Token is valid, proceed to fetch company data
-      // Note: The following code assumes you've correctly initialized `supabase` with the service role key for server-side operations
-      const fetchData = async () => {
-        const { data, error } = await supabase
-          .from('companies')
-          .select('*'); // Fetch all company data
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*'); // Fetch all company data
 
-        if (error) {
-          throw error;
-        }
+    if (error) throw error;
 
-        if (data && data.length > 0) {
-          res.json(data); // Send all company records as response
-        } else {
-          res.status(404).send('No company data found');
-        }
-      };
-      
-      fetchData().catch(err => {
-        console.error('Error fetching company data:', err);
-        res.status(500).send('Server error');
-      });
-    });
+    if (data && data.length > 0) {
+      res.json(data); // Send all company records as a response
+    } else {
+      res.status(404).send('No company data found');
+    }
   } catch (err) {
-    console.error('Server-side error:', err);
+    console.error('Error fetching company data:', err);
     res.status(500).send('Server error');
   }
 });
 
 
-app.put('/update-company/:companyId', async (req, res) => {
+
+app.put('/update-company/:companyId',verifyJWT, async (req, res) => {
   const companyId = req.params.companyId; // Get the companyId from the URL parameter
   const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe } = req.body;
 
@@ -2021,7 +2016,7 @@ app.post('/register', async (req, res) => {
   });
   
   
-  app.post('/insertUserDetails', async (req, res) => {
+  app.post('/insertUserDetails', verifyJWT, async (req, res) => {
     const { email, username } = req.body;
     console.log('Attempting to insert details for', email, 'with username', username);
 
@@ -2043,7 +2038,7 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.post('/updateUserDetails', async (req, res) => {
+app.post('/updateUserDetails', verifyJWT, async (req, res) => {
   const { email, username, name, surname } = req.body; // Add more fields as necessary
   console.log('Attempting to update details for', email, 'with new username', username);
 
@@ -2067,7 +2062,7 @@ app.post('/updateUserDetails', async (req, res) => {
 
 
 
-app.get('/getUserDetails', async (req, res) => {
+app.get('/getUserDetails',verifyJWT, async (req, res) => {
   const { email } = req.query; // Assuming email is passed as a query parameter
 
   try {

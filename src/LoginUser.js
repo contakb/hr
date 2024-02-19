@@ -26,7 +26,7 @@ function LoginUser() {
       console.error('Error logging in:', error.message);
       setErrorMessage(error.message || 'Failed to login');
     } else {
-      console.log('Logged in successfully:', user);
+      console.log('Logged in successfully:', email);
       navigate('/account-details', { state: { email } });// Adjust as necessary for your routing
     }
   };

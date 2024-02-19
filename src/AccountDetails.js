@@ -5,6 +5,8 @@ import { supabase } from './supabaseClient';
 import CreateCompanyForm from './CreateCompanyForm';
 import { toast } from 'react-toastify';
 import axios from 'axios'; // Assuming you're using axios for HTTP requests
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct path
 // In your React component, e.g., AccountDetails.js
 
 
@@ -30,6 +32,8 @@ function AccountDetails() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const user = useUser();
+  const userEmail = user?.email; // Safely access the email property
 
   
   
@@ -37,17 +41,22 @@ function AccountDetails() {
   
 
   const fetchUserDetails = async () => {
+    if (!user || !user.email) {
+      console.error("User data is not available.");
+      return;
+    }
+  
     try {
-      const response = await axios.get(`http://localhost:3001/getUserDetails?email=${encodeURIComponent(email)}`);
+      const response = await axiosInstance.get(`http://localhost:3001/getUserDetails?email=${encodeURIComponent(user.email)}`);
       if (response.data.success && response.data.data) {
         const userData = response.data.data;
-        setUsername(response.data.data.username || '');
-        setName(response.data.data.name || '');
-        setSurname(response.data.data.surname || '');
-        setStreet(response.data.data.street || ''); // Set street
-        setNumber(response.data.data.number || ''); // Set number
-        setCity(response.data.data.city || ''); // Set city
-        setPostcode(response.data.data.postcode || ''); // Set postcode
+        setUsername(userData.username || ''); // Notice direct access to userData
+  setName(userData.name || '');
+  setSurname(userData.surname || '');
+  setStreet(userData.street || ''); // Set street
+  setNumber(userData.number || ''); // Set number
+  setCity(userData.city || ''); // Set city
+  setPostcode(userData.postcode || ''); // Set postcode
         setIsEditMode(false); // Have details, view mode
         setUserDetailsExist(true); // User details exist
         setOriginalData(userData); // Store the original data
@@ -64,72 +73,39 @@ function AccountDetails() {
 }; 
 
 useEffect(() => {
-  fetchUserDetails();
-}, [email]); // Depend on email to refetch if it changes
+  // Only fetch user details if the user object is available
+  if (user && user.email) {
+    fetchUserDetails();
+  } else {
+    // If no user is present, navigate to login
+    navigate('/login');
+  }
+}, [user, navigate, ]); // Added fetchUserDetails as a dependency
+
+
+
 
 
 useEffect(() => {
-  const handleAuthStateChange = async () => {
-    // Retrieve the current session data using Supabase v2.0 method
-    const { data: sessionData, error } = await supabase.auth.getSession();
+  
 
-    if (error) {
-      console.error('Error getting session:', error.message);
-      setError('Failed to get session.');
-      // Redirect to login page if there is an error fetching the session
-      navigate('/login');
-      return;
-    }
-
-    if (!sessionData || !sessionData.session) {
-      // No session found, redirect to login page
-      navigate('/login');
-      return;
-    }
-
-    // User is logged in, proceed to fetch company data
-    setIsLoading(true);
+  // Fetch company data if user is present
+  const fetchCompanyData = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/created_company', {
-        headers: {
-          'Authorization': `Bearer ${sessionData.session.access_token}` // Use access_token from sessionData
-        }
+      const response = await axiosInstance.get('http://localhost:3001/api/created_company', {
+        
       });
-      if (response.data && response.data.length > 0) {
-        setCompanyData(response.data[0]); // Assuming you're interested in the first item
-      } else {
-        setCompanyData(null);
-      }
-      setError('');
+      setCompanyData(response.data.length > 0 ? response.data[0] : null);
     } catch (error) {
       console.error('Error fetching company data:', error);
       setError('Failed to fetch company data.');
-      setCompanyData(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Immediately check the session state and fetch data or redirect
-  handleAuthStateChange();
-
-  // Listen for auth state changes
-  const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_OUT') {
-      setCompanyData(null);
-      navigate('/login');
-    } else if (event === 'SIGNED_IN' && session) {
-      handleAuthStateChange(); // Re-fetch company data or handle login
-    }
-  });
-
-  // Cleanup function to unsubscribe from the auth state changes
-  return () => {
-    if (authListener && authListener.subscription) {
-      authListener.subscription.unsubscribe();
-    }
-  };
-}, [navigate]);
+  fetchCompanyData();
+}, [user, navigate]);
 
 
 
@@ -140,7 +116,7 @@ const handleSubmit = async (event) => {
   const endpoint = userDetailsExist ? '/updateUserDetails' : '/insertUserDetails';
 
   try {
-    const response = await axios.post(`http://localhost:3001${endpoint}`, {
+    const response = await axiosInstance.post(`http://localhost:3001${endpoint}`, {
       email,
       username,
       name,
@@ -206,10 +182,11 @@ if (isLoading) {
   return <div>Loading...</div>;
 }
 
+
 return (
   <div>
     <h1>Account Details</h1>
-    <p>Email: {email}</p>
+    <p>Email: {user.email}</p>
     <form onSubmit={handleSubmit}>
       <label htmlFor="username">Username:</label>
       <input

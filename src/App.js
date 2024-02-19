@@ -25,6 +25,7 @@ import Aneks from './Aneks';
 import CreateCompany from './CreateCompany';
 import SetupPage from './setup';
 import { SetupProvider } from './SetupContext';
+import { UserProvider } from './UserContext'; // Adjust the import path as necessary
 
 import AddEmployees from './EmployeeForm';
 import SalarySetup from './SalarySelectionPage';
@@ -35,6 +36,9 @@ import AddParamsToEmployee from './EmployeeParam'; // Import your new component
 
 function App() {
   return (
+    <UserProvider> {/* Wrap the entire Router with UserProvider */}
+    <Router>
+   
     <div className="App">
       <ToastContainer
         position="top-center"
@@ -48,7 +52,8 @@ function App() {
         pauseOnHover
         theme="light"
       />
-      <Router>
+       
+       
 	  {/* Navigation */}
         <NavigationPage />
         <SetupProvider>
@@ -88,8 +93,12 @@ function App() {
 		  
         </Routes>
         </SetupProvider>
-      </Router>
+      
+        
     </div>
+    
+    </Router>
+    </UserProvider>
   );
 }
 
