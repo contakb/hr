@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DatePicker from 'react-datepicker'; // Import DatePicker
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { toast } from 'react-toastify';
 import 'react-datepicker/dist/react-datepicker.css'; // Import styles
 import { set } from 'date-fns';
@@ -515,8 +516,8 @@ if (validContracts.length > 0 && workingHours && holidays.length >= 0 && year &&
 }
 }, [validContracts, workingHours, holidays, year, month]);
 
-const fetchCompanyData = () => {
-axios.get('http://localhost:3001/api/created_company')
+const fetchCompanyData = async () => {
+  axiosInstance.get('http://localhost:3001/api/created_company')
   .then(response => {
     if (response.data && response.data.company_id) {
       setCompanyData(response.data);

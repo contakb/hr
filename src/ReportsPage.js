@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct path
 
 function ReportsPage() {
   const currentYear = new Date().getFullYear();
@@ -20,6 +22,8 @@ const [selectedRange, setSelectedRange] = useState(3); // Default to 3 months
 const [contracts, setContracts] = useState([]);
 const [companyData, setCompanyData] = useState(null);
 const [error, setError] = useState(null);
+const user = useUser();
+  const userEmail = user?.email; // Safely access the email property
 
 
 
@@ -166,29 +170,34 @@ const handlePrint = () => {
 };
   
 
-  const fetchCompanyData = () => {
-    axios.get('http://localhost:3001/api/created_company')
-      .then(response => {
-        if (response.data && response.data.company_id) {
-          setCompanyData(response.data);
+const fetchCompanyData = async () => {
+  axiosInstance.get('http://localhost:3001/api/created_company')
+    .then(response => {
+        const company = response.data.length > 0 ? response.data[0] : null;
+        if (company && company.company_id) {
+            setCompanyData(company);
+            setError(''); // Clear any previous error messages
         } else {
-          setCompanyData(null); // Set to null if no data is returned
+            setCompanyData(null); // Set to null if no data is returned
         }
-      })
-      .catch(error => {
-        console.error('Error fetching company data:', error);
-        // Check if the error is due to no data found and set an appropriate message
-        if (error.response && error.response.status === 404) {
-        } else {
-          setError('Failed to fetch company data.');
-        }
-        setCompanyData(null); // Set companyData to null when fetch fails
-      });
-  };
-  
-  useEffect(() => {
-    fetchCompanyData();
-  }, []);
+        
+    })
+    .catch(error => {
+      console.error('Error fetching company data:', error);
+      // Check if the error is due to no data found and set an appropriate message
+      if (error.response && error.response.status === 404) {
+        setError('No existing company data found. Please fill out the form to create a new company.');
+      } else {
+        setError('Failed to fetch company data.');
+      }
+
+      setCompanyData(null); // Set companyData to null when fetch fails
+    });
+};
+
+useEffect(() => {
+  fetchCompanyData();
+}, []);
   
   const toggleContracts = async () => {
       try {
@@ -377,6 +386,7 @@ const handlePrint = () => {
               <p>Zaświadcza się, że Pan/Pani: {selectedEmployeeData ? `${selectedEmployeeData.name} ${selectedEmployeeData.surname}` : 'Unknown'}</p>
               <p>Pesel: {selectedEmployeeData.pesel}</p>
               <p>zam. adres: {selectedEmployeeData.city}</p>
+             
 
               jest zatrudniony w {companyData.company_name}
               {/* Add more details as needed */}
