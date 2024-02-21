@@ -474,7 +474,7 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
   // Function to trigger the download of the XML file
   const downloadXMLFile = () => {
     const xmlContent = generateXML();
-    const fileName = `salary_report_${monthYear}.xml`; // Customize file name as needed
+    const fileName = `Deklaracja_ZUS_RCA_${companyData.company_name}_${monthYear}.xml`; // Customize file name as needed
     downloadXML(xmlContent, fileName);
     setExportCount(exportCount + 1); // Increment export counter
   };
@@ -483,6 +483,7 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
   return (
     <div className="salary-details-container">
       <h2>Salary List Details for {month}/{year}, Salary Date: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
+      <button onClick={downloadXMLFile}>Export plik RCA do ZUS</button>
       <table>
         <thead>
           <tr>
@@ -556,7 +557,6 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
           </tr>
         </tfoot>
       </table>
-      <button onClick={downloadXMLFile}>Export to XML</button>
     </div>
     
   );
