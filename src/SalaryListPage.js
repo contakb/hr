@@ -345,6 +345,11 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
     fetchCompanyData();
   }, []); // Empty dependency array ensures this effect runs once on mount
 
+  const generateDocumentId = () => {
+    // Generate a random number between 1000000000 (inclusive) and 9999999999 (inclusive)
+    return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+  };
+
   // Calculate sums
   const totals = salaryList.reduce((acc, salary) => {
     acc.gross_total += salary.gross_total;
@@ -360,96 +365,107 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
     // Example starts the XML string, more complex logic needed for full implementation
     let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xmlContent += `<KEDU wersja_schematu="1" xsi:schemaLocation="http://www.zus.pl/2021/KEDU_5_4 kedu_5_4.xsd" xmlns="http://www.zus.pl/2021/KEDU_5_4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
-  xmlContent += `<naglowek.KEDU>\n`;
-  xmlContent += `  <program>\n`;
-  xmlContent += `    <producent>Asseco Poland SA</producent>\n`;
-  xmlContent += `    <symbol>Płatnik</symbol>\n`;
-  xmlContent += `    <wersja>1002002</wersja>\n`;
-  xmlContent += `  </program>\n`;
-  xmlContent += `</naglowek.KEDU>\n`;
+  xmlContent += `\t<naglowek.KEDU>\n`;
+  xmlContent += `\t\t<program>\n`;
+  xmlContent += `\t\t\t<producent>Asseco Poland SA</producent>\n`;
+  xmlContent += `\t\t\t<symbol>Płatnik</symbol>\n`;
+  xmlContent += `\t\t\t<wersja>1002002</wersja>\n`;
+  xmlContent += `\t\t</program>\n`;
+  xmlContent += `\t</naglowek.KEDU>\n`;
   // Construct the document ID using month and year for simplicity
   // This example concatenates year, month, and a unique identifier like a timestamp
   // Increment the export declaration number
   const declarationNumber = exportCount + 1;
-  const timestamp = Date.now().toString();
-    const documentId = `${year}${month}${timestamp.substring(timestamp.length - 6)}`; // Last 6 digits of timestamp
+  
+  const documentId = generateDocumentId();
+  xmlContent += `\t<ZUSRCA id_dokumentu="${documentId}">\n`;
+  xmlContent += `\t\t<I>\n`;
+  xmlContent += `\t\t\t<p1>\n`;
+  xmlContent += `\t\t\t\t<p1>${declarationNumber.toString().padStart(2, '0')}</p1>\n`; // Format as two digits
+  xmlContent += `\t\t\t\t<p2>${year}-${month}</p2>\n`;
+  xmlContent += `\t\t\t</p1>\n`;
+  xmlContent += `\t\t</I>\n`;
 
-  // Adding ZUSRCA section with dynamic year and month
-  xmlContent += `<ZUSRCA id_dokumentu="${documentId}">\n`;
-  xmlContent += `  <I>\n`;
-  xmlContent += `    <p1>\n`;
-  xmlContent += `      <p1>${declarationNumber.toString().padStart(2, '0')}</p1>\n`; // Format as two digits
-  xmlContent += `      <p2>${year}-${month}</p2>\n`;
-  xmlContent += `    </p1>\n`;
-  xmlContent += `  </I>\n`;
-
-      xmlContent += `  <II>\n`;
-      xmlContent += `    <p1>Regon</p1>\n`; // Do uzupełnienia w danych firmy
-      xmlContent += `    <p2>${companyData.taxid}</p2>\n`;
-      xmlContent += `    <p6>${companyData.company_name}</p6>\n`;
-      xmlContent += `  </II>\n`;
+      xmlContent += `\t\t<II>\n`;
+      xmlContent += `\t\t\t<p1>Regon</p1>\n`; // Do uzupełnienia w danych firmy
+      xmlContent += `\t\t\t<p2>${companyData.taxid}</p2>\n`;
+      xmlContent += `\t\t\t<p6>${companyData.company_name}</p6>\n`;
+      xmlContent += `\t\t</II>\n`;
   
     // Assuming salaryList contains all the necessary information
-    salaryList.forEach((salary) => {
+    salaryList.forEach((salary, index) => {
       // Assuming `kod_ub` is a string like '011000' and needs to be split into '0110' and '00'
   const kodUb = salary.employeeParams.length > 0 ? salary.employeeParams[0].kod_ub : 'N/A';
   const kodUbPart1 = kodUb !== 'N/A' ? kodUb.substring(0, 4) : '0';
   const kodUbPart2 = kodUb !== 'N/A' ? kodUb.substring(4, 5) : '0';
   const kodUbPart3 = kodUb !== 'N/A' ? kodUb.substring(5, 6) : '0';
+  // Calculate the sum of specified components
+  const sumSocial = salary.emeryt_ub + salary.rent_ub + salary.rent_pr +
+  salary.emeryt_pr + salary.wypadkowe + salary.chorobowe;
       // Construct XML segments for each salary entry
       // This is a simplified example. Adapt it based on your actual data structure and requirements.
       // Start the XML with company data if available
     
-      xmlContent += `  <III id_bloku="${salary.employee_id}">\n`;
-      xmlContent += `    <A>\n`;
-      xmlContent += `      <p1>${salary.employees.surname}</p1>\n`;
-      xmlContent += `      <p2>${salary.employees.name}</p2>\n`;
-      xmlContent += `      <p3>P</p3>\n`;
-      xmlContent += `      <p4>${salary.employees.pesel}</p4>\n`;
+      xmlContent += `\t\t<III id_bloku="${index + 1}">\n`;
+      xmlContent += `\t\t\t<A>\n`;
+      xmlContent += `\t\t\t\t<p1>${salary.employees.surname}</p1>\n`;
+      xmlContent += `\t\t\t\t<p2>${salary.employees.name}</p2>\n`;
+      xmlContent += `\t\t\t\t<p3>P</p3>\n`;
+      xmlContent += `\t\t\t\t<p4>${salary.employees.pesel}</p4>\n`;
       // Continue building the XML content...
-      xmlContent += `    </A>\n`;
-      xmlContent += `    <B>\n`;
-  xmlContent += `      <p1>\n`; // Start nested p1
-  xmlContent += `        <p1>${kodUbPart1}</p1>\n`;
-  xmlContent += `        <p2>${kodUbPart2}</p2>\n`;
-  xmlContent += `        <p3>${kodUbPart3}</p3>\n`; // Assuming '0' is a placeholder; adjust as necessary
-  xmlContent += `      </p1>\n`; // Close nested p1
-  xmlContent += `      <p3>\n`; // Start nested p1
-  xmlContent += `        <p1>0</p1>\n`;// etat
-  xmlContent += `        <p2>0</p2>\n`;// etat do uzupełnienia z contractu
-  xmlContent += `      </p3>\n`; // Start nested p1
-  xmlContent += `       <p4>${salary.social_base}</p4>\n`;
-  xmlContent += `       <p5>${salary.social_base}</p5>\n`;
-  xmlContent += `       <p6>${salary.social_base}</p6>\n`;
-  xmlContent += `       <p7>${salary.social_base}</p7>\n`;
-  xmlContent += `       <p8>${salary.social_base}</p8>\n`;
-  xmlContent += `       <p9>${salary.social_base}</p9>\n`;
-  xmlContent += `       <p10>${salary.social_base}</p10>\n`;
-  xmlContent += `       <p11>${salary.social_base}</p11>\n`;
-  xmlContent += `       <p12>${salary.social_base}</p12>\n`;
-  xmlContent += `       <p13>${salary.social_base}</p13>\n`;
-  xmlContent += `       <p14>${salary.social_base}</p14>\n`;
-  xmlContent += `       <p27>${salary.social_base}</p27>\n`;
-  xmlContent += `       <p28>${salary.social_base}</p28>\n`;
-  xmlContent += `       <p29>${salary.social_base}</p29>\n`;
+      xmlContent += `\t\t\t</A>\n`;
+      xmlContent += `\t\t\t<B>\n`;
+  xmlContent += `\t\t\t\t<p1>\n`; // Start nested p1
+  xmlContent += `\t\t\t\t\t<p1>${kodUbPart1}</p1>\n`;
+  xmlContent += `\t\t\t\t\t<p2>${kodUbPart2}</p2>\n`;
+  xmlContent += `\t\t\t\t\t<p3>${kodUbPart3}</p3>\n`; // Assuming '0' is a placeholder; adjust as necessary
+  xmlContent += `\t\t\t\t</p1>\n`; // Close nested p1
+  xmlContent += `\t\t\t\t<p3>\n`; // Start nested p1
+  xmlContent += `\t\t\t\t\t<p1>0</p1>\n`;// etat
+  xmlContent += `\t\t\t\t\t<p2>0</p2>\n`;// etat do uzupełnienia z contractu
+  xmlContent += `\t\t\t\t</p3>\n`; // Start nested p1
+  xmlContent += `\t\t\t\t<p4>${salary.social_base.toFixed(2)}</p4>\n`;
+  xmlContent += `\t\t\t\t<p5>${salary.social_base.toFixed(2)}</p5>\n`;
+  xmlContent += `\t\t\t\t<p6>${salary.social_base.toFixed(2)}</p6>\n`;
+  xmlContent += `\t\t\t\t<p7>${salary.emeryt_ub.toFixed(2)}</p7>\n`;
+  xmlContent += `\t\t\t\t<p8>${salary.rent_ub.toFixed(2)}</p8>\n`;
+  xmlContent += `\t\t\t\t<p9>${salary.chorobowe.toFixed(2)}</p9>\n`;
+  xmlContent += `\t\t\t\t<p10>0.00</p10>\n`;
+  xmlContent += `\t\t\t\t<p11>${salary.emeryt_pr.toFixed(2)}</p11>\n`;
+  xmlContent += `\t\t\t\t<p12>${salary.rent_pr.toFixed(2)}</p12>\n`;
+  xmlContent += `\t\t\t\t<p13>0.00</p13>\n`;
+  xmlContent += `\t\t\t\t<p14>${salary.wypadkowe.toFixed(2)}</p14>\n`;
+  xmlContent += `\t\t\t\t<p27>0.00</p27>\n`;
+  xmlContent += `\t\t\t\t<p28>0.00</p28>\n`;
+  xmlContent += `\t\t\t\t<p29>${sumSocial.toFixed(2)}</p29>\n`;//Suma społecznego
   // Include additional elements (<p2>, <p3>, etc.) as necessary
-  xmlContent += `    </B>\n`;
-  xmlContent += `    <C>\n`;
-      xmlContent += `      <p1>${salary.health_base}</p1>\n`;
-      xmlContent += `      <p2>0,00</p2>\n`;
-      xmlContent += `      <p4>${salary.heath_amount}</p4>\n`;
+  xmlContent += `\t\t\t</B>\n`;
+  xmlContent += `\t\t\t<C>\n`;
+      xmlContent += `\t\t\t\t<p1>${salary.health_base.toFixed(2)}</p1>\n`;
+      xmlContent += `\t\t\t\t<p2>0.00</p2>\n`;
+      xmlContent += `\t\t\t\t<p4>${salary.heath_amount.toFixed(2)}</p4>\n`;
       // Continue building the XML content...
-      xmlContent += `    </C>\n`;
-      xmlContent += `  </III>\n`;
+      xmlContent += `\t\t\t</C>\n`;
+      xmlContent += `\t\t\t<E>\n`;
+      xmlContent += `\t\t\t\t<p1>0</p1>\n`;
+      xmlContent += `\t\t\t\t<p5>0</p5>\n`;
+      xmlContent += `\t\t\t\t<p9>0</p9>\n`;
+      xmlContent += `\t\t\t\t<p12>0</p12>\n`;
+      xmlContent += `\t\t\t\t<p14>0</p14>\n`;
+      xmlContent += `\t\t\t\t<p18>0</p18>\n`;
+      // Continue building the XML content...
+      xmlContent += `\t\t\t</E>\n`;
+      xmlContent += `\t\t\t<F/>\n`;
+      xmlContent += `\t\t</III>\n`;
       
     });
     // Append the current date in the specified format
-    xmlContent += `<IV>\n`;
-    xmlContent += `  <p1>${formattedDate}</p1>\n`;
-    xmlContent += `</IV>\n`;
+    xmlContent += `\t\t<IV>\n`;
+    xmlContent += `\t\t\t<p1>${formattedDate}</p1>\n`;
+    xmlContent += `\t\t</IV>\n`;
 
     // Close the XML structure
-    xmlContent += `</ZUSRCA>\n`;
+    xmlContent += `\t</ZUSRCA>\n`;
     xmlContent += `</KEDU>`;
 
     return xmlContent;
