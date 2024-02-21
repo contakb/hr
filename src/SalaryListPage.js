@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct path
 
 
 
@@ -14,6 +16,9 @@ function SalaryListPage() {
   const [selectedSalaryList, setSelectedSalaryList] = useState(null);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [companyData, setCompanyData] = useState(null);
+  const user = useUser();
+ 
 
 
 
@@ -48,6 +53,19 @@ function SalaryListPage() {
           const contractEnd = contract.contract_to_date ? new Date(contract.contract_to_date) : new Date();
           return (contractStart <= selectedMonthEnd && contractEnd >= selectedMonthStart);
         });
+
+        // Fetch employee parameters
+      try {
+        const paramsResponse = await axios.get(`http://localhost:3001/api/employee-params/${salary.employee_id}`);
+        if (paramsResponse.data && paramsResponse.data.parameters) {
+          salary.employeeParams = paramsResponse.data.parameters;
+        } else {
+          salary.employeeParams = []; // Ensure employeeParams is always defined
+        }
+      } catch (paramsError) {
+        console.error('Error fetching employee parameters:', paramsError);
+        salary.employeeParams = []; // Handle error case by setting employeeParams to an empty array
+      }
       }
   
       setSalaryList(salaryData);
@@ -61,8 +79,10 @@ function SalaryListPage() {
   };
   
   
-  
 
+
+  
+  
   const handleCreateNewSalaryList = () => {
     navigate('/salary-selection');
   };
@@ -302,6 +322,148 @@ const handleDeleteIndividualSalary = async (salaryId) => {
 function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndividualSalary }) {
   // Split the monthYear string to get month and year
   const [month, year] = monthYear ? monthYear.split('/') : ['-', '-'];
+  const [companyData, setCompanyData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [exportCount, setExportCount] = useState(0);
+  // Format the current date as YYYY-MM-DD
+  const currentDate = new Date();
+  const formattedDate = currentDate.toISOString().substring(0, 10); // Converts to "YYYY-MM-DD"
+
+   // Fetch company data
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      try {
+        const response = await axiosInstance.get('http://localhost:3001/api/created_company');
+        setCompanyData(response.data.length > 0 ? response.data[0] : null);
+      } catch (error) {
+        console.error('Error fetching company data:', error);
+        setError('Failed to fetch company data.');
+      } 
+    };
+
+    fetchCompanyData();
+  }, []); // Empty dependency array ensures this effect runs once on mount
+
+  // Calculate sums
+  const totals = salaryList.reduce((acc, salary) => {
+    acc.gross_total += salary.gross_total;
+    acc.social_base_total += salary.social_base;
+    acc.emeryt_ub += salary.emeryt_ub;
+    acc.rent_ub += salary.rent_ub;
+    // Add more fields as necessary
+    return acc;
+  }, { gross_total: 0, social_base_total: 0, emeryt_ub: 0, rent_ub: 0 /* Initialize other fields here */ });
+
+  // Function to generate XML string
+  const generateXML = () => {
+    // Example starts the XML string, more complex logic needed for full implementation
+    let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xmlContent += `<KEDU wersja_schematu="1" xsi:schemaLocation="http://www.zus.pl/2021/KEDU_5_4 kedu_5_4.xsd" xmlns="http://www.zus.pl/2021/KEDU_5_4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
+  xmlContent += `<naglowek.KEDU>\n`;
+  xmlContent += `  <program>\n`;
+  xmlContent += `    <producent>Asseco Poland SA</producent>\n`;
+  xmlContent += `    <symbol>Płatnik</symbol>\n`;
+  xmlContent += `    <wersja>1002002</wersja>\n`;
+  xmlContent += `  </program>\n`;
+  xmlContent += `</naglowek.KEDU>\n`;
+  // Construct the document ID using month and year for simplicity
+  // This example concatenates year, month, and a unique identifier like a timestamp
+  // Increment the export declaration number
+  const declarationNumber = exportCount + 1;
+  const timestamp = Date.now().toString();
+    const documentId = `${year}${month}${timestamp.substring(timestamp.length - 6)}`; // Last 6 digits of timestamp
+
+  // Adding ZUSRCA section with dynamic year and month
+  xmlContent += `<ZUSRCA id_dokumentu="${documentId}">\n`;
+  xmlContent += `  <I>\n`;
+  xmlContent += `    <p1>\n`;
+  xmlContent += `      <p1>${declarationNumber.toString().padStart(2, '0')}</p1>\n`; // Format as two digits
+  xmlContent += `      <p2>${year}-${month}</p2>\n`;
+  xmlContent += `    </p1>\n`;
+  xmlContent += `  </I>\n`;
+
+      xmlContent += `  <II>\n`;
+      xmlContent += `    <p1>Regon</p1>\n`; // Do uzupełnienia w danych firmy
+      xmlContent += `    <p2>${companyData.taxid}</p2>\n`;
+      xmlContent += `    <p6>${companyData.company_name}</p6>\n`;
+      xmlContent += `  </II>\n`;
+  
+    // Assuming salaryList contains all the necessary information
+    salaryList.forEach((salary) => {
+      // Assuming `kod_ub` is a string like '011000' and needs to be split into '0110' and '00'
+  const kodUb = salary.employeeParams.length > 0 ? salary.employeeParams[0].kod_ub : 'N/A';
+  const kodUbPart1 = kodUb !== 'N/A' ? kodUb.substring(0, 4) : '0';
+  const kodUbPart2 = kodUb !== 'N/A' ? kodUb.substring(4, 5) : '0';
+  const kodUbPart3 = kodUb !== 'N/A' ? kodUb.substring(5, 6) : '0';
+      // Construct XML segments for each salary entry
+      // This is a simplified example. Adapt it based on your actual data structure and requirements.
+      // Start the XML with company data if available
+    
+      xmlContent += `  <III id_bloku="${salary.employee_id}">\n`;
+      xmlContent += `    <A>\n`;
+      xmlContent += `      <p1>${salary.employees.surname}</p1>\n`;
+      xmlContent += `      <p2>${salary.employees.name}</p2>\n`;
+      xmlContent += `      <p3>P</p3>\n`;
+      xmlContent += `      <p4>${salary.employees.pesel}</p4>\n`;
+      // Continue building the XML content...
+      xmlContent += `    </A>\n`;
+      xmlContent += `    <B>\n`;
+  xmlContent += `      <p1>\n`; // Start nested p1
+  xmlContent += `        <p1>${kodUbPart1}</p1>\n`;
+  xmlContent += `        <p2>${kodUbPart2}</p2>\n`;
+  xmlContent += `        <p3>${kodUbPart3}</p3>\n`; // Assuming '0' is a placeholder; adjust as necessary
+  xmlContent += `      </p1>\n`; // Close nested p1
+  xmlContent += `      <p3>\n`; // Start nested p1
+  xmlContent += `        <p1>0</p1>\n`;// etat
+  xmlContent += `        <p2>0</p2>\n`;// etat do uzupełnienia z contractu
+  xmlContent += `      </p3>\n`; // Start nested p1
+  xmlContent += `       <p4>${salary.social_base}</p4>\n`;
+  xmlContent += `       <p5>${salary.social_base}</p5>\n`;
+  xmlContent += `       <p6>${salary.social_base}</p6>\n`;
+  xmlContent += `       <p7>${salary.social_base}</p7>\n`;
+  xmlContent += `       <p8>${salary.social_base}</p8>\n`;
+  xmlContent += `       <p9>${salary.social_base}</p9>\n`;
+  xmlContent += `       <p10>${salary.social_base}</p10>\n`;
+  xmlContent += `       <p11>${salary.social_base}</p11>\n`;
+  xmlContent += `       <p12>${salary.social_base}</p12>\n`;
+  xmlContent += `       <p13>${salary.social_base}</p13>\n`;
+  xmlContent += `       <p14>${salary.social_base}</p14>\n`;
+  xmlContent += `       <p27>${salary.social_base}</p27>\n`;
+  xmlContent += `       <p28>${salary.social_base}</p28>\n`;
+  xmlContent += `       <p29>${salary.social_base}</p29>\n`;
+  // Include additional elements (<p2>, <p3>, etc.) as necessary
+  xmlContent += `    </B>\n`;
+  xmlContent += `    <C>\n`;
+      xmlContent += `      <p1>${salary.health_base}</p1>\n`;
+      xmlContent += `      <p2>0,00</p2>\n`;
+      xmlContent += `      <p4>${salary.heath_amount}</p4>\n`;
+      // Continue building the XML content...
+      xmlContent += `    </C>\n`;
+      xmlContent += `  </III>\n`;
+      
+    });
+    // Append the current date in the specified format
+    xmlContent += `<IV>\n`;
+    xmlContent += `  <p1>${formattedDate}</p1>\n`;
+    xmlContent += `</IV>\n`;
+
+    // Close the XML structure
+    xmlContent += `</ZUSRCA>\n`;
+    xmlContent += `</KEDU>`;
+
+    return xmlContent;
+  };
+
+  // Function to trigger the download of the XML file
+  const downloadXMLFile = () => {
+    const xmlContent = generateXML();
+    const fileName = `salary_report_${monthYear}.xml`; // Customize file name as needed
+    downloadXML(xmlContent, fileName);
+    setExportCount(exportCount + 1); // Increment export counter
+  };
+
+
   return (
     <div className="salary-details-container">
       <h2>Salary List Details for {month}/{year}, Salary Date: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
@@ -311,6 +473,7 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
           <th>Month</th>
             <th>Year</th>
             <th>EMP.ID</th>
+            <th>Pesel</th>
             <th>Name</th>
             <th>Surname</th>
             <th>Salary Date</th>
@@ -327,6 +490,7 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
 			<th>Netto</th>
       <th>wyn.chorobowe</th>
       <th>przerwy</th>
+      <th>kodUb</th>
 
           </tr>
         </thead>
@@ -336,6 +500,7 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
               <td>{salary.salary_month}</td>
               <td>{salary.salary_year}</td>
               <td>{salary.employee_id}</td>
+              <td>{salary.employees.pesel}</td>
               <td>{salary.employees.name}</td> {/* Display employee name */}
               <td>{salary.employees.surname}</td> {/* Display employee surname */}  
               <td>{new Date(salary.salary_date).toLocaleDateString()}</td>
@@ -355,6 +520,7 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
                 {salary.healthBreaks.map(breakItem => 
                   `${breakItem.break_type} (${breakItem.break_start_date} - ${breakItem.break_end_date}, Days: ${breakItem.break_days}`).join('\n')}
               </td>
+              {salary.employeeParams.length > 0 ? salary.employeeParams[0].kod_ub : 'N/A'}
               <td>
               <button onClick={() => handleDeleteIndividualSalary(salary.id)}>Delete</button>
               </td>
@@ -362,9 +528,33 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
             </tr>
           ))}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan="6">Total</td> {/* Adjust colSpan as needed */}
+            <td>{totals.gross_total.toFixed(2)}</td> {/* Assuming these are numbers and need to be formatted */}
+            <td>{totals.social_base_total.toFixed(2)}</td> {/* Placeholder for other columns */}
+            <td></td> {/* Placeholder for other columns */}
+            <td>{totals.emeryt_ub.toFixed(2)}</td>
+            <td>{totals.rent_ub.toFixed(2)}</td>
+            {/* Render other totals similarly */}
+          </tr>
+        </tfoot>
       </table>
+      <button onClick={downloadXMLFile}>Export to XML</button>
     </div>
+    
   );
+}
+// Reuse the downloadXML function provided earlier or define it here again
+function downloadXML(xmlContent, fileName) {
+  const blob = new Blob([xmlContent], { type: 'application/xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 export default SalaryListPage;
