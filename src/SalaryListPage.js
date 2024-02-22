@@ -18,6 +18,7 @@ function SalaryListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [companyData, setCompanyData] = useState(null);
   const user = useUser();
+  const [viewMode, setViewMode] = useState('details'); // 'details' or 'export'
  
 
 
@@ -102,7 +103,7 @@ function SalaryListPage() {
   // Use the function to get unique combinations
   const uniqueMonthYearCombinations = getUniqueMonthYearCombinations();
 
-  const handleViewDetails = (monthYear) => {
+  const handleViewDetails = (monthYear, viewMode = 'details') => {
     setSelectedMonthYear(monthYear);
     const selectedSalaryList = salaryList.filter(
       (salary) => `${salary.salary_month}/${salary.salary_year}` === monthYear
@@ -111,6 +112,7 @@ function SalaryListPage() {
   const salaryDate = selectedSalaryList.length > 0 ? selectedSalaryList[0].salary_date : null;
     setSelectedSalaryList(selectedSalaryList);
     setSelectedSalaryDate(salaryDate); // You'll need to manage this state
+    setViewMode(viewMode); // Set the view mode based on the action
   };
 
   const handleEditSalary = (salaryListByMonthYear) => {
@@ -251,11 +253,16 @@ const handleDeleteIndividualSalary = async (salaryId) => {
       
 
       <div style={{ marginTop: '10px' }}>
-        <button onClick={handleCreateNewSalaryList}>Create New Salary List</button>
+        <tr></tr>
+        
+        <h1>Nowa lista płac:</h1> 
+        <td>
+        <button onClick={handleCreateNewSalaryList}>Przygotuj nową listę</button>
+        </td>
       </div>
 
       <div className="salary-list-title">
-  <h1>Salary List</h1>
+  <h1>Utworzone listy płac:</h1>
   <div>
         <label>
           Filter by Month/Year:
@@ -278,14 +285,16 @@ const handleDeleteIndividualSalary = async (salaryId) => {
 </div>
 
 {isLoading ? (
-  <div>Loading data...</div> // Loading indicator inside your component
+  
+  <div style={{ padding: '20px', textAlign: 'center' }}>Wczytuję dane...</div>
+  
 ) : (
   <table>
     <thead>
       <tr>
-        <th>Month</th>
-        <th>Year</th>
-        <th>Salary Date</th>
+        <th>Miesiąc</th>
+        <th>Rok</th>
+        <th>Data wypłaty</th>
         <th>Więcej</th>
       </tr>
     </thead>
@@ -300,9 +309,10 @@ const handleDeleteIndividualSalary = async (salaryId) => {
             <td>{salaryListByMonthYear[0].salary_year}</td>
             <td>{new Date(salaryListByMonthYear[0].salary_date).toLocaleDateString()}</td>
             <td>
-              <button onClick={() => handleViewDetails(combination)}>Szczegóły</button>
-              <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edit</button>
-              <button onClick={() => handleDeleteSalaryByMonthYear(combination)}>Delete Month/Year</button>
+            <button onClick={() => handleViewDetails(combination, 'details')}>Szczegóły listy</button>
+              <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edycja</button>
+              <button onClick={() => handleDeleteSalaryByMonthYear(combination)}>Skasuj listę </button>
+              <button onClick={() => handleViewDetails(combination, 'export')}>Export XML to ZUS</button>
             </td>
           </tr>
         );
@@ -312,14 +322,14 @@ const handleDeleteIndividualSalary = async (salaryId) => {
 )}
 
 {selectedSalaryList && (
-  <SalaryListDetails salaryList={selectedSalaryList}  monthYear={selectedMonthYear} salaryDate={selectedSalaryDate} handleDeleteIndividualSalary={handleDeleteIndividualSalary}/>
+  <SalaryListDetails salaryList={selectedSalaryList}  monthYear={selectedMonthYear} salaryDate={selectedSalaryDate} handleDeleteIndividualSalary={handleDeleteIndividualSalary} viewMode={viewMode}/>
 )}
 
     </div>
   );
 }
 
-function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndividualSalary }) {
+function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndividualSalary, viewMode }) {
   // Split the monthYear string to get month and year
   const [month, year] = monthYear ? monthYear.split('/') : ['-', '-'];
   const [companyData, setCompanyData] = useState(null);
@@ -376,13 +386,15 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
   // This example concatenates year, month, and a unique identifier like a timestamp
   // Increment the export declaration number
   const declarationNumber = exportCount + 1;
+  // Assuming `month` is a number, convert it to a string and pad it to two digits
+const formattedMonth = month.toString().padStart(2, '0');
   
   const documentId = generateDocumentId();
   xmlContent += `\t<ZUSRCA id_dokumentu="${documentId}">\n`;
   xmlContent += `\t\t<I>\n`;
   xmlContent += `\t\t\t<p1>\n`;
   xmlContent += `\t\t\t\t<p1>${declarationNumber.toString().padStart(2, '0')}</p1>\n`; // Format as two digits
-  xmlContent += `\t\t\t\t<p2>${year}-${month}</p2>\n`;
+  xmlContent += `\t\t\t\t<p2>${year}-${formattedMonth}</p2>\n`;
   xmlContent += `\t\t\t</p1>\n`;
   xmlContent += `\t\t</I>\n`;
 
@@ -482,8 +494,9 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
 
   return (
     <div className="salary-details-container">
+      {viewMode === 'details' && (
+        <>
       <h2>Salary List Details for {month}/{year}, Salary Date: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
-      <button onClick={downloadXMLFile}>Export plik RCA do ZUS</button>
       <table>
         <thead>
           <tr>
@@ -557,6 +570,16 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
           </tr>
         </tfoot>
       </table>
+      </>
+      )}
+      {viewMode === 'export' && (
+        <>
+         <h2>Eksportuj dane do PUE/ZUS za okres {month}/{year}</h2>
+        <td>
+          <button onClick={downloadXMLFile}>Export plik RCA do ZUS</button>
+          </td>
+        </>
+      )}
     </div>
     
   );
