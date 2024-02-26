@@ -339,6 +339,24 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
   // Format the current date as YYYY-MM-DD
   const currentDate = new Date();
   const formattedDate = currentDate.toISOString().substring(0, 10); // Converts to "YYYY-MM-DD"
+  const parsedSalaryDate = salaryDate ? new Date(salaryDate) : new Date();
+  
+  // Extract month and year from parsedSalaryDate
+  const month_zus = parsedSalaryDate.getMonth() + 1; // getMonth() returns 0-11
+  const year_zus = parsedSalaryDate.getFullYear();
+
+  // Format month for display
+  const formattedMonth = month_zus.toString().padStart(2, '0');
+
+  const uniqueEmployeeIds = new Set();
+// Assuming salaryList is already filtered for the selected month/year
+salaryList.forEach((salary) => {
+  // Add the employee's unique identifier to the Set
+  uniqueEmployeeIds.add(salary.employee_id); // Or salary.employees.pesel if using PESEL as unique identifier
+});
+
+// Now, uniqueEmployeeIds contains only unique identifiers
+const uniqueEmployeeCount = uniqueEmployeeIds.size;
 
    // Fetch company data
   useEffect(() => {
@@ -364,12 +382,29 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
   const totals = salaryList.reduce((acc, salary) => {
     acc.gross_total += salary.gross_total;
     acc.social_base_total += salary.social_base;
+    acc.bonus += salary.bonus;
     acc.emeryt_ub += salary.emeryt_ub;
+    acc.emeryt_pr += salary.emeryt_pr;
     acc.rent_ub += salary.rent_ub;
+    acc.rent_pr += salary.rent_pr;
+    acc.chorobowe += salary.chorobowe;
+    acc.wypadkowe += salary.wypadkowe;
+    acc.heath_amount += salary.heath_amount;
+    acc.fp += salary.fp;
+    acc.fgsp += salary.fgsp;
     // Add more fields as necessary
     return acc;
-  }, { gross_total: 0, social_base_total: 0, emeryt_ub: 0, rent_ub: 0 /* Initialize other fields here */ });
+  }, { gross_total: 0, social_base_total: 0, emeryt_ub: 0, emeryt_pr: 0, rent_ub: 0,rent_pr: 0, chorobowe:0, wypadkowe:0, bonus:0, heath_amount:0, fp:0, fgsp:0/* Initialize other fields here */ });
 
+  const total_spol_ub = totals.emeryt_ub + totals.rent_ub;
+  const total_spol_pr = totals.emeryt_pr + totals.rent_pr;
+  const total_spol_emeryt = totals.emeryt_pr + totals.emeryt_ub;
+  const total_spol_rent = totals.rent_pr + totals.rent_ub;
+  const total_emeryt_rent = total_spol_emeryt + total_spol_rent;
+  const total_chorobowe_wypadkowe = totals.chorobowe + totals.wypadkowe;
+  const total_spol = total_chorobowe_wypadkowe + total_emeryt_rent;
+  const total_fpfgsp = totals.fp + totals.fgsp;
+  const total_zus = total_spol + totals.heath_amount + total_fpfgsp;
   // Function to generate XML string
   const generateXML = () => {
     // Example starts the XML string, more complex logic needed for full implementation
@@ -387,6 +422,14 @@ function SalaryListDetails({ salaryList, monthYear, salaryDate, handleDeleteIndi
   // Increment the export declaration number
   const declarationNumber = exportCount + 1;
   // Assuming `month` is a number, convert it to a string and pad it to two digits
+  // Extract and format year and month
+  // Convert salaryDate to a Date object if it's not null or undefined
+const parsedSalaryDate = salaryDate ? new Date(salaryDate) : null;
+
+// Now use parsedSalaryDate for getting year and month
+const year = parsedSalaryDate ? parsedSalaryDate.getFullYear().toString() : '';
+const month = parsedSalaryDate ? (parsedSalaryDate.getMonth() + 1).toString().padStart(2, '0') : ''; 
+
 const formattedMonth = month.toString().padStart(2, '0');
   
   const documentId = generateDocumentId();
@@ -475,9 +518,78 @@ const formattedMonth = month.toString().padStart(2, '0');
     xmlContent += `\t\t<IV>\n`;
     xmlContent += `\t\t\t<p1>${formattedDate}</p1>\n`;
     xmlContent += `\t\t</IV>\n`;
-
-    // Close the XML structure
     xmlContent += `\t</ZUSRCA>\n`;
+    // Close the XML structure
+    
+    xmlContent += `\t<ZUSDRA>\n`;
+    xmlContent += `\t<ZUSDRA id_dokumentu="${documentId}">\n`;
+    xmlContent += `\t\t<I>\n`;
+    xmlContent += `\t\t\t<p1>3</p1>\n`;
+    xmlContent += `\t\t\t<p2>\n`;
+    xmlContent += `\t\t\t\t<p1>${declarationNumber.toString().padStart(2, '0')}</p1>\n`; // Format as two digits
+    xmlContent += `\t\t\t\t<p2>${year}-${formattedMonth}</p2>\n`;
+    xmlContent += `\t\t\t</p2>\n`;
+    xmlContent += `\t\t</I>\n`;
+    xmlContent += `\t\t<II>\n`;
+    xmlContent += `\t\t\t<p1>Regon</p1>\n`; // Do uzupełnienia w danych firmy
+    xmlContent += `\t\t\t<p2>${companyData.taxid}</p2>\n`;
+    xmlContent += `\t\t\t<p6>${companyData.company_name}</p6>\n`;
+    xmlContent += `\t\t</II>\n`;
+    xmlContent += `\t\t<III>\n`;
+    xmlContent += `\t\t\t<p1>${uniqueEmployeeCount}</p1>\n`; // Do uzupełnienia w danych firmy
+    xmlContent += `\t\t\t<p3>${companyData.wypadkowe}</p3>\n`;
+    xmlContent += `\t\t</III>\n`;
+    xmlContent += `\t\t<IV>\n`;
+    xmlContent += `\t\t\t<p1>${total_spol_emeryt.toFixed(2)}</p1>\n`; // Close nested p1\n`; // Start nested p1
+    xmlContent += `\t\t\t<p2>${total_spol_rent.toFixed(2)}</p2>\n`; // Close nested p1\n`; // Start nested p1
+    xmlContent += `\t\t\t<p3>${total_emeryt_rent.toFixed(2)}</p3>\n`; // Start n // Start nested p1
+    xmlContent += `\t\t\t<p4>${totals.emeryt_ub.toFixed(2)}</p4>\n`;
+    xmlContent += `\t\t\t<p5>${totals.rent_ub.toFixed(2)}</p5>\n`;
+    xmlContent += `\t\t\t<p6>${total_spol_ub.toFixed(2)}</p6>\n`;
+    xmlContent += `\t\t\t<p7>${totals.emeryt_pr.toFixed(2)}</p7>\n`;
+    xmlContent += `\t\t\t<p8>${totals.rent_pr.toFixed(2)}</p8>\n`;
+    xmlContent += `\t\t\t<p9>${total_spol_pr.toFixed(2)}</p9>\n`;
+    xmlContent += `\t\t\t<p10>0.00</p10>\n`;
+    xmlContent += `\t\t\t<p11>0.00</p11>\n`;
+    xmlContent += `\t\t\t<p12>0.00</p12>\n`;
+    xmlContent += `\t\t\t<p19>${totals.chorobowe.toFixed(2)}</p19>\n`;
+    xmlContent += `\t\t\t<p20>${totals.wypadkowe.toFixed(2)}</p20>\n`;
+    xmlContent += `\t\t\t<p21>${total_chorobowe_wypadkowe.toFixed(2)}</p21>\n`;
+    xmlContent += `\t\t\t<p22>${totals.chorobowe.toFixed(2)}</p22>\n`;
+    xmlContent += `\t\t\t<p23>0.00</p23>\n`;
+    xmlContent += `\t\t\t<p24>${totals.chorobowe.toFixed(2)}</p24>\n`;
+    xmlContent += `\t\t\t<p25>0.00</p25>\n`;
+    xmlContent += `\t\t\t<p26>${totals.wypadkowe.toFixed(2)}</p26>\n`;
+    xmlContent += `\t\t\t<p27>${totals.wypadkowe.toFixed(2)}</p27>\n`;
+    xmlContent += `\t\t\t<p37>${total_spol.toFixed(2)}</p37>\n`;
+    xmlContent += `\t\t</IV>\n`;
+    xmlContent += `\t\t<V>\n`;
+    xmlContent += `\t\t\t<p1>0.00</p1>\n`; // Do uzupełnienia w danych firmy
+    xmlContent += `\t\t\t<p2>0.00</p2>\n`;
+    xmlContent += `\t\t\t<p3>0.00</p3>\n`;
+    xmlContent += `\t\t\t<p4>0.00</p4>\n`;
+    xmlContent += `\t\t\t<p5>0.00</p5>\n`;
+    xmlContent += `\t\t</V>\n`;
+    xmlContent += `\t\t<VI>\n`;
+    xmlContent += `\t\t\t<p1>0.00</p1>\n`; // Do uzupełnienia w danych firmy
+    xmlContent += `\t\t\t<p2>0.00</p2>\n`;
+    xmlContent += `\t\t\t<p4>0.00</p4>\n`;
+    xmlContent += `\t\t\t<p5>${totals.heath_amount.toFixed(2)}</p5>\n`;
+    xmlContent += `\t\t\t<p7>${totals.heath_amount.toFixed(2)}</p7>\n`;
+    xmlContent += `\t\t</VI>\n`;
+    xmlContent += `\t\t<VII>\n`;
+    xmlContent += `\t\t\t<p1>${totals.fp.toFixed(2)}</p1>\n`; // Do uzupełnienia w danych firmy
+    xmlContent += `\t\t\t<p2>${totals.fgsp.toFixed(2)}</p2>\n`;
+    xmlContent += `\t\t\t<p3>${total_fpfgsp.toFixed(2)}</p3>\n`;
+    xmlContent += `\t\t</VII>\n`;
+    xmlContent += `\t\t<IX>\n`;
+    xmlContent += `\t\t\t<p1>0.00</p1>\n`; // Close nested p1\n`; // Start nested p1
+    xmlContent += `\t\t\t<p2>${total_zus.toFixed(2)}</p2>\n`; // Close nested p1\n`; // Start nested p1
+    xmlContent += `\t\t</IX>\n`;
+    xmlContent += `\t\t<XIII>\n`;
+    xmlContent += `\t\t\t<p1>${formattedDate}</p1>\n`;
+    xmlContent += `\t\t</XIII>\n`;
+    xmlContent += `\t</ZUSDRA>\n`;
     xmlContent += `</KEDU>`;
 
     return xmlContent;
@@ -496,7 +608,8 @@ const formattedMonth = month.toString().padStart(2, '0');
     <div className="salary-details-container">
       {viewMode === 'details' && (
         <>
-      <h2>Salary List Details for {month}/{year}, Salary Date: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
+      <h2>Lista płac za {month}/{year}, Data wypłaty: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
+      <p>Ilość pracowników: {uniqueEmployeeCount}</p>
       <table>
         <thead>
           <tr>
@@ -560,12 +673,14 @@ const formattedMonth = month.toString().padStart(2, '0');
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan="6">Total</td> {/* Adjust colSpan as needed */}
+            <td colSpan="7">Total</td> {/* Adjust colSpan as needed */}
             <td>{totals.gross_total.toFixed(2)}</td> {/* Assuming these are numbers and need to be formatted */}
             <td>{totals.social_base_total.toFixed(2)}</td> {/* Placeholder for other columns */}
-            <td></td> {/* Placeholder for other columns */}
+            <td>{totals.bonus.toFixed(2)}</td> {/* Placeholder for other columns */}
             <td>{totals.emeryt_ub.toFixed(2)}</td>
             <td>{totals.rent_ub.toFixed(2)}</td>
+            <td>{totals.chorobowe.toFixed(2)}</td>
+            <td>{totals.heath_amount.toFixed(2)}</td>
             {/* Render other totals similarly */}
           </tr>
         </tfoot>
@@ -574,9 +689,15 @@ const formattedMonth = month.toString().padStart(2, '0');
       )}
       {viewMode === 'export' && (
         <>
-         <h2>Eksportuj dane do PUE/ZUS za okres {month}/{year}</h2>
+         <h2>Eksportuj dane do PUE/ZUS za okres  {formattedMonth}/{year_zus}</h2>
         <td>
-          <button onClick={downloadXMLFile}>Export plik RCA do ZUS</button>
+          <button onClick={downloadXMLFile}> RCA do ZUS</button>
+          </td>
+          <td>
+          <button onClick={downloadXMLFile}> RSA do ZUS</button>
+          </td>
+          <td>
+          <button onClick={downloadXMLFile}> DRA do ZUS</button>
           </td>
         </>
       )}
