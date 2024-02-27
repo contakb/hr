@@ -301,8 +301,15 @@ const handleDeleteIndividualSalary = async (salaryId) => {
     <tbody>
       {uniqueMonthYearCombinations.map((combination) => {
         const salaryListByMonthYear = salaryList.filter(
-          (salary) => `${salary.salary_month}/${salary.salary_year}` === combination
-        );
+          (salary) => `${salary.salary_month}/${salary.salary_year}` === combination);
+          // Assuming salaryListByMonthYear[0].salary_date is in "YYYY-MM-DD" format
+  const salaryDate = new Date(salaryListByMonthYear[0].salary_date);
+  const month = salaryDate.getMonth() + 1; // JavaScript months are 0-based
+  const year = salaryDate.getFullYear();
+
+  // Format month for display
+  const formattedMonth = `${month}`.padStart(2, '0'); // Ensure two digits
+        
         return (
           <tr key={combination}>
             <td>{salaryListByMonthYear[0].salary_month}</td>
@@ -312,7 +319,7 @@ const handleDeleteIndividualSalary = async (salaryId) => {
             <button onClick={() => handleViewDetails(combination, 'details')}>Szczegóły listy</button>
               <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edycja</button>
               <button onClick={() => handleDeleteSalaryByMonthYear(combination)}>Skasuj listę </button>
-              <button onClick={() => handleViewDetails(combination, 'export')}>Export XML to ZUS</button>
+              <button onClick={() => handleViewDetails(combination, 'export')}>Export Deklaracji do ZUS za {formattedMonth}/{year}</button>
             </td>
           </tr>
         );
@@ -460,6 +467,19 @@ const formattedMonth = month.toString().padStart(2, '0');
       // Construct XML segments for each salary entry
       // This is a simplified example. Adapt it based on your actual data structure and requirements.
       // Start the XML with company data if available
+      const activeContracts = salary.contracts.filter(contract => {
+        const contractFromDate = new Date(contract.contract_from_date);
+        const contractToDate = new Date(contract.contract_to_date);
+        const firstDayOfMonth = new Date(year, month - 1, 1);
+        const lastDayOfMonth = new Date(year, month, 0);
+        return contractFromDate <= lastDayOfMonth && contractToDate >= firstDayOfMonth;
+    });
+
+    // Select the most appropriate active contract based on your criteria
+    // Here, we select the last contract in the filtered list, assuming it's sorted by date
+    // You might need to sort or apply different logic based on your specific requirements
+    const selectedContract = activeContracts[activeContracts.length - 1]; // Example selection logic
+    let etatValue = selectedContract && selectedContract.etat ? selectedContract.etat : "0"; // Default to "0" if null or undefined
     
       xmlContent += `\t\t<III id_bloku="${index + 1}">\n`;
       xmlContent += `\t\t\t<A>\n`;
@@ -476,8 +496,8 @@ const formattedMonth = month.toString().padStart(2, '0');
   xmlContent += `\t\t\t\t\t<p3>${kodUbPart3}</p3>\n`; // Assuming '0' is a placeholder; adjust as necessary
   xmlContent += `\t\t\t\t</p1>\n`; // Close nested p1
   xmlContent += `\t\t\t\t<p3>\n`; // Start nested p1
-  xmlContent += `\t\t\t\t\t<p1>0</p1>\n`;// etat
-  xmlContent += `\t\t\t\t\t<p2>0</p2>\n`;// etat do uzupełnienia z contractu
+  xmlContent += `\t\t\t\t\t<p1>${etatValue.split('/')[0]}</p1>\n`; // etat part before '/'
+  xmlContent += `\t\t\t\t\t<p2>${etatValue.split('/')[1] || etatValue}</p2>\n`; // etat part after '/', or repeat etatValue if no '/'
   xmlContent += `\t\t\t\t</p3>\n`; // Start nested p1
   xmlContent += `\t\t\t\t<p4>${salary.social_base.toFixed(2)}</p4>\n`;
   xmlContent += `\t\t\t\t<p5>${salary.social_base.toFixed(2)}</p5>\n`;
@@ -590,6 +610,77 @@ const formattedMonth = month.toString().padStart(2, '0');
     xmlContent += `\t\t\t<p1>${formattedDate}</p1>\n`;
     xmlContent += `\t\t</XIII>\n`;
     xmlContent += `\t</ZUSDRA>\n`;
+    xmlContent += `\t<ZUSRSA>\n`;
+    xmlContent += `\t<ZUSRSA id_dokumentu="${documentId}">\n`;
+    xmlContent += `\t\t<I>\n`;
+    xmlContent += `\t\t\t<p1>3</p1>\n`;
+    xmlContent += `\t\t\t<p2>\n`;
+    xmlContent += `\t\t\t\t<p1>${declarationNumber.toString().padStart(2, '0')}</p1>\n`; // Format as two digits
+    xmlContent += `\t\t\t\t<p2>${year}-${formattedMonth}</p2>\n`;
+    xmlContent += `\t\t\t</p2>\n`;
+    xmlContent += `\t\t</I>\n`;
+    xmlContent += `\t\t<II>\n`;
+    xmlContent += `\t\t\t<p1>Regon</p1>\n`; // Do uzupełnienia w danych firmy
+    xmlContent += `\t\t\t<p2>${companyData.taxid}</p2>\n`;
+    xmlContent += `\t\t\t<p6>${companyData.company_name}</p6>\n`;
+    xmlContent += `\t\t</II>\n`;
+
+    let employeeWithBreaksIndex = 1; // Initialize a separate counter for employees with breaks
+
+    // Assuming salaryList contains all the necessary information
+    salaryList.forEach((salary, index) => {
+      // Check if the employee has any breaks
+    if (salary.healthBreaks && salary.healthBreaks.length > 0) {
+      // Start constructing the XML for each employee with breaks
+       // Assuming `kod_ub` is a string like '011000' and needs to be split into '0110' and '00'
+  const kodUb = salary.employeeParams.length > 0 ? salary.employeeParams[0].kod_ub : 'N/A';
+  const kodUbPart1 = kodUb !== 'N/A' ? kodUb.substring(0, 4) : '0';
+  const kodUbPart2 = kodUb !== 'N/A' ? kodUb.substring(4, 5) : '0';
+  const kodUbPart3 = kodUb !== 'N/A' ? kodUb.substring(5, 6) : '0';
+
+  // Define a mapping from break type names to codes
+const breakTypeToCode = {
+  "zwolnienie": "331",
+  "bezpłatny": "111",
+  "zasiłek": "313",
+  "nieobecność": "151",
+  "ciąża": "SomeCode", // Add the correct code for "ciąża"
+  "wychowawczy": "AnotherCode" // Add the correct code for "wychowawczy"
+};
+
+xmlContent += `\t\t<III id_bloku="${employeeWithBreaksIndex}">\n`; // Use the separate counter
+  xmlContent += `\t\t\t<A>\n`;
+  xmlContent += `\t\t\t\t<p1>${salary.employees.surname}</p1>\n`;
+  xmlContent += `\t\t\t\t<p2>${salary.employees.name}</p2>\n`;
+  xmlContent += `\t\t\t\t<p3>P</p3>\n`;
+  xmlContent += `\t\t\t\t<p4>${salary.employees.pesel}</p4>\n`;
+  // Continue building the XML content...
+  xmlContent += `\t\t\t</A>\n`;
+  xmlContent += `\t\t\t<B>\n`;
+xmlContent += `\t\t\t\t<p1>\n`; // Start nested p1
+xmlContent += `\t\t\t\t\t<p1>${kodUbPart1}</p1>\n`;
+xmlContent += `\t\t\t\t\t<p2>${kodUbPart2}</p2>\n`;
+xmlContent += `\t\t\t\t\t<p3>${kodUbPart3}</p3>\n`; // Assuming '0' is a placeholder; adjust as necessary
+xmlContent += `\t\t\t\t</p1>\n`; // Close nested p1
+
+    // Now append the breaks for this employee, if any
+      salary.healthBreaks.forEach((healthBreak) => {
+        const breakCode = breakTypeToCode[healthBreak.break_type] || "UnknownCode"; // Default to "UnknownCode" if not found
+          xmlContent += `\t\t\t\t<p2>${breakCode}</p2>\n`;
+          xmlContent += `\t\t\t\t<p3>${healthBreak.break_start_date}</p3>\n`;
+          xmlContent += `\t\t\t\t<p4>${healthBreak.break_end_date}</p4>\n`;
+          xmlContent += `\t\t\t\t<p5>${healthBreak.break_days}</p5>\n`;
+          xmlContent += `\t\t\t\t<p6>${salary.wyn_chorobowe}</p6>\n`;
+      });
+      xmlContent += `\t\t\t<B>\n`;
+      xmlContent += `\t\t</III>\n`;
+      employeeWithBreaksIndex++; // Increment the counter only for employees with breaks
+  }
+}); 
+xmlContent += `\t\t<IX>\n`;
+xmlContent += `\t\t\t<p1>${formattedDate}</p1>\n`;
+xmlContent += `\t\t</IX>\n`;
+xmlContent += `\t</ZUSRSA>\n`;
     xmlContent += `</KEDU>`;
 
     return xmlContent;
@@ -598,7 +689,7 @@ const formattedMonth = month.toString().padStart(2, '0');
   // Function to trigger the download of the XML file
   const downloadXMLFile = () => {
     const xmlContent = generateXML();
-    const fileName = `Deklaracja_ZUS_RCA_${companyData.company_name}_${monthYear}.xml`; // Customize file name as needed
+    const fileName = `Deklaracja_ZUS_RCA_${companyData.company_name}_${formattedMonth}_${year}.xml`; // Customize file name as needed
     downloadXML(xmlContent, fileName);
     setExportCount(exportCount + 1); // Increment export counter
   };
@@ -691,14 +782,10 @@ const formattedMonth = month.toString().padStart(2, '0');
         <>
          <h2>Eksportuj dane do PUE/ZUS za okres  {formattedMonth}/{year_zus}</h2>
         <td>
-          <button onClick={downloadXMLFile}> RCA do ZUS</button>
+          <button onClick={downloadXMLFile}> Raport miesięczny - DRA RCA RSA do ZUS</button>
           </td>
-          <td>
-          <button onClick={downloadXMLFile}> RSA do ZUS</button>
-          </td>
-          <td>
-          <button onClick={downloadXMLFile}> DRA do ZUS</button>
-          </td>
+          
+          
         </>
       )}
     </div>
