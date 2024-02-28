@@ -184,34 +184,86 @@ if (isLoading) {
 
 
 return (
-  <div className="p-4">
-    <h1 className="font-bold text-xl mb-4">Account Details</h1>
-    <p className="mb-2">Email: {user.email}</p>
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {[
-        { id: 'username', value: username, onChange: setUsername, placeholder: 'Enter your username' },
-        { id: 'name', value: name, onChange: setName, placeholder: 'Enter your name' },
-        { id: 'surname', value: surname, onChange: setSurname, placeholder: 'Enter your surname' },
-        { id: 'street', value: street, onChange: setStreet, placeholder: 'Enter your street' },
-        { id: 'number', value: number, onChange: setNumber, placeholder: 'Enter your number' },
-        { id: 'postcode', value: postcode, onChange: setPostcode, placeholder: 'Enter your postcode' },
-        { id: 'city', value: city, onChange: setCity, placeholder: 'Enter your city' },
-      ].map((input) => (
-        <div key={input.id}>
-          <label htmlFor={input.id} className="block text-gray-700 text-sm font-bold mb-2">
-            {input.id}:
-          </label>
-          <input
-            id={input.id}
-            type="text"
-            value={input.value}
-            onChange={(e) => input.onChange(e.target.value)}
-            placeholder={input.placeholder}
-            readOnly={!isEditMode}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
+<div className="bg-gray-100 p-4">
+  <div className="flex flex-col lg:flex-row gap-8 justify-center lg:items-start">
+    <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md">
+      <h1 className="font-bold text-xl mb-4">Szczegóły konta:</h1>
+      <p className="mb-2">Email: {user.email}</p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-wrap -mx-2">
+          <div className="w-full md:w-1/2 px-2 mb-4">
+            <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+              readOnly={!isEditMode}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-2 mb-4">
+            <label htmlFor="surname" className="block text-gray-700 text-sm font-bold mb-2">Surname:</label>
+            <input
+              id="surname"
+              type="text"
+              value={surname}
+              onChange={(e) => setSurname(e.target.value)}
+              placeholder="Enter your surname"
+              readOnly={!isEditMode}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-2 mb-4">
+            <label htmlFor="street" className="block text-gray-700 text-sm font-bold mb-2">Ulica:</label>
+            <input
+              id="street"
+              type="text"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              placeholder= "Enter your street"
+              readOnly={!isEditMode}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-2 mb-4">
+            <label htmlFor="number" className="block text-gray-700 text-sm font-bold mb-2">Numer:</label>
+            <input
+              id="number"
+              type="text"
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              placeholder= "Enter your number"
+              readOnly={!isEditMode}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-2 mb-4">
+            <label htmlFor="postcode" className="block text-gray-700 text-sm font-bold mb-2">Kod pocztowy:</label>
+            <input
+              id="postcode"
+              type="text"
+              value={postcode}
+              onChange={(e) => setPostcode(e.target.value)}
+              placeholder= "Enter your postcode"
+              readOnly={!isEditMode}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-2 mb-4">
+            <label htmlFor="city" className="block text-gray-700 text-sm font-bold mb-2">Miasto:</label>
+            <input
+              id="city"
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder= "Enter your city"
+              readOnly={!isEditMode}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
         </div>
-      ))}
       <div className="flex items-center space-x-2">
         {isEditMode ? (
           <>
@@ -219,14 +271,14 @@ return (
               type="submit"
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
-              {username ? 'Update Details' : 'Save Data'}
+              {username ? 'Uaktualnij dane' : 'Zapisz dane'}
             </button>
             <button
               type="button"
               onClick={handleCancelEdit}
               className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
-              Cancel
+              Rezygnacja
             </button>
           </>
         ) : (
@@ -235,7 +287,7 @@ return (
             onClick={handleEditClick}
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
-            Edit
+            Edycja
           </button>
         )}
       </div>
@@ -244,18 +296,19 @@ return (
         onClick={handleLogout}
         className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
       >
-        Logout
+        Wyloguj
       </button>
     </form>
     {updateMessage && <p className="mt-4">{updateMessage}</p>}
-    <div className="mt-6">
-      <h2 className="font-bold text-lg mb-2">Company Data:</h2>
-      {error && <p className="text-red-500 mb-2">{error}</p>}
+    </div>
+    <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md lg:flex lg:flex-col">
+        <h2 className="font-bold text-xl mb-4">Dane firmy:</h2>
+        {error && <p className="text-red-500 mb-2">{error}</p>}
       {companyData ? (
         <div className="space-y-2">
           {/* Company data fields */}
-          <p>Company Name: {companyData.company_name}</p>
-          {/* The rest of the company data fields */}
+          <p>Nazwa: {companyData.company_name}</p>
+          <p>Numer NIP: {companyData.taxid}</p>
         </div>
       ) : (
         <p>No data available. Please add company details.</p>
@@ -264,10 +317,12 @@ return (
         onClick={handleManageCompanyData}
         className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
       >
-        {companyData ? 'Update Company Data' : 'Create Company Data'}
+        {companyData ? 'Uaktualnij dane firmy' : 'Dodaj dane firmy'}
       </button>
     </div>
   </div>
+  </div> 
+  
 );
 }
 
