@@ -83,49 +83,81 @@ function LoginUser() {
   
 
   return (
-    <div>
-      <h1>{isPasswordRecovery ? "Reset Password" : "Login"}</h1>
-      {errorMessage && <p className="error">{errorMessage}</p>}
-      
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+      <h1 className="text-xl font-semibold mb-4">{isPasswordRecovery ? "Reset Password" : "Login"}</h1>
+      {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
+
       {isPasswordRecovery ? (
         // Display password reset view
-        <div>
-          {/* Simplified for brevity. Implement a form or input for the new password */}
+        <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
           <input
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             type="password"
             placeholder="Enter your new password"
-            onChange={(e) => setPassword(e.target.value)} // Reuse the password state or create a new one
+            onChange={(e) => setPassword(e.target.value)}
           />
-          <button onClick={() => handleNewPasswordSubmit(password)}>Reset Password</button>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4"
+            onClick={() => handleNewPasswordSubmit(password)}
+          >
+            Reset Password
+          </button>
         </div>
       ) : (
         // Display regular login form
-        <form onSubmit={handleLogin}>
-          <label htmlFor="email">Email:</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-  
-          <button type="submit">Log in</button>
-          <button onClick={handleResetPassword} type="button">Forgot Password?</button>
-          
+        <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+              Email:
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+              Password:
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
+          <div className="flex items-center justify-between">
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+            >
+              Log in
+            </button>
+            <button
+              className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+              onClick={handleResetPassword}
+              type="button"
+            >
+              Forgot Password?
+            </button>
+          </div>
         </form>
-        
       )}
-      <p><button type="button" onClick={() => navigate('/Login')}>Create Account</button></p>
+      <p>
+        <button
+          className="text-blue-500 hover:text-blue-800"
+          type="button"
+          onClick={() => navigate('/Login')}
+        >
+          Create Account
+        </button>
+      </p>
     </div>
   );
 }

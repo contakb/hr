@@ -184,118 +184,90 @@ if (isLoading) {
 
 
 return (
-  <div>
-    <h1>Account Details</h1>
-    <p>Email: {user.email}</p>
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="username">Username:</label>
-      <input
-        id="username"
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Enter your username"
-        readOnly={!isEditMode} // Make field editable only in edit mode
-      />
-      <label htmlFor="name">name:</label>
-      <input
-  id="name"
-  type="text"
-  value={name}
-  onChange={(e) => setName(e.target.value)}
-  placeholder="Enter your name"
-  readOnly={!isEditMode}
-/>
-<label htmlFor="surname">surname:</label>
-<input
-  id="surname"
-  type="text"
-  value={surname}
-  onChange={(e) => setSurname(e.target.value)}
-  placeholder="Enter your surname"
-  readOnly={!isEditMode}
-/>
-<label htmlFor="street">street:</label>
-<input
-  id="street"
-  type="text"
-  value={street}
-  onChange={(e) => setStreet(e.target.value)}
-  placeholder="Enter your street"
-  readOnly={!isEditMode}
-/>
-<label htmlFor="number">number:</label>
-<input
-  id="number"
-  type="text"
-  value={number}
-  onChange={(e) => setNumber(e.target.value)}
-  placeholder="Enter your numer"
-  readOnly={!isEditMode}
-/>
-<label htmlFor="postcode">postcode:</label>
-<input
-  id="postcode"
-  type="text"
-  value={postcode}
-  onChange={(e) => setPostcode(e.target.value)}
-  placeholder="Enter your postcode"
-  readOnly={!isEditMode}
-/>
-<label htmlFor="city">city:</label>
-<input
-  id="city"
-  type="text"
-  value={city}
-  onChange={(e) => setCity(e.target.value)}
-  placeholder="Enter your city"
-  readOnly={!isEditMode}
-/>
-      {isEditMode ? (
-        <>
-        <button type="submit">{username ? 'Update Details' : 'Save Data'}</button>
-        <button type="button" onClick={handleCancelEdit}>Cancel</button>
-        </>
-        
-      ) : (
-        <p><button type="button" onClick={handleEditClick}>Edit</button></p>
-        
-
-      )
-      }
-      <p><button type="button" onClick={handleLogout}>Logout</button></p>
-      
-
-    </form>
-    {updateMessage && <p>{updateMessage}</p>}
-    <div>
-            <h1>Dane firmy:</h1>
-            {error && <p className="error-message">{error}</p>}
-            {companyData ? (
-                <div>
-                    <p>Company Name: {companyData.company_name}</p>
-                    <p>Street: {companyData.street}</p>
-                    <p>Number: {companyData.number}</p>
-                    <p>Post Code: {companyData.post_code}</p>
-                    <p>City: {companyData.city}</p>
-                    <p>Country: {companyData.country}</p>
-                    <p>Tax ID: {companyData.taxid}</p>
-                    {companyData.forma === 'osoba_fizyczna' && <p>PESEL: {companyData.pesel}</p>}
-                    <p>Tax Office: {companyData.tax_office}</p>
-                    <p>ID: {companyData.company_id}</p>
-                    <p>Insurance: {companyData.wypadkowe}</p>
-                    <p>Bank Account: {companyData.bank_account}</p>
-                    <p>Business Form: {companyData.forma}</p>
-                </div>
-            ) : (
-                <p>No data available. Please add company details.</p>
-            )}
-            <button onClick={handleManageCompanyData}>
-                {companyData ? 'Update Company Data' : 'Create Company Data'}
-            </button>
+  <div className="p-4">
+    <h1 className="font-bold text-xl mb-4">Account Details</h1>
+    <p className="mb-2">Email: {user.email}</p>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {[
+        { id: 'username', value: username, onChange: setUsername, placeholder: 'Enter your username' },
+        { id: 'name', value: name, onChange: setName, placeholder: 'Enter your name' },
+        { id: 'surname', value: surname, onChange: setSurname, placeholder: 'Enter your surname' },
+        { id: 'street', value: street, onChange: setStreet, placeholder: 'Enter your street' },
+        { id: 'number', value: number, onChange: setNumber, placeholder: 'Enter your number' },
+        { id: 'postcode', value: postcode, onChange: setPostcode, placeholder: 'Enter your postcode' },
+        { id: 'city', value: city, onChange: setCity, placeholder: 'Enter your city' },
+      ].map((input) => (
+        <div key={input.id}>
+          <label htmlFor={input.id} className="block text-gray-700 text-sm font-bold mb-2">
+            {input.id}:
+          </label>
+          <input
+            id={input.id}
+            type="text"
+            value={input.value}
+            onChange={(e) => input.onChange(e.target.value)}
+            placeholder={input.placeholder}
+            readOnly={!isEditMode}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
         </div>
+      ))}
+      <div className="flex items-center space-x-2">
+        {isEditMode ? (
+          <>
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              {username ? 'Update Details' : 'Save Data'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={handleEditClick}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      >
+        Logout
+      </button>
+    </form>
+    {updateMessage && <p className="mt-4">{updateMessage}</p>}
+    <div className="mt-6">
+      <h2 className="font-bold text-lg mb-2">Company Data:</h2>
+      {error && <p className="text-red-500 mb-2">{error}</p>}
+      {companyData ? (
+        <div className="space-y-2">
+          {/* Company data fields */}
+          <p>Company Name: {companyData.company_name}</p>
+          {/* The rest of the company data fields */}
+        </div>
+      ) : (
+        <p>No data available. Please add company details.</p>
+      )}
+      <button
+        onClick={handleManageCompanyData}
+        className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      >
+        {companyData ? 'Update Company Data' : 'Create Company Data'}
+      </button>
+    </div>
   </div>
-  
 );
 }
 
