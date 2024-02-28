@@ -243,30 +243,38 @@ const handleDeleteIndividualSalary = async (salaryId) => {
   }
 };
 
+const [openDropdown, setOpenDropdown] = useState(null);
 
+const toggleDropdown = (id) => {
+  if (openDropdown === id) {
+    setOpenDropdown(null); // Close the dropdown if it's already open
+  } else {
+    setOpenDropdown(id); // Open the clicked dropdown and close others
+  }
+};
   
 
   
 
   return (
-    <div className="salary-list-container">
-      
+    <div className="p-5">
+    <div className="my-10">
+      <h1 className="text-xl font-bold mb-4">Nowa lista płac:</h1>
+      <button
+        onClick={handleCreateNewSalaryList}
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      >
+        Przygotuj nową listę
+      </button>
+    </div>
 
-      <div style={{ marginTop: '10px' }}>
-        <tr></tr>
-        
-        <h1>Nowa lista płac:</h1> 
-        <td>
-        <button onClick={handleCreateNewSalaryList}>Przygotuj nową listę</button>
-        </td>
-      </div>
-
-      <div className="salary-list-title">
-  <h1>Utworzone listy płac:</h1>
+    <div className="mb-10">
+      <h1 className="text-xl font-bold mb-4">Utworzone listy płac:</h1>
   <div>
-        <label>
+  <label className="block text-gray-700 text-sm font-bold mb-2">
           Filter by Month/Year:
           <select
+            className="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ml-2"
             value={selectedMonthYear}
             onChange={(e) => {
               setSelectedMonthYear(e.target.value);
@@ -286,16 +294,25 @@ const handleDeleteIndividualSalary = async (salaryId) => {
 
 {isLoading ? (
   
-  <div style={{ padding: '20px', textAlign: 'center' }}>Wczytuję dane...</div>
+  <div className="text-center py-20">Wczytuję dane...</div>
   
 ) : (
-  <table>
+  <div className="overflow-x-auto">
+  <table className="min-w-full leading-normal">
     <thead>
-      <tr>
-        <th>Miesiąc</th>
-        <th>Rok</th>
-        <th>Data wypłaty</th>
-        <th>Więcej</th>
+    <tr>
+        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+          Miesiąc
+        </th>
+        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+          Rok
+        </th>
+        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+          Data wypłaty
+        </th>
+        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+          Akcje
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -312,20 +329,49 @@ const handleDeleteIndividualSalary = async (salaryId) => {
         
         return (
           <tr key={combination}>
-            <td>{salaryListByMonthYear[0].salary_month}</td>
-            <td>{salaryListByMonthYear[0].salary_year}</td>
-            <td>{new Date(salaryListByMonthYear[0].salary_date).toLocaleDateString()}</td>
-            <td>
-            <button onClick={() => handleViewDetails(combination, 'details')}>Szczegóły listy</button>
-              <button onClick={() => handleEditSalary(salaryListByMonthYear)}>Edycja</button>
-              <button onClick={() => handleDeleteSalaryByMonthYear(combination)}>Skasuj listę </button>
-              <button onClick={() => handleViewDetails(combination, 'export')}>Export Deklaracji do ZUS za {formattedMonth}/{year}</button>
+            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+              {salaryListByMonthYear[0].salary_month}
             </td>
+            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+              {salaryListByMonthYear[0].salary_year}
+            </td>
+            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+              {new Date(salaryListByMonthYear[0].salary_date).toLocaleDateString()}
+            </td>
+            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm relative">
+    <div className="inline-block">
+      <button
+        onClick={() => toggleDropdown(combination)}
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded focus:outline-none focus:shadow-outline text-xs"
+        aria-haspopup="true"
+        aria-expanded={openDropdown === combination ? 'true' : 'false'}>
+        Akcje
+      </button>
+      {/* Adjust the div visibility based on openDropdown state */}
+      <div className={`${openDropdown === combination ? 'block' : 'hidden'} absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg`}>
+        <ul className="py-1 text-sm text-gray-700">
+          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleViewDetails(combination, 'details')}>
+            Szczegóły listy
+          </li>
+          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleEditSalary(salaryListByMonthYear)}>
+            Edycja
+          </li>
+          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeleteSalaryByMonthYear(combination)}>
+            Skasuj listę
+          </li>
+          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleViewDetails(combination, 'export')}>
+            Export Deklaracji do ZUS za {formattedMonth}/{year}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </td>
           </tr>
         );
       })}
     </tbody>
   </table>
+  </div>
 )}
 
 {selectedSalaryList && (
@@ -696,94 +742,98 @@ xmlContent += `\t</ZUSRSA>\n`;
 
 
   return (
-    <div className="salary-details-container">
+    <div className="salary-details-container p-5">
       {viewMode === 'details' && (
         <>
-      <h2>Lista płac za {month}/{year}, Data wypłaty: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
-      <p>Ilość pracowników: {uniqueEmployeeCount}</p>
-      <table>
-        <thead>
+      <h2 className="text-xl font-bold mb-4">Lista płac za {month}/{year}, Data wypłaty: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
+      <p className="mb-4">Ilość pracowników: {uniqueEmployeeCount}</p>
+      <div className="overflow-x-auto">
+        <table className="min-w-full leading-normal rounded-lg overflow-hidden">
+          <thead className="bg-gray-100">
           <tr>
-          <th>Month</th>
-            <th>Year</th>
-            <th>EMP.ID</th>
-            <th>Pesel</th>
-            <th>Name</th>
-            <th>Surname</th>
-            <th>Salary Date</th>
-			<th>Brutto</th>
-      <th>Podstawa zus</th>
-      <th>Bonus</th>
-			<th>Ub.emeryt</th>
-			<th>Ub.rentowe</th>
-			<th>Ub.chorobowe</th>
-			<th>ub.zdrowotne</th>
-			<th>Koszty</th>
-      <th>Ulga</th>
-			<th>Podatek</th>
-			<th>Netto</th>
-      <th>wyn.chorobowe</th>
-      <th>przerwy</th>
-      <th>kodUb</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Month</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Year</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">EMP.ID</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Pesel</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Surname</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Salary Date</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Brutto</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Podstawa zus</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bonus</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Ub.emeryt</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Ub.rentowe</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Ub.chorobowe</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ub.zdrowotne</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Koszty</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Ulga</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Podatek</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Netto</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">wyn.chorobowe</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">przerwy</th>
+          <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">kodUb</th>
 
           </tr>
         </thead>
         <tbody>
           {salaryList.map((salary) => (
-            <tr key={salary.id}>
-              <td>{salary.salary_month}</td>
-              <td>{salary.salary_year}</td>
-              <td>{salary.employee_id}</td>
-              <td>{salary.employees.pesel}</td>
-              <td>{salary.employees.name}</td> {/* Display employee name */}
-              <td>{salary.employees.surname}</td> {/* Display employee surname */}  
-              <td>{new Date(salary.salary_date).toLocaleDateString()}</td>
-			  <td>{salary.gross_total}</td>
-        <td>{salary.social_base}</td> 
-        <td>{salary.bonus}</td>
-			  <td>{salary.emeryt_ub}</td>
-			  <td>{salary.rent_ub}</td>
-			  <td>{salary.chorobowe}</td>
-			  <td>{salary.heath_amount}</td>
-			  <td>{salary.koszty}</td>
-        <td>{salary.ulga}</td>
-			  <td>{salary.tax}</td>
-			  <td>{salary.net_amount}</td>
-        <td>{salary.wyn_chorobowe}</td>
-        <td>
+            <tr key={salary.id} className="hover:bg-gray-50">
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.salary_month}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.salary_year}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.employee_id}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.employees.pesel}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.employees.name}</td> {/* Display employee name */}
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.employees.surname}</td> {/* Display employee surname */}  
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{new Date(salary.salary_date).toLocaleDateString()}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.gross_total}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.social_base}</td> 
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.bonus}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.emeryt_ub}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.rent_ub}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.chorobowe}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.heath_amount}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.koszty}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.ulga}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.tax}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.net_amount}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">{salary.wyn_chorobowe}</td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                 {salary.healthBreaks.map(breakItem => 
                   `${breakItem.break_type} (${breakItem.break_start_date} - ${breakItem.break_end_date}, Days: ${breakItem.break_days}`).join('\n')}
               </td>
               {salary.employeeParams.length > 0 ? salary.employeeParams[0].kod_ub : 'N/A'}
-              <td>
-              <button onClick={() => handleDeleteIndividualSalary(salary.id)}>Delete</button>
-              </td>
+              <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                  <button onClick={() => handleDeleteIndividualSalary(salary.id)} className="text-red-500 hover:text-red-700 font-bold py-1 px-2 rounded focus:outline-none focus:shadow-outline text-xs">
+                    Delete
+                  </button>
+                </td>
               
             </tr>
           ))}
         </tbody>
-        <tfoot>
+        <tfoot className="bg-gray-50">
           <tr>
-            <td colSpan="7">Total</td> {/* Adjust colSpan as needed */}
-            <td>{totals.gross_total.toFixed(2)}</td> {/* Assuming these are numbers and need to be formatted */}
-            <td>{totals.social_base_total.toFixed(2)}</td> {/* Placeholder for other columns */}
-            <td>{totals.bonus.toFixed(2)}</td> {/* Placeholder for other columns */}
-            <td>{totals.emeryt_ub.toFixed(2)}</td>
-            <td>{totals.rent_ub.toFixed(2)}</td>
-            <td>{totals.chorobowe.toFixed(2)}</td>
-            <td>{totals.heath_amount.toFixed(2)}</td>
+          <td colSpan="7" className="px-5 py-3 border-t border-gray-200 bg-white text-sm font-bold">Total</td>
+              <td className="px-5 py-3 border-t border-gray-200 bg-white text-sm">{totals.gross_total.toFixed(2)}</td>
+              <td className="px-5 py-3 border-t border-gray-200 bg-white text-sm">{totals.social_base_total.toFixed(2)}</td> {/* Placeholder for other columns */}
+              <td className="px-5 py-3 border-t border-gray-200 bg-white text-sm">{totals.bonus.toFixed(2)}</td> {/* Placeholder for other columns */}
+              <td className="px-5 py-3 border-t border-gray-200 bg-white text-sm">{totals.emeryt_ub.toFixed(2)}</td>
+              <td className="px-5 py-3 border-t border-gray-200 bg-white text-sm">{totals.rent_ub.toFixed(2)}</td>
+              <td className="px-5 py-3 border-t border-gray-200 bg-white text-sm">{totals.chorobowe.toFixed(2)}</td>
+              <td className="px-5 py-3 border-t border-gray-200 bg-white text-sm">{totals.heath_amount.toFixed(2)}</td>
             {/* Render other totals similarly */}
           </tr>
         </tfoot>
       </table>
+      </div>
       </>
       )}
       {viewMode === 'export' && (
         <>
-         <h2>Eksportuj dane do PUE/ZUS za okres  {formattedMonth}/{year_zus}</h2>
-        <td>
-          <button onClick={downloadXMLFile}> Raport miesięczny - DRA RCA RSA do ZUS</button>
-          </td>
+         <h2 className="text-xl font-bold mb-3">Eksportuj dane do PUE/ZUS za okres {formattedMonth}/{year_zus}</h2>
+      <button onClick={downloadXMLFile} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        Raport miesięczny - DRA RCA RSA do ZUS
+      </button>
           
           
         </>
