@@ -84,7 +84,7 @@ function LoginUser() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-xl font-semibold mb-4">{isPasswordRecovery ? "Reset Password" : "Login"}</h1>
+      <h1 className="text-xl font-semibold mb-4">{isPasswordRecovery ? "Resetuj hasło" : "Logowanie"}</h1>
       {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
 
       {isPasswordRecovery ? (
@@ -121,7 +121,7 @@ function LoginUser() {
 
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-              Password:
+              Hasło:
             </label>
             <input
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
@@ -132,32 +132,46 @@ function LoginUser() {
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <button
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              type="submit"
-            >
-              Log in
-            </button>
-            <button
-              className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
-              onClick={handleResetPassword}
-              type="button"
-            >
-              Forgot Password?
-            </button>
-          </div>
+          <div className="flex flex-col items-center justify-center space-y-4">
+  <div className="flex items-center justify-center">
+    <button
+      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      type="submit"
+    >
+      Zaloguj się
+    </button>
+  </div>
+  <div className="flex items-center gap-4">
+    <label className="text-gray-700 text-sm font-bold" htmlFor="resetpassword">
+      Problem z logowaniem?
+    </label>
+    <button
+      className="font-bold text-sm text-blue-500 hover:text-blue-800"
+      onClick={handleResetPassword}
+      type="button"
+    >
+      Zresetuj hasło
+    </button>
+  </div>
+</div>
+
+            
+          
         </form>
       )}
-      <p>
+      <div className="flex items-center gap-4">
+    <label className="text-gray-700 text-sm font-bold" htmlFor="resetpassword">
+        Nie posiadasz danych logowania?
+        </label>
         <button
-          className="text-blue-500 hover:text-blue-800"
+        
+        className="font-bold text-sm text-blue-500 hover:text-blue-800"
           type="button"
           onClick={() => navigate('/Login')}
         >
-          Create Account
+          Utwórz konto
         </button>
-      </p>
+        </div>
     </div>
   );
 }
