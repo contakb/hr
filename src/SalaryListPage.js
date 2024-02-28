@@ -113,6 +113,7 @@ function SalaryListPage() {
     setSelectedSalaryList(selectedSalaryList);
     setSelectedSalaryDate(salaryDate); // You'll need to manage this state
     setViewMode(viewMode); // Set the view mode based on the action
+    setActionTrigger(prev => prev + 1); // Increment the trigger to ensure uniqueness
   };
 
   const handleEditSalary = (salaryListByMonthYear) => {
@@ -176,7 +177,7 @@ function SalaryListPage() {
 };
 
 const handleDeleteSalaryByMonthYear = async (monthYear) => {
-  if (window.confirm(`Are you sure you want to delete all salary records for ${monthYear}?`)) {
+  if (window.confirm(`Czy jesteś pewny, że chcesz skasować (bez możliwości odtworzenia) listę płac za ${monthYear}?`)) {
     try {
       setIsLoading(true);
       const [month, year] = monthYear.split('/');
@@ -244,6 +245,8 @@ const handleDeleteIndividualSalary = async (salaryId) => {
 };
 
 const [openDropdown, setOpenDropdown] = useState(null);
+const [actionTrigger, setActionTrigger] = useState(0); // Initialize to 0 or Date.now(), for example
+
 
 const toggleDropdown = (id) => {
   if (openDropdown === id) {
@@ -252,6 +255,50 @@ const toggleDropdown = (id) => {
     setOpenDropdown(id); // Open the clicked dropdown and close others
   }
 };
+
+const handleActionSelection = () => {
+  // Close the dropdown
+  setOpenDropdown(null);
+
+  // Logic to scroll to the details section
+  // Ensure the element is in the DOM
+  const detailsElement = document.getElementById('salary-details');
+  if (detailsElement) {
+    detailsElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  } else {
+    console.error('Details element not found');
+  }
+  
+  // Plus, any other logic you need to run when an action is selected...
+};
+
+useEffect(() => {
+  let targetId = '';
+
+  if (viewMode === 'details') {
+    targetId = 'details-section';
+  } else if (viewMode === 'export') {
+    targetId = 'export-section';
+  }
+
+  if (targetId) {
+    setTimeout(() => {
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
+  }
+}, [viewMode, actionTrigger]); // Now depends on both viewMode and actionTrigger
+
+
+
   
 
   
@@ -350,7 +397,8 @@ const toggleDropdown = (id) => {
       {/* Adjust the div visibility based on openDropdown state */}
       <div className={`${openDropdown === combination ? 'block' : 'hidden'} absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg`}>
         <ul className="py-1 text-sm text-gray-700">
-          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleViewDetails(combination, 'details')}>
+          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" 
+          onClick={() => {handleViewDetails(combination, 'details');handleActionSelection();}}>
             Szczegóły listy
           </li>
           <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleEditSalary(salaryListByMonthYear)}>
@@ -359,7 +407,8 @@ const toggleDropdown = (id) => {
           <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeleteSalaryByMonthYear(combination)}>
             Skasuj listę
           </li>
-          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleViewDetails(combination, 'export')}>
+          <li className="block px-4 py-2 hover:bg-gray-100 cursor-pointer" 
+          onClick={() => {handleViewDetails(combination, 'export');handleActionSelection();}}>
             Export Deklaracji do ZUS za {formattedMonth}/{year}
           </li>
         </ul>
@@ -742,9 +791,9 @@ xmlContent += `\t</ZUSRSA>\n`;
 
 
   return (
-    <div className="salary-details-container p-5">
-      {viewMode === 'details' && (
-        <>
+    <div> 
+    {viewMode === 'details' && (
+      <div id="details-section" className="salary-details-container p-5">
       <h2 className="text-xl font-bold mb-4">Lista płac za {month}/{year}, Data wypłaty: {salaryDate ? new Date(salaryDate).toLocaleDateString() : 'N/A'}</h2>
       <p className="mb-4">Ilość pracowników: {uniqueEmployeeCount}</p>
       <div className="overflow-x-auto">
@@ -826,9 +875,11 @@ xmlContent += `\t</ZUSRSA>\n`;
         </tfoot>
       </table>
       </div>
-      </>
+
+      </div>
       )}
       {viewMode === 'export' && (
+        <div id="export-section" className="p-5">
         <>
          <h2 className="text-xl font-bold mb-3">Eksportuj dane do PUE/ZUS za okres {formattedMonth}/{year_zus}</h2>
       <button onClick={downloadXMLFile} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
@@ -837,9 +888,10 @@ xmlContent += `\t</ZUSRSA>\n`;
           
           
         </>
+        </div>
       )}
-    </div>
     
+    </div>
   );
 }
 // Reuse the downloadXML function provided earlier or define it here again
