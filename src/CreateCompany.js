@@ -211,7 +211,7 @@ const goToNextStep = () => {
     return regex.test(postcode);
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
   
     console.log('CreatedCompany Data:', companyData); // Debugging
@@ -260,84 +260,40 @@ const goToNextStep = () => {
     }
 };
 
-  const handleCreateCompany = (event) => {
-    // Return the axios call directly as it returns a Promise
-  return axiosInstance.post('http://localhost:3001/create-company', {
-        CompanyName,
-        street,
-        number,
-        postcode,
-        city,
-		country,
-        taxOfficeName,
-        PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
-        Taxid,
-        Bankaccount,
-        formaPrawna: formData.formaPrawna,
-        wypadkowe: wypadkoweRate // Include the wypadkowe rate here
-      })
-      .then((response) => {
-        if (response && response.data) {
-        // Handle successful create employee
-  console.log('Company created:', response.data);
-  // Set success message
-  setUpdateMessage('Company created successfully.');
-  setUpdateMessage('Company created successfully. You can now move to the next step.');
-  setShowNextStepButton(true); // Show the button to move to the next step
-  // Mark the step as completed in the context
-  markStepAsCompleted(1); // Assuming step 1 is for creating a company
-  nextStep(); // Move to the next step
-  console.log("Moving to the next step");
-  
-    // Navigate to the next page, for example, add employees
-    
-  // Fetch the latest company data
-  fetchCompanyData(); 
-  // Clear form fields
-  setCompanyName('');
-  setStreet('');
-  setNumber('');
-  setPostcode('');
-  setCity('');
-setCountry('');
-  setTaxOffice('');
-  setPESEL('');
+const handleCreateCompany = async () => {
+  try {
+    const response = await axiosInstance.post('http://localhost:3001/create-company', {
+      CompanyName,
+      street,
+      number,
+      postcode,
+      city,
+      country,
+      taxOfficeName: taxOffice, // Assuming taxOffice is correctly defined in your component's state
+      PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
+      Taxid,
+      Bankaccount,
+      formaPrawna: formData.formaPrawna,
+      wypadkowe: wypadkoweRate
+    });
 
-  // Switch back to view mode after a delay
-  setTimeout(() => {
-    setIsEditMode(false);
-    setUpdateMessage('');
-}, 3000);
-
-// Use the returned employeeId from the server response
-const createdCompanyData = {
-  companyId: response.data.company_id,
-  CompanyName: response.data.CompanyName,
-  street,
-  number,
-  postcode,
-  city,
-  country,
-  taxOffice,
-  PESEL,
-  Taxid,
-  Bankaccount,
-  formaPrawna
+    console.log('Company created:', response.data);
+    // Assuming response.data contains the flag 'success'
+    if (response.data.success) {
+      setUpdateMessage('Company created successfully. You can now move to the next step.');
+      setShowNextStepButton(true);
+      nextStep(); // Assuming this is a function to move to the next setup step
+      // Optionally, clear form fields or perform additional state updates here
+    } else {
+      // Handle any server-specified errors (e.g., validation errors returned from your API)
+      setUpdateMessage('Failed to create company. Please check your input.');
+    }
+  } catch (error) {
+    console.error('Error creating company:', error);
+    setUpdateMessage(error.response?.data?.error || 'An unexpected error occurred while creating the company.');
+  }
 };
 
-// Set the created employee data in the state
-localStorage.setItem('createdCompany', JSON.stringify(createdCompanyData));
-setCreatedCompany(createdCompanyData);
-
-
-        
-}
-})
-      .catch((error) => {
-        // Handle create employee error
-        console.error('Error creating company:', error);
-      });
-  };
 
   const handleCompanyNameChange = (event) => {
     setCompanyName(event.target.value);
@@ -497,17 +453,12 @@ const handleUpdateCompany = (event, companyId) => {
   
 
   return (
-    <div className="setupProcess">
+    <div className="setupProcess bg-gray-50 min-h-screen flex flex-col items-center justify-start pt-10">
   <StepIndicator steps={steps} currentStep={currentStep} />
 
-    
-    <div className="companyTodoContainer">
-    <div className="companyDetails">
-    
-
-      
-    
-      <h1>Dane Twojej firmy:</h1>
+  <div className="companyTodoContainer max-w-4xl w-full">
+    <div className="companyDetails bg-white shadow-md rounded px-6 py-8 mt-5">
+      <h1 className="text-2xl font-semibold mb-4">Dane Twojej firmy:</h1>
       {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
       {updateMessage && <div style={{ color: 'green' }}>{updateMessage}</div>}
       {isLoading ? (

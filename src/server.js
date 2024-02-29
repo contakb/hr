@@ -1717,68 +1717,40 @@ app.get('/account/:username', isAuthenticated, async (req, res) => {
   }
 });
 
-app.post('/create-company', async (req, res) => {
-  const CompanyName = req.body.CompanyName;
-  const street = req.body.street;
-  const number = req.body.number;
-  const postcode = req.body.postcode;
-  const city = req.body.city;
-  const country = req.body.country;
-  const taxOfficeName = req.body.taxOfficeName;
-  const PESEL = req.body.PESEL;
-  const Taxid = req.body.Taxid;
-  const Bankaccount = req.body.Bankaccount;
-  const formaPrawna = req.body.formaPrawna;
-  const wypadkowe = req.body.wypadkowe
+app.post('/create-company', verifyJWT, async (req, res) => {
+  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe } = req.body;
+  console.log('Attempting to insert company details for', CompanyName);
 
   try {
-    const { data, error } = await supabase
-      .from('companies')
-      .insert([
-        {
-          company_name: CompanyName,
-          street: street,
-          number: number,
-          post_code: postcode,
-          city: city,
-          country: country,
-          tax_office: taxOfficeName,
-          pesel: PESEL,
-          taxid: Taxid,
-          bank_account: Bankaccount,
-          forma: formaPrawna,
-          wypadkowe: wypadkowe,
-        }
-      ])
-      .select();
+      const insertResponse = await supabase
+          .from('companies')
+          .insert([{
+              company_name: CompanyName,
+              street,
+              number,
+              post_code: postcode,
+              city,
+              country,
+              tax_office: taxOfficeName,
+              pesel: PESEL,
+              taxid: Taxid,
+              bank_account: Bankaccount,
+              forma: formaPrawna,
+              wypadkowe
+          }]);
 
-      const { data: secondData, error: secondError } = await supabase.from('compnies').insert(/*...*/);
+      if (insertResponse.error) {
+          throw insertResponse.error;
+      }
 
-      console.log('Supabase Response:', data, error);
-        
-
-    if (error) {
-      console.error('Error inserting employee data', error);
-      res.status(500).send('Error occurred while saving data.');
-      return;
-    }
-
-    // Check if data has the expected structure
-    if (data && data.length > 0) {
-      const company_id  = data[0].id;
-      res.send({
-        company_id,
-        CompanyName,
-      });
-    } else {
-      console.error('Unexpected response structure from Supabase');
-      res.status(500).send('Error occurred while processing the response.');
-    }
-  } catch (err) {
-    console.error('An unexpected error occurred', err);
-    res.status(500).send('An unexpected error occurred.');
+      console.log('Company details inserted successfully for:', CompanyName);
+      res.json({ success: true, message: 'Company details inserted successfully.' });
+  } catch (error) {
+      console.error('Failed to insert company details:', error);
+      res.status(500).json({ success: false, message: 'Failed to insert company details.', error: error.message || error });
   }
 });
+
 
 app.get('/api/created_company', verifyJWT, async (req, res) => {
   try {
@@ -2018,14 +1990,14 @@ app.post('/register', async (req, res) => {
   
   
   app.post('/insertUserDetails', verifyJWT, async (req, res) => {
-    const { email, username } = req.body;
+    const { email, username, name, surname, street, number, city, postcode } = req.body;
     console.log('Attempting to insert details for', email, 'with username', username);
 
     try {
         // Directly attempt to insert the new user details
         const insertResponse = await supabase
             .from('users')
-            .insert([{ email, username }]); // Ensure this matches your table structure
+            .insert([{ email, username, name, surname, street, number,city, postcode }]); // Ensure this matches your table structure
 
         if (insertResponse.error) {
             throw insertResponse.error;

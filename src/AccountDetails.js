@@ -93,19 +93,26 @@ useEffect(() => {
   const fetchCompanyData = async () => {
     try {
       const response = await axiosInstance.get('http://localhost:3001/api/created_company', {
+
         
       });
       setCompanyData(response.data.length > 0 ? response.data[0] : null);
     } catch (error) {
       console.error('Error fetching company data:', error);
-      setError('Failed to fetch company data.');
+      setError('Nie udało się pobrać danych firmy.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  fetchCompanyData();
-}, [user, navigate]);
+  if (supabase.auth.getUser()) { // Check if there is a logged-in user
+    fetchCompanyData();
+  } else {
+    // Possibly handle the scenario of no user being logged in
+    console.log('No user logged in.');
+    navigate('/login'); // Redirect to login page if no user is logged in
+  }
+}, [user,navigate]); // Removed 'user' from dependencies if it's not explicitly used within the effect
 
 
 
@@ -311,7 +318,7 @@ return (
           <p>Numer NIP: {companyData.taxid}</p>
         </div>
       ) : (
-        <p>No data available. Please add company details.</p>
+        <p>Brak danych firmy. Uzupełnij proszę dane.</p>
       )}
       <button
         onClick={handleManageCompanyData}
