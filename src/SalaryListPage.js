@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
+import { useRequireAuth } from './useRequireAuth';
 
 
 
@@ -17,8 +18,8 @@ function SalaryListPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [companyData, setCompanyData] = useState(null);
-  const user = useUser();
   const [viewMode, setViewMode] = useState('details'); // 'details' or 'export'
+  const user = useRequireAuth();
  
 
 
