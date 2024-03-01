@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
@@ -32,100 +32,103 @@ function AccountDetails() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const user = useUser();
+  const { user, updateUserContext } = useUser();
+
+
+  console.log(user); // Check if user data is available
   const userEmail = user?.email; // Safely access the email property
 
   
   
-  
-  
-
-  const fetchUserDetails = async () => {
+  // Define fetchUserDetails outside of useEffect to ensure it's accessible
+  const fetchUserDetails = useCallback(async () => {
+    setIsLoading(true); // Set loading to true at the beginning of the fetch
     if (!user || !user.email) {
-      console.error("User data is not available.");
+      console.error("User or user email is not defined.");
       return;
     }
-  
+
+    // Optional: Reset form fields/state here before fetching new details
+  resetFormFields(); // This function would set all form fields to '' or some initial state
+
     try {
       const response = await axiosInstance.get(`http://localhost:3001/getUserDetails?email=${encodeURIComponent(user.email)}`);
       if (response.data.success && response.data.data) {
         const userData = response.data.data;
-        setUsername(userData.username || ''); // Notice direct access to userData
-  setName(userData.name || '');
-  setSurname(userData.surname || '');
-  setStreet(userData.street || ''); // Set street
-  setNumber(userData.number || ''); // Set number
-  setCity(userData.city || ''); // Set city
-  setPostcode(userData.postcode || ''); // Set postcode
-        setIsEditMode(false); // Have details, view mode
-        setUserDetailsExist(true); // User details exist
-        setOriginalData(userData); // Store the original data
+        setUsername(userData.username || '');
+        setName(userData.name || '');
+        setSurname(userData.surname || '');
+        setStreet(userData.street || '');
+        setNumber(userData.number || '');
+        setCity(userData.city || '');
+        setPostcode(userData.postcode || '');
+        setIsEditMode(false);
+        setUserDetailsExist(true);
+        setOriginalData(userData);
       } else {
-        setIsEditMode(true); // No details, edit mode
-        setUserDetailsExist(false); // No user details found
+        setIsEditMode(true);
+        setUserDetailsExist(false);
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error fetching user details:', error);
-      setIsEditMode(true); // Assume edit mode on error
-      setUserDetailsExist(false); // Error fetching details, assume no details exist
+      setIsEditMode(true);
+      setUserDetailsExist(false);
     }
-}; 
+    setIsLoading(false); // Set loading to false once fetching is complete
+  }, [user, axiosInstance]); // Include all dependencies here
 
 useEffect(() => {
-  // Only fetch user details if the user object is available
   if (user && user.email) {
     fetchUserDetails();
-  } else {
-    // If no user is present, navigate to login
-    navigate('/login');
   }
-}, [user, navigate, ]); // Added fetchUserDetails as a dependency
-
-
+}, [user]);
 
 
 
 useEffect(() => {
-  
-
-  // Fetch company data if user is present
   const fetchCompanyData = async () => {
+    setIsLoading(true); // Assuming you're managing a loading state
+    
+    // Fetch company data if user is present
     try {
-      const response = await axiosInstance.get('http://localhost:3001/api/created_company', {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Error fetching session:', sessionError.message);
+        setError('Problem z pobraniem danych sesji.'); // Problem fetching session data
+        navigate('/login'); // Redirect to login if session fetching failed
+      }
 
-        
-      });
-      setCompanyData(response.data.length > 0 ? response.data[0] : null);
+      if (sessionData && sessionData.session) {
+        // We have a session, now fetch company data
+        const response = await axiosInstance.get('http://localhost:3001/api/created_company');
+        setCompanyData(response.data.length > 0 ? response.data[0] : null);
+      } else {
+        console.log('No user logged in.');
+        navigate('/login'); // Redirect to login page if no session is present
+      }
     } catch (error) {
       console.error('Error fetching company data:', error);
-      setError('Nie udało się pobrać danych firmy.');
+      setError('Nie udało się pobrać danych firmy.'); // Failed to fetch company data
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (supabase.auth.getUser()) { // Check if there is a logged-in user
-    fetchCompanyData();
-  } else {
-    // Possibly handle the scenario of no user being logged in
-    console.log('No user logged in.');
-    navigate('/login'); // Redirect to login page if no user is logged in
-  }
-}, [user,navigate]); // Removed 'user' from dependencies if it's not explicitly used within the effect
+  fetchCompanyData();
+}, [navigate]); // Removed 'user' since we're directly checking the session now
 
 
 
 
-// Adjust handleSubmit to use userDetailsExist to decide between insert/update
+
 const handleSubmit = async (event) => {
   event.preventDefault();
   const endpoint = userDetailsExist ? '/updateUserDetails' : '/insertUserDetails';
 
   try {
     const response = await axiosInstance.post(`http://localhost:3001${endpoint}`, {
-      email,
-      username,
+      email: user.email, // Assuming 'user' is obtained from useUser() and contains the email
       name,
       surname,
       street,
@@ -133,11 +136,20 @@ const handleSubmit = async (event) => {
       city,
       postcode,
     });
+
     if (response.data.success) {
       toast.success(`${userDetailsExist ? 'Updated' : 'Saved'} successfully!`);
       setIsEditMode(false); // Exit edit mode after successful operation
       setUserDetailsExist(true); // Assume details now exist after successful save/update
-      fetchUserDetails(); // Refetch user details to update UI
+
+      // Update the global user context with the updated details
+      // Assuming updateUserContext is a function available via useUser() for updating the user context
+      // This step assumes you have the updated user data available. Adjust as necessary.
+      const updatedUserDetails = { ...user, name, surname, street, number, city, postcode };
+      updateUserContext(updatedUserDetails);
+
+      // Optionally, refetch user details if needed to ensure the UI is up-to-date
+      // fetchUserDetails(); // This might be redundant if you're already updating the context
     } else {
       setUpdateMessage('Failed to save details.');
     }
@@ -146,6 +158,7 @@ const handleSubmit = async (event) => {
     setUpdateMessage('An error occurred while saving details.');
   }
 };
+
 
 
 // Inside your React component, e.g., AccountDetails.js
@@ -179,10 +192,21 @@ const handleCancelEdit = () => {
   setIsEditMode(false); // Exit edit mode
 };
 
+const resetFormFields = () => {
+  setUsername('');
+  setName('');
+  setSurname('');
+  setStreet('');
+  setNumber('');
+  setCity('');
+  setPostcode('');
+  // Any other form fields you have
+};
 
 
 const handleManageCompanyData = () => {
-  navigate('/CreateCompany');
+  navigate('/CreateCompany', { state: { companyData } });
+
 };
 
 if (isLoading) {
@@ -275,11 +299,13 @@ return (
         {isEditMode ? (
           <>
             <button
-              type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            >
-              {username ? 'Uaktualnij dane' : 'Zapisz dane'}
-            </button>
+  type="submit"
+  disabled={isLoading} // Disable the button when isLoading is true
+  className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+>
+  {isLoading ? 'Przetwarzanie...' : (userDetailsExist ? 'Uaktualnij dane' : 'Zapisz dane')}
+</button>
+
             <button
               type="button"
               onClick={handleCancelEdit}
@@ -309,7 +335,7 @@ return (
     {updateMessage && <p className="mt-4">{updateMessage}</p>}
     </div>
     <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md lg:flex lg:flex-col">
-        <h2 className="font-bold text-xl mb-4">Dane firmy:</h2>
+        <h2 className="font-bold text-xl mb-4">Dane Twojej firmy:</h2>
         {error && <p className="text-red-500 mb-2">{error}</p>}
       {companyData ? (
         <div className="space-y-2">

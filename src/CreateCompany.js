@@ -9,6 +9,8 @@ import { useSetup } from './SetupContext'; // Adjust the path as necessary
 import { useLocation } from 'react-router-dom';
 // Import your custom axios instance
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { supabase } from './supabaseClient';
+import { useUser } from './UserContext'; // Ensure correct pat
 
 
 
@@ -44,6 +46,7 @@ const [formaPrawna, setformaPrawna] = useState('');
 const [numberOfEmployees, setNumberOfEmployees] = useState('');
 const [wypadkoweRate, setWypadkoweRate] = useState('1.67%');
 const [companyData, setCompanyData] = useState(null);
+const { user, updateUserContext } = useUser();
     const [isEditMode, setIsEditMode] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -93,6 +96,8 @@ useEffect(() => {
 }, [setIsInSetupProcess]);
 
 
+
+
   useEffect(() => {
     axios.get('http://localhost:3001/tax-offices')
         .then((response) => {
@@ -128,7 +133,7 @@ const fetchCompanyData = async () => {
       console.error('Error fetching company data:', error);
       // Check if the error is due to no data found and set an appropriate message
       if (error.response && error.response.status === 404) {
-        setError('No existing company data found. Please fill out the form to create a new company.');
+        setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.');
       } else {
         setError('Failed to fetch company data.');
       }
@@ -138,9 +143,18 @@ const fetchCompanyData = async () => {
     });
 };
 
+
 useEffect(() => {
-  fetchCompanyData();
-}, []);
+  // Only fetch user details if the user object is available
+  if (!user) {
+    navigate('/login');
+    
+  } else {
+    // If no user is present, navigate to login
+    fetchCompanyData();
+  }
+}, [user, navigate]);// Added fetchUserDetails as a dependency
+
 
 const goToNextStep = () => {
   // Increment the current step.
@@ -211,7 +225,7 @@ const goToNextStep = () => {
     return regex.test(postcode);
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
   
     console.log('CreatedCompany Data:', companyData); // Debugging
@@ -260,40 +274,84 @@ const goToNextStep = () => {
     }
 };
 
-const handleCreateCompany = async () => {
-  try {
-    const response = await axiosInstance.post('http://localhost:3001/create-company', {
-      CompanyName,
-      street,
-      number,
-      postcode,
-      city,
-      country,
-      taxOfficeName: taxOffice, // Assuming taxOffice is correctly defined in your component's state
-      PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
-      Taxid,
-      Bankaccount,
-      formaPrawna: formData.formaPrawna,
-      wypadkowe: wypadkoweRate
-    });
+  const handleCreateCompany = async () => {
+    // Return the axios call directly as it returns a Promise
+   await axiosInstance.post('http://localhost:3001/create-company', {
+        CompanyName,
+        street,
+        number,
+        postcode,
+        city,
+		country,
+        taxOfficeName,
+        PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
+        Taxid,
+        Bankaccount,
+        formaPrawna: formData.formaPrawna,
+        wypadkowe: wypadkoweRate // Include the wypadkowe rate here
+      })
+      .then((response) => {
+        if (response && response.data) {
+        // Handle successful create employee
+  console.log('Company created:', response.data);
+  // Set success message
+  setUpdateMessage('Company created successfully.');
+  setUpdateMessage('Company created successfully. You can now move to the next step.');
+  setShowNextStepButton(true); // Show the button to move to the next step
+  // Mark the step as completed in the context
+  markStepAsCompleted(1); // Assuming step 1 is for creating a company
+  nextStep(); // Move to the next step
+  console.log("Moving to the next step");
+  
+    // Navigate to the next page, for example, add employees
+    
+  // Fetch the latest company data
+  fetchCompanyData(); 
+  // Clear form fields
+  setCompanyName('');
+  setStreet('');
+  setNumber('');
+  setPostcode('');
+  setCity('');
+setCountry('');
+  setTaxOffice('');
+  setPESEL('');
 
-    console.log('Company created:', response.data);
-    // Assuming response.data contains the flag 'success'
-    if (response.data.success) {
-      setUpdateMessage('Company created successfully. You can now move to the next step.');
-      setShowNextStepButton(true);
-      nextStep(); // Assuming this is a function to move to the next setup step
-      // Optionally, clear form fields or perform additional state updates here
-    } else {
-      // Handle any server-specified errors (e.g., validation errors returned from your API)
-      setUpdateMessage('Failed to create company. Please check your input.');
-    }
-  } catch (error) {
-    console.error('Error creating company:', error);
-    setUpdateMessage(error.response?.data?.error || 'An unexpected error occurred while creating the company.');
-  }
+  // Switch back to view mode after a delay
+  setTimeout(() => {
+    setIsEditMode(false);
+    setUpdateMessage('');
+}, 3000);
+
+// Use the returned employeeId from the server response
+const createdCompanyData = {
+  companyId: response.data.company_id,
+  CompanyName: response.data.CompanyName,
+  street,
+  number,
+  postcode,
+  city,
+  country,
+  taxOffice,
+  PESEL,
+  Taxid,
+  Bankaccount,
+  formaPrawna
 };
 
+// Set the created employee data in the state
+localStorage.setItem('createdCompany', JSON.stringify(createdCompanyData));
+setCreatedCompany(createdCompanyData);
+
+
+        
+}
+})
+      .catch((error) => {
+        // Handle create employee error
+        console.error('Error creating company:', error);
+      });
+  };
 
   const handleCompanyNameChange = (event) => {
     setCompanyName(event.target.value);
@@ -394,7 +452,7 @@ const toggleEditMode = (editMode) => {
 
 
 
-const handleUpdateCompany = (event, companyId) => {
+const handleUpdateCompany = async (event, companyId) => {
     event.preventDefault();
 
   
@@ -436,7 +494,7 @@ const handleUpdateCompany = (event, companyId) => {
 
     console.log('Updating company data:', companyData);
   
-    axiosInstance.put(`http://localhost:3001/update-company/${companyId}`, companyData)
+    await axiosInstance.put(`http://localhost:3001/update-company/${companyId}`, companyData)
         .then(response => {
             console.log('Company updated successfully:', response.data);
             setUpdateMessage('Company updated successfully.');
@@ -459,119 +517,149 @@ const handleUpdateCompany = (event, companyId) => {
   <div className="companyTodoContainer max-w-4xl w-full">
     <div className="companyDetails bg-white shadow-md rounded px-6 py-8 mt-5">
       <h1 className="text-2xl font-semibold mb-4">Dane Twojej firmy:</h1>
-      {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
-      {updateMessage && <div style={{ color: 'green' }}>{updateMessage}</div>}
+      {validationError && <div className="text-red-500">{validationError}</div>}
+      {updateMessage && <div className="text-green-500">{updateMessage}</div>}
       {isLoading ? (
           <p>Loading...</p>
       ) : error ? (
         <div>
-          <p>{error}</p>
+          <p className="text-red-500">{error}</p>
           {/* Call renderForm function to display the form for creating a new company */}
           {renderForm()}
         </div>
       ) : companyData && !isEditMode ? (
           <div>
-                    <p>Company Name: {companyData.company_name}</p>
-        <p>street: {companyData.street}</p>
-        <p>number: {companyData.number}</p>
-        <p>kod pocztowy: {companyData.post_code}</p>
-        <p>city: {companyData.city}</p>
-        <p>country: {companyData.country}</p>
-        <p>Tax ID: {companyData.taxid}</p>
+                     <p>Company Name: <span className="font-medium">{companyData.company_name}</span></p>
+        <p>street: <span className="font-medium">{companyData.street}</span></p>
+        <p>number: <span className="font-medium">{companyData.number}</span></p>
+        <p>kod pocztowy: <span className="font-medium">{companyData.post_code}</span></p>
+        <p>city: <span className="font-medium">{companyData.city}</span></p>
+        <p>country: <span className="font-medium">{companyData.country}</span></p>
+        <p>Tax ID: <span className="font-medium">{companyData.taxid}</span></p>
         {companyData.forma === 'osoba_fizyczna' && (
-        <p>PESEL: {companyData.pesel}</p>
+        <p>PESEL: <span className="font-medium">{companyData.pesel}</span></p>
       )}
-        <p>Tax Office: {companyData.tax_office}</p>
-        <p>ID: {companyData.company_id}</p>
-        <p>ubezpieczenie wypadkowe: {companyData.wypadkowe}</p>
-        <p>rachunek bankowy: {companyData.bank_account}</p>
-        <p>forma działalności: {companyData.forma}</p>
+        <p>Tax Office: <span className="font-medium">{companyData.tax_office}</span></p>
+        <p>ID: <span className="font-medium">{companyData.company_id}</span></p>
+        <p>ubezpieczenie wypadkowe: <span className="font-medium">{companyData.wypadkowe}</span></p>
+        <p>rachunek bankowy: <span className="font-medium">{companyData.bank_account}</span></p>
+        <p>forma działalności: <span className="font-medium">{companyData.forma}</span></p>
 
-        <button onClick={() => toggleEditMode(true)}>Edit Company</button>
+        <button className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edit Company</button>
           </div>
       ) : (
         renderForm()
         )}
         {/* Move the conditional rendering here, outside the renderForm function */}
-        {showNextStepButton && (
-          <div>
-            <p>{updateMessage}</p>
-            <button onClick={goToNextStep}>Go to Next Step</button>
-          </div>
-        )}
-      </div>
+      {showNextStepButton && (
+        <div className="mt-4">
+          <p>{updateMessage}</p>
+          <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={goToNextStep}>Go to Next Step</button>
+        </div>
+      )}
+    </div>
     {/* Conditionally render ToDo component if companyData exists */}
     {companyData && (
-      <div className="todoList">
+      <div className="todoList mt-5">
         <ToDo />
       </div>
     )}
   </div>
-  </div>
+</div>
 );
   function renderForm() {
     return (
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col space-y-2">
          {/* Your form fields go here */}
-         <label>Tax id:</label>
-        <input type="text" value={Taxid} onChange={handleTaxidChange} />
+         <div className="flex flex-col">
+        <label className="font-semibold" htmlFor="companyName">Company Name:</label>
+        <input className="border border-gray-300 rounded p-2" id="companyName" type="text" value={CompanyName} onChange={handleCompanyNameChange} />
+        </div>
+        <label className="font-semibold" htmlFor="Taxid">Tax id:</label>
+         <input className="border border-gray-300 rounded p-2" id="Taxid" type="text" value={Taxid} onChange={handleTaxidChange} />
+         <div className="flex flex-col mb-4">
+  <label className="mb-2 font-semibold" htmlFor="formaPrawna">Forma Prawna:</label>
+  <select
+    id="formaPrawna"
+    name="formaPrawna"
+    value={formData.formaPrawna}
+    onChange={handleChange}  // Assuming handleChange handles form updates
+    className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+  >
+    <option value="osoba_prawna">Osoba Prawna</option>
+    <option value="osoba_fizyczna">Osoba Fizyczna</option>
+  </select>
+</div>
+
   
-        <label>Company Name:</label>
-        <input type="text" value={CompanyName} onChange={handleCompanyNameChange} />
+{formData.formaPrawna === 'osoba_fizyczna' && (
+  <div className="flex flex-col mb-4">
+    <label className="mb-2 font-semibold" htmlFor="PESEL">PESEL Number:</label>
+    <input
+      id="PESEL"
+      type="text"
+      name="PESEL"
+      value={formData.PESEL}
+      onChange={handleChange}  // Again, ensure handleChange is set up to handle this input
+      className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+    />
+  </div>
+)}
+
   
-        <label>
-      Forma Prawna:
-      <select
-        name="formaPrawna"
-        value={formData.formaPrawna}
-        onChange={handleChange}  // Use the same handleChange for consistency
-      >
-        <option value="osoba_prawna">Osoba Prawna</option>
-        <option value="osoba_fizyczna">Osoba Fizyczna</option>
-      </select>
-    </label>
+         {/* Street */}
+  <div className="flex flex-col">
+    <label htmlFor="street" className="font-semibold">Street:</label>
+    <input id="street" type="text" value={street} onChange={handleStreetChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+  </div>
+
+  {/* Number */}
+  <div className="flex flex-col">
+    <label htmlFor="number" className="font-semibold">Number:</label>
+    <input id="number" type="text" value={number} onChange={handleNumberChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+  </div>
+
+  {/* Postcode */}
+  <div className="flex flex-col">
+    <label htmlFor="postcode" className="font-semibold">Postcode:</label>
+    <input id="postcode" type="text" value={postcode} onChange={handlePostcodeChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+  </div>
+
+  {/* City */}
+  <div className="flex flex-col">
+    <label htmlFor="city" className="font-semibold">City:</label>
+    <input id="city" type="text" value={city} onChange={handleCityChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+  </div>
+
+  {/* Country */}
+  <div className="flex flex-col">
+    <label htmlFor="country" className="font-semibold">Country:</label>
+    <input id="country" type="text" value={country} onChange={handleCountryChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+  </div>
+
+  {/* Bank Account */}
+  <div className="flex flex-col">
+    <label htmlFor="bankAccount" className="font-semibold">Bank account:</label>
+    <input id="bankAccount" type="text" value={Bankaccount} onChange={handleBankaccountChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+  </div>
   
-    {formData.formaPrawna === 'osoba_fizyczna' && (
-      <label>
-        PESEL Number:
-        <input
-          type="text"
-          name="PESEL"
-          value={formData.PESEL}
-          onChange={handleChange}  // Consistent use of handleChange
-        />
-      </label>
-          )}
+        {/* Tax Office - Assuming 'Select' is a component from a library like 'react-select' */}
+  <div className="flex flex-col">
+    <label htmlFor="taxOffice" className="font-semibold">Tax Office:</label>
+    <Select
+      id="taxOffice"
+      options={taxOfficeOptions}
+      onChange={handleTaxOfficeChange}
+      isSearchable={true}
+      placeholder="Wybierz US"
+      value={taxOfficeOptions.find(option => option.value === taxOffice)}
+      classNamePrefix="react-select" // You might need to adjust this based on your Select component's props
+    />
+  </div>
   
-        <label>Street:</label>
-        <input type="text" value={street} onChange={handleStreetChange} />
-  
-        <label>Number:</label>
-        <input type="text" value={number} onChange={handleNumberChange} />
-  
-        <label>Postcode:</label>
-        <input type="text" value={postcode} onChange={handlePostcodeChange} />
-  
-        <label>City:</label>
-        <input type="text" value={city} onChange={handleCityChange} />
-    
-    <label>Country:</label>
-        <input type="text" value={country} onChange={handleCountryChange} />
-  
-        <label>Bank account:</label>
-        <input type="text" value={Bankaccount} onChange={handleBankaccountChange} />
-  
-        <label>Tax Office:</label>
-            <Select 
-                options={taxOfficeOptions} 
-                onChange={handleTaxOfficeChange}
-                isSearchable={true}
-                placeholder="Wybierz US"
-                value={taxOfficeOptions.find(option => option.value === taxOffice)}
-            />
-  
-        
-        <p><label htmlFor="numberOfEmployees">Number of Employees:</label>
+  <div className="flex flex-col">
+        <p><label htmlFor="numberOfEmployees" className="font-semibold">Number of Employees:</label>
         <input 
   type="number" 
   id="numberOfEmployees" 
@@ -586,7 +674,9 @@ const handleUpdateCompany = (event, companyId) => {
     }
   }} 
   /></p>
+  </div>
   <div>
+  <div className="flex flex-col">
   <label htmlFor="ubezpieczenieWypadkowe">Ubezpieczenie Wypadkowe Rate:</label>
   {numberOfEmployees > 10 ? (
     <input 
@@ -603,11 +693,20 @@ const handleUpdateCompany = (event, companyId) => {
     Note: If your company has more than 10 employees, please enter the rate provided by ZUS.
   </p>
   </div>
-        <button type="submit">{isEditMode ? 'Update Company' : 'Create Company'}</button>
-        <button onClick={() => toggleEditMode(false)}>Cancel</button>
-        <button onClick={handleClearData}>Clear Data</button>
+  </div>
+  <div className="flex space-x-2 mt-4">
+    <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+      {isEditMode ? 'Update Company' : 'Create Company'}
+    </button>
+    <button onClick={() => toggleEditMode(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+      Cancel
+    </button>
+    <button onClick={handleClearData} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+      Clear Data
+    </button>
+  </div>
 
-
+        </div>
       </form>
     );
 }

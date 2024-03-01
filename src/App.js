@@ -72,7 +72,7 @@ function App() {
 		  <Route path="/salary-list" element={<SalaryListPage />} />
 		  <Route path="/Reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
-      <Route path="/accountById/:userid" element={<AccountDetails/>} />
+      
       <Route path="/EmployeeContract/:employeeId" element={<EmployeeContract />} />
       <Route path="/ToDo" element={<ToDo />} />
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
