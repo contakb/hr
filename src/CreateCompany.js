@@ -515,49 +515,83 @@ const handleUpdateCompany = async (event, companyId) => {
   <StepIndicator steps={steps} currentStep={currentStep} />
 
   <div className="companyTodoContainer max-w-4xl w-full">
-    <div className="companyDetails bg-white shadow-md rounded px-6 py-8 mt-5">
-      <h1 className="text-2xl font-semibold mb-4">Dane Twojej firmy:</h1>
-      {validationError && <div className="text-red-500">{validationError}</div>}
-      {updateMessage && <div className="text-green-500">{updateMessage}</div>}
-      {isLoading ? (
-          <p>Loading...</p>
-      ) : error ? (
-        <div>
-          <p className="text-red-500">{error}</p>
-          {/* Call renderForm function to display the form for creating a new company */}
-          {renderForm()}
+  <div className="companyDetailsView bg-white shadow-md rounded px-6 py-9 mt-6">
+    <h1 className="text-2xl font-semibold mb-4">Dane Twojej firmy:</h1>
+    {validationError && <div className="text-red-500">{validationError}</div>}
+    {updateMessage && <div className="text-green-500">{updateMessage}</div>}
+    {isLoading ? (
+      <p>Loading...</p>
+    ) : error ? (
+      <div><p className="text-red-500">{error}</p></div>
+    ) : companyData && !isEditMode ? (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Dynamically generated company details */}
+        <div className="col-span-1 md:col-span-3">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Company Name:</label>
+          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.company_name}</p>
         </div>
-      ) : companyData && !isEditMode ? (
-          <div>
-                     <p>Company Name: <span className="font-medium">{companyData.company_name}</span></p>
-        <p>street: <span className="font-medium">{companyData.street}</span></p>
-        <p>number: <span className="font-medium">{companyData.number}</span></p>
-        <p>kod pocztowy: <span className="font-medium">{companyData.post_code}</span></p>
-        <p>city: <span className="font-medium">{companyData.city}</span></p>
-        <p>country: <span className="font-medium">{companyData.country}</span></p>
-        <p>Tax ID: <span className="font-medium">{companyData.taxid}</span></p>
+        {/* Repeat this structure for other company details */}
+        <div className="col-span-1">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Street:</label>
+          <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.street}</p>
+        </div>
+        <div className="col-span-1">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Number:</label>
+          <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.number}</p>
+        </div>
+        <div className="col-span-1">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Kod pocztowy:</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.post_code}</p>
+        </div>
+        <div className="col-span-1">
+        <label className="block text-gray-700 text-sm font-bold mb-2">City:</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.city}</p>
+        </div>
+        <div className="col-span-1">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Country:</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.country}</p>
+        </div>
+        <div className="col-span-1 md:col-span-2">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Tax ID::</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.taxid}</p>
+        </div>
+        <div className="col-span-1 md:col-span-2">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Tax Office:</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.tax_office}</p>
+        </div>
         {companyData.forma === 'osoba_fizyczna' && (
-        <p>PESEL: <span className="font-medium">{companyData.pesel}</span></p>
-      )}
-        <p>Tax Office: <span className="font-medium">{companyData.tax_office}</span></p>
-        <p>ID: <span className="font-medium">{companyData.company_id}</span></p>
-        <p>ubezpieczenie wypadkowe: <span className="font-medium">{companyData.wypadkowe}</span></p>
-        <p>rachunek bankowy: <span className="font-medium">{companyData.bank_account}</span></p>
-        <p>forma działalności: <span className="font-medium">{companyData.forma}</span></p>
-
-        <button className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edit Company</button>
-          </div>
-      ) : (
-        renderForm()
-        )}
-        {/* Move the conditional rendering here, outside the renderForm function */}
-      {showNextStepButton && (
-        <div className="mt-4">
-          <p>{updateMessage}</p>
-          <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={goToNextStep}>Go to Next Step</button>
+        <div className="col-span-1 md:col-span-2">
+        <label className="block text-gray-700 text-sm font-bold mb-2">PESEL</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.pesel}</p>
         </div>
-      )}
+        )}
+        <div className="col-span-1 md:col-span-2">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Forma działalności:</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.forma}</p>
+        </div>
+        <div className="col-span-1 md:col-span-2">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Ubezpieczenie wypadkowe:</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.wypadkowe}</p>
+        </div>
+        <div className="col-span-1 md:col-span-2">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Rachunek bankowy:</label>
+        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.bank_account}</p>
+        </div>
+        <div className="col-span-1 md:col-span-2">
+      <button className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edytuj dane firmy</button>
+      </div>
     </div>
+  ) : (
+    renderForm()
+  )}
+  {showNextStepButton && (
+    <div className="mt-4">
+      <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={goToNextStep}>Go to Next Step</button>
+    </div>
+  )}
+</div>
+
+
     {/* Conditionally render ToDo component if companyData exists */}
     {companyData && (
       <div className="todoList mt-5">
@@ -663,8 +697,9 @@ const handleUpdateCompany = async (event, companyId) => {
         <input 
   type="number" 
   id="numberOfEmployees" 
-  placeholder="Uzupełnij wartość jeśli masz powyżej 10 pracowników"
+  placeholder="Uzupełnij wartość w % jeśli masz powyżej 10 pracowników"
   value={numberOfEmployees} 
+  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
   onChange={(e) => {
     setNumberOfEmployees(e.target.value);
     if (e.target.value <= 10) {
@@ -676,8 +711,8 @@ const handleUpdateCompany = async (event, companyId) => {
   /></p>
   </div>
   <div>
-  <div className="flex flex-col">
-  <label htmlFor="ubezpieczenieWypadkowe">Ubezpieczenie Wypadkowe Rate:</label>
+  <div className="flex flex-col mb-4 space-y-1">
+  <label htmlFor="ubezpieczenieWypadkowe">Ujęta stopa procentowa na ub. wypadkowe:</label>
   {numberOfEmployees > 10 ? (
     <input 
       type="text" 
@@ -687,11 +722,16 @@ const handleUpdateCompany = async (event, companyId) => {
       onChange={(e) => setWypadkoweRate(e.target.value)} // Update state when user inputs a value
     />
   ) : (
-    <p>{wypadkoweRate} (for companies with 10 or fewer employees)</p>
+    <p>{wypadkoweRate} (dla firm zatrudniających mniej niż 10 osób)</p>
   )}
+  <div className="flex flex-col space-y-3">
   <p className="note">
-    Note: If your company has more than 10 employees, please enter the rate provided by ZUS.
+    Uwaga: Firma posiadająca więcej niż 10 pracowników i
   </p>
+  <p className="note">
+  uzyskała z ZUS - Stopa procentowa składki na ubezpieczenie wypadkowe
+  </p>
+  </div>
   </div>
   </div>
   <div className="flex space-x-2 mt-4">
