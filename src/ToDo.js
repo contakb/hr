@@ -10,54 +10,57 @@ function ToDo() {
     const [showReportSubMenu, setShowReportSubMenu] = useState(false);
 
     return (
-        <div className="ToDo">
-            <h1>What would you like to do?</h1>
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-10">
+  <div className="ToDo bg-white shadow-md rounded px-3 py-6 max-w-xl sm:max-w-md w-full">
+    <h1 className="text-xl font-semibold mb-3 text-center">What would you like to do?</h1>
             
             {!showEmploySubMenu && !showManageSubMenu && !showReportSubMenu ? (
-                <ul>
-                    <li><button onClick={() => setShowEmploySubMenu(true)}>Employ a New Person</button></li>
-                    <li><button onClick={() => navigate('/salary-selection')}>Przygotuj listę płac</button></li>
-                    <li><button onClick={() => setShowManageSubMenu(true)}>Manage Existing Employees</button></li>
-                    <li><button onClick={() => setShowReportSubMenu(true)}>Wygeneruj raport</button></li>
+                <div className="space-y-4">
+                    <button onClick={() => setShowEmploySubMenu(true)} className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Employ a New Person</button>
+                    <button onClick={() => navigate('/salary-selection')} className="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Przygotuj listę płac</button>
+                    <button onClick={() => setShowManageSubMenu(true)} className="w-full bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Manage Existing Employees</button>
+      <button onClick={() => setShowReportSubMenu(true)} className="w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Wygeneruj raport</button>
+      {/*... other main options */}
                     {/*... other main options */}
-                </ul>
+                    </div>
             ) : null}
 
             {showEmploySubMenu ? (
-                <div>
-                    <h2>Employ a New Person</h2>
-                    <ul>
-                        <li><button onClick={() => navigate('/createEmployee')}>Create Employee Data</button></li>
-                        <li><button onClick={() => navigate('/createEmployee/contract')}>Create Contract</button></li>
+                <div className="space-y-4">
+                <h2 className="text-xl font-semibold mb-2">Employ a New Person</h2>
+                <div className="space-y-2">
+                <button onClick={() => navigate('/createEmployee')} className="w-full bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create Employee Data</button>
+        <button onClick={() => navigate('/createEmployee/contract')} className="w-full bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create Contract</button>
                         {/*... other employ submenu options */}
-                    </ul>
-                    <button onClick={() => setShowEmploySubMenu(false)}>Back</button>
+                    </div>
+                    <button onClick={() => setShowEmploySubMenu(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Back</button>
                 </div>
             ) : null}
 
             {showManageSubMenu ? (
-                <div>
-                    <h2>Manage Existing Employees</h2>
-                    <ul>
-                        <li><button onClick={() => navigate('/employeeList')}>Lista pracowników</button></li>
-                        <li><button onClick={() => navigate('/manage/view')}>View Employee Performance</button></li>
-                        {/*... other manage submenu options */}
-                    </ul>
-                    <button onClick={() => setShowManageSubMenu(false)}>Back</button>
+                <div className="space-y-4">
+                <h2 className="text-xl font-semibold mb-2">Manage Existing Employees</h2>
+                <div className="space-y-2">
+        <button onClick={() => navigate('/employeeList')} className="w-full bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Lista pracowników</button>
+        <button onClick={() => navigate('/manage/view')} className="w-full bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">View Employee Performance</button>
+        {/*... other manage submenu options */}
+      </div>
+      <button onClick={() => setShowManageSubMenu(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Back</button>
                 </div>
             ) : null}
 
 {showReportSubMenu ? (
-                <div>
-                    <h2>Wygeneruj raport</h2>
-                    <ul>
-                        <li><button onClick={() => navigate('/reports')}>Lista raportów</button></li>
-                        <li><button onClick={() => navigate('/manage/view')}>View Employee Performance</button></li>
-                        {/*... other manage submenu options */}
-                    </ul>
-                    <button onClick={() => setShowReportSubMenu(false)}>Back</button>
-                </div>
+                <div className="space-y-4">
+      <h2 className="text-xl font-semibold mb-2">Wygeneruj raport</h2>
+      <div className="space-y-2">
+        <button onClick={() => navigate('/reports')} className="w-full bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Lista raportów</button>
+        <button onClick={() => navigate('/manage/view')} className="w-full bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">View Employee Performance</button>
+        {/*... other report submenu options */}
+      </div>
+      <button onClick={() => setShowReportSubMenu(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Back</button>
+    </div>
             ) : null}
+        </div>
         </div>
     );
 }
