@@ -105,7 +105,7 @@ useEffect(() => {
         setCompanyData(response.data.length > 0 ? response.data[0] : null);
       } else {
         console.log('No user logged in.');
-        navigate('/login'); // Redirect to login page if no session is present
+        navigate('/LoginUser'); // Redirect to login page if no session is present
       }
     } catch (error) {
       console.error('Error fetching company data:', error);
@@ -219,7 +219,7 @@ return (
   <div className="flex flex-col lg:flex-row gap-8 justify-center lg:items-start">
     <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md">
       <h1 className="font-bold text-xl mb-4">Szczegóły konta:</h1>
-      <p className="mb-2">Email: {user.email}</p>
+      <p className="mb-3">email: {user.email}</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full md:w-1/2 px-2 mb-4">

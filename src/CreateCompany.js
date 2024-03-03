@@ -143,18 +143,16 @@ const fetchCompanyData = async () => {
     });
 };
 
-
 useEffect(() => {
   // Only fetch user details if the user object is available
   if (!user) {
-    navigate('/login');
+    navigate('/LoginUser');
     
   } else {
     // If no user is present, navigate to login
     fetchCompanyData();
   }
 }, [user, navigate]);// Added fetchUserDetails as a dependency
-
 
 const goToNextStep = () => {
   // Increment the current step.
@@ -514,8 +512,8 @@ const handleUpdateCompany = async (event, companyId) => {
     <div className="setupProcess bg-gray-50 min-h-screen flex flex-col items-center justify-start pt-10">
   <StepIndicator steps={steps} currentStep={currentStep} />
 
-  <div className="companyTodoContainer max-w-4xl w-full">
-  <div className="companyDetailsView bg-white shadow-md rounded px-6 py-9 mt-6">
+  <div className="companyTodoContainer max-w-4xl w-full flex flex-col lg:flex-row gap-8">
+  <div className="companyDetails bg-white shadow-md rounded px-6 py-8 flex-1">
     <h1 className="text-2xl font-semibold mb-4">Dane Twojej firmy:</h1>
     {validationError && <div className="text-red-500">{validationError}</div>}
     {updateMessage && <div className="text-green-500">{updateMessage}</div>}
@@ -524,40 +522,40 @@ const handleUpdateCompany = async (event, companyId) => {
     ) : error ? (
       <div><p className="text-red-500">{error}</p></div>
     ) : companyData && !isEditMode ? (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Dynamically generated company details */}
         <div className="col-span-1 md:col-span-3">
           <label className="block text-gray-700 text-sm font-bold mb-2">Company Name:</label>
           <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.company_name}</p>
         </div>
         {/* Repeat this structure for other company details */}
-        <div className="col-span-1">
+        <div className="col-span-1 md:col-span-2">
           <label className="block text-gray-700 text-sm font-bold mb-2">Street:</label>
-          <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.street}</p>
+          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.street}</p>
         </div>
         <div className="col-span-1">
           <label className="block text-gray-700 text-sm font-bold mb-2">Number:</label>
-          <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.number}</p>
+          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.number}</p>
         </div>
         <div className="col-span-1">
         <label className="block text-gray-700 text-sm font-bold mb-2">Kod pocztowy:</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.post_code}</p>
+        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.post_code}</p>
         </div>
         <div className="col-span-1">
         <label className="block text-gray-700 text-sm font-bold mb-2">City:</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.city}</p>
+        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.city}</p>
         </div>
         <div className="col-span-1">
         <label className="block text-gray-700 text-sm font-bold mb-2">Country:</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.country}</p>
+        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.country}</p>
         </div>
         <div className="col-span-1 md:col-span-2">
         <label className="block text-gray-700 text-sm font-bold mb-2">Tax ID::</label>
         <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.taxid}</p>
         </div>
-        <div className="col-span-1 md:col-span-2">
+        <div className="col-span-1 md:col-span-3">
         <label className="block text-gray-700 text-sm font-bold mb-2">Tax Office:</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.tax_office}</p>
+        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.tax_office}</p>
         </div>
         {companyData.forma === 'osoba_fizyczna' && (
         <div className="col-span-1 md:col-span-2">
@@ -573,9 +571,9 @@ const handleUpdateCompany = async (event, companyId) => {
         <label className="block text-gray-700 text-sm font-bold mb-2">Ubezpieczenie wypadkowe:</label>
         <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.wypadkowe}</p>
         </div>
-        <div className="col-span-1 md:col-span-2">
+        <div className="col-span-1 md:col-span-3">
         <label className="block text-gray-700 text-sm font-bold mb-2">Rachunek bankowy:</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.bank_account}</p>
+        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.bank_account}</p>
         </div>
         <div className="col-span-1 md:col-span-2">
       <button className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edytuj dane firmy</button>
@@ -594,7 +592,7 @@ const handleUpdateCompany = async (event, companyId) => {
 
     {/* Conditionally render ToDo component if companyData exists */}
     {companyData && (
-      <div className="todoList mt-5">
+       <div className="todoList bg-white shadow-md rounded px-6 py-8 flex-1">
         <ToDo />
       </div>
     )}
@@ -692,48 +690,47 @@ const handleUpdateCompany = async (event, companyId) => {
     />
   </div>
   
+  <div className="flex flex-col space-y-4">
   <div className="flex flex-col">
-        <p><label htmlFor="numberOfEmployees" className="font-semibold">Number of Employees:</label>
-        <input 
-  type="number" 
-  id="numberOfEmployees" 
-  placeholder="Uzupełnij wartość w % jeśli masz powyżej 10 pracowników"
-  value={numberOfEmployees} 
-  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-  onChange={(e) => {
-    setNumberOfEmployees(e.target.value);
-    if (e.target.value <= 10) {
-      setWypadkoweRate('1.67%'); // Automatically set the rate for 10 or fewer employees
-    } else {
-      setWypadkoweRate(''); // Reset the rate for more than 10 employees
-    }
-  }} 
-  /></p>
-  </div>
-  <div>
-  <div className="flex flex-col mb-4 space-y-1">
-  <label htmlFor="ubezpieczenieWypadkowe">Ujęta stopa procentowa na ub. wypadkowe:</label>
-  {numberOfEmployees > 10 ? (
+    <label htmlFor="numberOfEmployees" className="font-semibold block mb-2">Ilość pracowników:</label>
     <input 
-      type="text" 
-      id="ubezpieczenieWypadkowe" 
-      placeholder="Enter rate from ZUS" 
-      value={wypadkoweRate}
-      onChange={(e) => setWypadkoweRate(e.target.value)} // Update state when user inputs a value
+      type="number" 
+      id="numberOfEmployees" 
+      placeholder="Podaj ilość osób zgłoszonych do ub. wypadkowego"
+      value={numberOfEmployees} 
+      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      onChange={(e) => {
+        setNumberOfEmployees(e.target.value);
+        if (e.target.value <= 10) {
+          setWypadkoweRate('1.67%'); // Automatically set the rate for 10 or fewer employees
+        } else {
+          setWypadkoweRate(''); // Reset the rate for more than 10 employees
+        }
+      }} 
     />
-  ) : (
-    <p>{wypadkoweRate} (dla firm zatrudniających mniej niż 10 osób)</p>
-  )}
-  <div className="flex flex-col space-y-3">
-  <p className="note">
-    Uwaga: Firma posiadająca więcej niż 10 pracowników i
-  </p>
-  <p className="note">
-  uzyskała z ZUS - Stopa procentowa składki na ubezpieczenie wypadkowe
-  </p>
   </div>
+
+  <div className="flex flex-col mb-4 space-y-2">
+    <label htmlFor="ubezpieczenieWypadkowe" className="font-semibold block">Ujęta stopa procentowa na ub. wypadkowe:</label>
+    {numberOfEmployees > 10 ? (
+      <input 
+        type="text" 
+        id="ubezpieczenieWypadkowe" 
+        placeholder="Uzułnij wartość w % jeśli masz powyżej 10 pracowników" 
+        value={wypadkoweRate}
+        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        onChange={(e) => setWypadkoweRate(e.target.value)}
+      />
+    ) : (
+      <p className="bg-gray-100 rounded w-full py-2 px-3">{wypadkoweRate} (dla firm zatrudniających mniej niż 10 osób)</p>
+    )}
+
+    <div className="text-sm mt-2">
+      <p>Uwaga: Firma posiadająca więcej niż 10 pracowników i uzyskała z ZUS stopę procentową składki na ubezpieczenie wypadkowe.</p>
+    </div>
   </div>
-  </div>
+</div>
+
   <div className="flex space-x-2 mt-4">
     <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
       {isEditMode ? 'Update Company' : 'Create Company'}
