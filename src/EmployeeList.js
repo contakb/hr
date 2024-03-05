@@ -13,7 +13,7 @@ import { useUser } from './UserContext'; // Ensure correct pat
 import { useRequireAuth } from './useRequireAuth';
 
 // Employee component
-function Employee({ employee, updateEmployeeInList, taxOffices, detailView }) {
+function Employee({ employee, updateEmployeeInList, taxOffices, detailView,  setSelectedEmployee }) {
   const { id, name, surname, street, number, postcode, city, country, tax_office, pesel } = employee;
   const [showDetails, setShowDetails] = useState(false);
   const [contractsVisible, setContractsVisible] = useState(false);
@@ -35,7 +35,6 @@ function Employee({ employee, updateEmployeeInList, taxOffices, detailView }) {
   const [taxOffice, setTaxOffice] = useState(employee.tax_office); // Assuming 'tax_office' is the property
   const [taxOfficeName, setTaxOfficeName] = useState(''); // You might need to adjust this based on how you handle tax office names
   const user = useRequireAuth();
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
   // State to track the selected employee for displaying details
 
 
@@ -372,24 +371,55 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
 };
   const contractStatus = isContractTerminated(employee.contractEndDate) ? 'Terminated' : 'Active';
   const statusColor = contractStatus === 'Terminated' ? 'red' : 'green';
+
  
   if (detailView) {
     // Render the detailed view of the selected employee
   return (
-    <div>
-      <span style={{ color: statusColor }}>{contractStatus}</span>
-      <p>Name: {name}</p>
-      <p>Surname: {surname}</p>
-  
-      <button onClick={toggleDetails}>{showDetails ? 'Hide Details' : 'Show Details'}</button>
-      <button onClick={toggleContracts}>{contractsVisible ? 'Hide Contracts' : 'Show Contracts'}</button>
+    <div className="bg-white p-4 shadow rounded-lg">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Employee Details</h3>
+        <span style={{ color: statusColor }}>{contractStatus}</span>
+      </div>
       
-      <button onClick={() => handleGenerateContractPage(id)}>Generuj</button>
+      <div className="mb-4">
+        <p><strong>Name:</strong> {name}</p>
+        <p><strong>Surname:</strong> {surname}</p>
+      </div>
 
-      <button onClick={handleMedicalExamination}>Medical Examination</button>
-      <button onClick={() => handleTerminateContractPage(id)}>Terminate Contract</button>
+      <div className="flex gap-2 mb-4">
+  <button 
+    className="bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={toggleDetails}
+  >
+    {showDetails ? 'Hide Details' : 'Show Details'}
+  </button>
+  <button 
+    className="bg-green-500 hover:bg-green-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={toggleContracts}
+  >
+    {contractsVisible ? 'Hide Contracts' : 'Show Contracts'}
+  </button>
+  <button 
+    className="bg-red-500 hover:bg-red-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={() => handleGenerateContractPage(id)}
+  >
+    Generuj
+  </button>
+  <button 
+    className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={handleMedicalExamination}
+  >
+    Medical Examination
+  </button>
+  <button 
+    className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={() => handleTerminateContractPage(id)}
+  >
+    Terminate Contract
+  </button>
 
-      <hr /> {/* Horizontal line divider */}
+      </div>
 
 
       {showDetails && (
@@ -581,7 +611,13 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     )}
   </div>
 )}
-
+<button 
+         
+    className="bg-red-500 hover:bg-red-700 text-white font-medium py-1 px-2 rounded text-xs"
+          onClick={() => setSelectedEmployee(null)}
+        >
+          Close
+        </button>
 
 
     </div>
@@ -593,10 +629,10 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
       {/* Summary information for the employee list */}
       
       <div>
-        <p className="font-bold">{employee.name} {employee.surname}</p>
+        <p className="font-bold">Id: {employee.id} {employee.name} {employee.surname} </p>
         <span style={{ color: statusColor }}>{contractStatus}</span>
       </div>
-      <button 
+      <button
         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
         onClick={() => setSelectedEmployee(employee)}
       >
@@ -720,11 +756,10 @@ function EmployeeList() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row gap-4">
-          
-          <div className="md:w-1/2">
-            <h1 className="text-2xl font-semibold mb-4">Employee List</h1>
+  <div className="max-w-6xl mx-auto sm:px-6 lg:px-8">
+    {/* Filters and Create Employee Button */}
+    <div className="mb-4">
+      <h1 className="text-2xl font-semibold">Employee List</h1>
         <div className="flex flex-wrap gap-4 mb-4 justify-between">
           <input
             type="text"
@@ -749,35 +784,38 @@ function EmployeeList() {
             Create Employee
           </button>
         </div>
-        <div className="employee-list">
+        </div>
+        {/* Main Content Area */}
+    <div className="flex flex-col bg-white p-1 shadow rounded-lg lg:flex-row gap-4">
+      {/* Employee List Section */}
+      <div className="lg:w-1/2 bg-white p-4 shadow rounded-lg">
       {loading ? (
         <div>Loading...</div>
       ) : error ? (
         <div className="text-red-500">{error}</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-1 gap-10">
+        <div className="grid grid-cols-1 gap-1">
+            {/* Map over your employees to render the list */}
           {filteredAndSortedEmployees.map((employee) => (
-            <div 
-            onClick={() => handleEmployeeSelect(employee)} 
-            key={employee.id} 
-            updateEmployeeInList={updateEmployeeInList} 
-            taxOffices={taxOffices}
-            className="cursor-pointer hover:bg-gray-200 p-2 rounded-md"
+            <div
+            className="cursor-pointer p-2 hover:bg-gray-200"
+            onClick={() => handleEmployeeSelect(employee)}
+            key={employee.id}
           >
-            {/* Pass just the necessary props to Employee for summary view */}
-            <Employee 
-              employee={employee} 
-              handleEmployeeSelect={handleEmployeeSelect} 
-              
+            <Employee
+              employee={employee}
+              updateEmployeeInList={updateEmployeeInList}
+              taxOffices={taxOffices}
+              detailView={false} // pass false to show summary view
+              setSelectedEmployee={setSelectedEmployee} // pass function to unset the selected employee
             />
           </div>
           ))}
         </div>
       )}
-    </div>
       </div>
       {selectedEmployee && (
-            <div className="md:w-1/2 bg-white p-4 rounded-md shadow">
+            <div className="lg:w-1/2 bg-white p-4 shadow rounded-lg">
               {/* Display selected employee details */}
               <Employee
                 employee={selectedEmployee}
@@ -788,10 +826,9 @@ function EmployeeList() {
               />
             </div>
           )}
-          
+          </div>
+          </div>
         </div>
-      </div>
-    </div>
   );
 }
 
