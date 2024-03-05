@@ -9,9 +9,11 @@ import { useLocation } from 'react-router-dom';
 import './Login.css';
 import Select from 'react-select';
 import { useSetup } from './SetupContext'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct pat
+import { useRequireAuth } from './useRequireAuth';
 
 // Employee component
-function Employee({ employee, updateEmployeeInList, taxOffices }) {
+function Employee({ employee, updateEmployeeInList, taxOffices, detailView }) {
   const { id, name, surname, street, number, postcode, city, country, tax_office, pesel } = employee;
   const [showDetails, setShowDetails] = useState(false);
   const [contractsVisible, setContractsVisible] = useState(false);
@@ -32,6 +34,12 @@ function Employee({ employee, updateEmployeeInList, taxOffices }) {
   const [updateMessage, setUpdateMessage] = useState('');
   const [taxOffice, setTaxOffice] = useState(employee.tax_office); // Assuming 'tax_office' is the property
   const [taxOfficeName, setTaxOfficeName] = useState(''); // You might need to adjust this based on how you handle tax office names
+  const user = useRequireAuth();
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  // State to track the selected employee for displaying details
+
+
+  
   
   
   
@@ -58,6 +66,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     navigate(`/EmployeeContract/${id}`);
 };
 
+    
 
 
   const handleMedicalExamination = () => {
@@ -364,7 +373,8 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
   const contractStatus = isContractTerminated(employee.contractEndDate) ? 'Terminated' : 'Active';
   const statusColor = contractStatus === 'Terminated' ? 'red' : 'green';
  
-
+  if (detailView) {
+    // Render the detailed view of the selected employee
   return (
     <div>
       <span style={{ color: statusColor }}>{contractStatus}</span>
@@ -576,6 +586,25 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
 
     </div>
       )
+}else {
+  // Render the summary view
+  return (
+    <div className="flex justify-between">
+      {/* Summary information for the employee list */}
+      
+      <div>
+        <p className="font-bold">{employee.name} {employee.surname}</p>
+        <span style={{ color: statusColor }}>{contractStatus}</span>
+      </div>
+      <button 
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+        onClick={() => setSelectedEmployee(employee)}
+      >
+        More
+      </button>
+    </div>
+  );
+}
 }
 
 // EmployeeList component
@@ -589,6 +618,12 @@ function EmployeeList() {
   const [taxOffices, setTaxOffices] = useState([]); // New state for tax offices
   const [filterStatus, setFilterStatus] = useState('all'); // new state for filtering by contract status
   const { setIsInSetupProcess } = useSetup(); // Use the hook to access context methods
+  const user = useRequireAuth();
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  const handleEmployeeSelect = (employee) => {
+    setSelectedEmployee(employee);
+  };
 
   const updateEmployeeInList = (employeeId, newDetails) => {
     setEmployees(currentEmployees => {
@@ -675,40 +710,86 @@ function EmployeeList() {
     navigate('/createEmployee');
   };
 
+  // If user is null, component will show a loading message or a minimal UI instead of immediately returning null
+  if (!user) {
+    return (
+      <div>Loading... If you are not redirected, <a href="/loginUser">click here to login</a>.</div>
+    );
+  }
+
 
   return (
-    <div className="employee-list-container">
-      <div className="employee-list-title">
-        <h1>Employee List</h1>
-        <input
-          type="text"
-          placeholder="Filter by surname..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-        <select onChange={handleSortChange}>
-          <option value="asc">Sort A-Z</option>
-          <option value="desc">Sort Z-A</option>
-        </select>
-        <select onChange={(e) => setFilterStatus(e.target.value)}>
-        <option value="all">All Employees</option>
-        <option value="active">Active Employees</option>
-        <option value="terminated">Terminated Employees</option>
-      </select>
-      <button className="create-employee-button" onClick={handleCreateEmployeeClick}>
-                Create Employee
-        </button>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row gap-4">
+          
+          <div className="md:w-1/2">
+            <h1 className="text-2xl font-semibold mb-4">Employee List</h1>
+        <div className="flex flex-wrap gap-4 mb-4 justify-between">
+          <input
+            type="text"
+            placeholder="Filter by surname..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border border-gray-300 rounded-md p-2 shadow-sm w-full md:w-auto flex-1"
+          />
+          <select onChange={handleSortChange} className="border border-gray-300 rounded-md p-2 shadow-sm">
+            <option value="asc">Sort A-Z</option>
+            <option value="desc">Sort Z-A</option>
+          </select>
+          <select onChange={(e) => setFilterStatus(e.target.value)} className="border border-gray-300 rounded-md p-2 shadow-sm">
+            <option value="all">All Employees</option>
+            <option value="active">Active Employees</option>
+            <option value="terminated">Terminated Employees</option>
+          </select>
+          <button 
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={handleCreateEmployeeClick}
+          >
+            Create Employee
+          </button>
+        </div>
+        <div className="employee-list">
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div className="text-red-500">{error}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-1 gap-10">
+          {filteredAndSortedEmployees.map((employee) => (
+            <div 
+            onClick={() => handleEmployeeSelect(employee)} 
+            key={employee.id} 
+            updateEmployeeInList={updateEmployeeInList} 
+            taxOffices={taxOffices}
+            className="cursor-pointer hover:bg-gray-200 p-2 rounded-md"
+          >
+            {/* Pass just the necessary props to Employee for summary view */}
+            <Employee 
+              employee={employee} 
+              handleEmployeeSelect={handleEmployeeSelect} 
+              
+            />
+          </div>
+          ))}
+        </div>
+      )}
+    </div>
       </div>
-      <div className="employee-list">
-        {loading ? (
-          <div>Loading...</div>
-        ) : error ? (
-          <div>{error}</div>
-        ) : (
-          filteredAndSortedEmployees.map((employee) => (
-            <Employee key={employee.id} employee={employee} updateEmployeeInList={updateEmployeeInList} taxOffices={taxOffices} />
-          ))
-        )}
+      {selectedEmployee && (
+            <div className="md:w-1/2 bg-white p-4 rounded-md shadow">
+              {/* Display selected employee details */}
+              <Employee
+                employee={selectedEmployee}
+                updateEmployeeInList={updateEmployeeInList}
+                taxOffices={taxOffices}
+                detailView={true} // pass true to show detailed view
+                setSelectedEmployee={setSelectedEmployee} // pass function to unset the selected employee
+              />
+            </div>
+          )}
+          
+        </div>
       </div>
     </div>
   );

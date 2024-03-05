@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
+import { useRequireAuth } from './useRequireAuth';
 
 
 function ToDo() {
@@ -8,6 +9,14 @@ function ToDo() {
     const [showEmploySubMenu, setShowEmploySubMenu] = useState(false);
     const [showManageSubMenu, setShowManageSubMenu] = useState(false);
     const [showReportSubMenu, setShowReportSubMenu] = useState(false);
+    const user = useRequireAuth();
+
+    // If user is null, component will show a loading message or a minimal UI instead of immediately returning null
+if (!user) {
+    return (
+      <div>Loading... If you are not redirected, <a href="/login">click here to login</a>.</div>
+    );
+  }
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-10">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
+import { useRequireAuth } from './useRequireAuth';
 
 function ReportsPage() {
   const currentYear = new Date().getFullYear();
@@ -22,7 +23,7 @@ const [selectedRange, setSelectedRange] = useState(3); // Default to 3 months
 const [contracts, setContracts] = useState([]);
 const [companyData, setCompanyData] = useState(null);
 const [error, setError] = useState(null);
-const user = useUser();
+const user = useRequireAuth();
   const userEmail = user?.email; // Safely access the email property
 
 
@@ -467,170 +468,206 @@ useEffect(() => {
           </table>
         </>
        )}
+       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
        {reportType === 'social-insurance' && (
-  
+  <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-4xl">
     <>
-      <h3>Składki ZUS za {month}/{year}</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Type of Contribution</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
+  <h3 className="text-xl font-semibold mb-4">Składki ZUS za {month}/{year}</h3>
+  <div className="overflow-x-auto mb-6">
+    <table className="min-w-full bg-white divide-y divide-gray-300">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Suma ubezpieczenia</th>
+          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Kwota:</th>
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
           {/* Map through each type of insurance and its total */}
           {/* Repeat for other insurance types */}
           {/* ... */}
           <tr>
-            <td>Total Społeczne</td>
-            <td>{reportData.totalSpołeczne.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Społecznego</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalSpołeczne.toFixed(2)}</td>
           </tr>
           <tr>
-            <td>Total FP+FGŚP</td>
-            <td>{reportData.totalFPFGŚP.toFixed(2)}</td>
+            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FP+FGŚP</td>
+            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalFPFGŚP.toFixed(2)}</td>
           </tr>
           <tr>
-            <td>Zdrowotne</td>
-            <td>{reportData.totalHealthAmount.toFixed(2)}</td>
+            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Zdrowotnego</td>
+            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalHealthAmount.toFixed(2)}</td>
           </tr>
-          <tr className="total-row">
-            <td>Grand Total</td>
-            <td>{reportData.grandTotal.toFixed(2)}</td>
+          <tr>
+            <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Łącznie</td>
+            <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-right text-gray-900">{reportData.grandTotal.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
-     
+      </div>
 
-     <div style={{ marginTop: '40px' }}></div> 
-     <div style={{ marginTop: '20px' }}></div> 
-    <table>
-      <thead>
+      <div className="my-10 w-full">
+  <div className="overflow-x-auto">
+    <table className="w-full bg-white divide-y divide-gray-300">
+      <thead className="bg-gray-50">
         <tr>
-          <th>Składa na:</th>
-          <th>Pracownik</th>
-          <th>Pracodawca</th>
-          <th>Razem</th>
-        </tr>
-      </thead>
-      <tbody>
+        <th className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Składa na:</th>
+        <th className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Pracownik</th>
+        <th className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Pracodawca</th>
+        <th className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Razem</th>
+      </tr>
+    </thead>
+    <tbody className="bg-white divide-y divide-gray-200">
         {/* Example row for pension insurance */}
-        <tr>
-          <td>Emerytalne (Pension Insurance)</td>
-          <td>{reportData.totalEmrytUb.toFixed(2)}</td>
-          <td>{reportData.totalEmerytPr.toFixed(2)}</td>
-          <td>{reportData.totalemeryt.toFixed(2)}</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Emerytalne</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{reportData.totalEmrytUb.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{reportData.totalEmerytPr.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{reportData.totalemeryt.toFixed(2)}</td>
         </tr>
         {/* Similar rows for other types of insurance */}
         {/* ... */}
-        <tr>
-          <td>Rentowe (Pension Insurance)</td>
-          <td>{reportData.totalRentUb.toFixed(2)}</td>
-          <td>{reportData.totalRentPr.toFixed(2)}</td>
-          <td>{reportData.totalrentowe.toFixed(2)}</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Rentowe</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalRentUb.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalRentPr.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalrentowe.toFixed(2)}</td>
         </tr>
-        <tr>
-          <td>wypadkowe (Pension Insurance)</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">wypadkowe</td>
           <td>-</td>
-          <td>{reportData.totalWypadkowe.toFixed(2)}</td>
-          <td>{reportData.totalWypadkowe.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalWypadkowe.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalWypadkowe.toFixed(2)}</td>
         </tr>
-        <tr>
-          <td>Chorobowe (Sickness Insurance)</td>
-          <td>{reportData.totalChorobowe.toFixed(2)}</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Chorobowe</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalChorobowe.toFixed(2)}</td>
           <td>-</td> {/* Assuming employer doesn't contribute */}
-          <td>{reportData.totalChorobowe.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalChorobowe.toFixed(2)}</td>
         </tr>
-        <tr>
-          <td>Suma społeczne:</td>
-          <td>{reportData.totalSpołeczneUb.toFixed(2)}</td>
-          <td>{reportData.totalSpołecznePr.toFixed(2)}</td> {/* Assuming employer doesn't contribute */}
-          <td>{reportData.totalSpołeczne.toFixed(2)}</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Suma społeczne:</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalSpołeczneUb.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalSpołecznePr.toFixed(2)}</td> {/* Assuming employer doesn't contribute */}
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalSpołeczne.toFixed(2)}</td>
         </tr>
-        <tr>
-          <td>FP </td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FP </td>
           <td>-</td>
-          <td>{reportData.totalFp.toFixed(2)}</td>
-          <td>{reportData.totalFp.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFp.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFp.toFixed(2)}</td>
         </tr>
 
-        <tr>
-          <td>FGSP</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FGSP</td>
           <td>-</td>
-          <td>{reportData.totalFgsp.toFixed(2)}</td>
-          <td>{reportData.totalFgsp.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFgsp.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFgsp.toFixed(2)}</td>
         </tr>
-        <tr>
-          <td>FP i FGŚP łącznie</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">FP i FGŚP łącznie</td>
           <td>-</td>
-          <td>{reportData.totalFPFGŚP.toFixed(2)}</td>
-          <td>{reportData.totalFPFGŚP.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalFPFGŚP.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalFPFGŚP.toFixed(2)}</td>
         </tr>
-        <tr>
-          <td>Zdrowotne (Sickness Insurance)</td>
-          <td>{reportData.totalHealthAmount.toFixed(2)}</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Zdrowotne</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalHealthAmount.toFixed(2)}</td>
           <td>-</td> {/* Assuming employer doesn't contribute */}
-          <td>{reportData.totalHealthAmount.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalHealthAmount.toFixed(2)}</td>
         </tr>
         {/* ... */}
-        <tr className="total-row">
-          <td>Total</td>
-          <td>{reportData.totalEmployeeContribution.toFixed(2)}</td>
-          <td>{reportData.totalEmployerContribution.toFixed(2)}</td>
-          <td>{reportData.grandTotal.toFixed(2)}</td>
+        <tr className="bg-gray-100">
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Łącznie</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalEmployeeContribution.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalEmployerContribution.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.grandTotal.toFixed(2)}</td>
         </tr>
       </tbody>
     </table>
+    </div>
+</div>
   </>
+  </div>
   )}
-     </div>
-  );
+  </div>
+  </div>
+  )
 };
 
   return (
-    <div>
-      <h2>Generate Report</h2>
-      <div>
-        <label>
-          Report Type:
-          <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
-            <option value="">Select Report Type</option>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-8">
+    <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-5xl"> {/* Adjusted max-w-full */}
+      <h2 className="text-2xl font-bold mb-4">Generuj raport</h2>
+      <div className="mb-8">
+      <div className="mb-4">
+        <label className="block mb-2 text-lg font-medium text-gray-700">
+          Rodzaj raportu:
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value)}
+            className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          >
+            <option value="">Wybierz rodzaj raportu</option>
             <option value="total-gross-amount">Total Gross Amount by Month and Year</option>
             <option value="total-net-amount">Total Net Amount by Month and Year</option>
             <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
             <option value="social-insurance">Social Insurance Report</option>
           </select>
         </label>
+      </div>
         {renderFormFields()}
         {reportType !== 'earnings-certificate' && (
-          <>
-            <label>
-              Month:
-              <select value={month} onChange={(e) => setMonth(e.target.value)}>
-                {months.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Year:
-              <select value={year} onChange={(e) => setYear(e.target.value)}>
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </label>
-          </>
-        )}
-        <button onClick={handleGenerateReport}>Generate</button>
-        <button onClick={handlePrint}>Print Report</button>
-
+        <div className="grid grid-cols-2 gap-4">
+          <label className="block text-lg font-medium text-gray-700">
+            Miesiąc:
+            <select
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            >
+              {months.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-lg font-medium text-gray-700">
+            Rok:
+            <select
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+      <div className="mt-6 flex space-x-4">
+        <button
+          onClick={handleGenerateReport}
+          className="inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Generuj
+        </button>
+        <button
+          onClick={handlePrint}
+          className="inline-flex items-center px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          Drukuj
+        </button>
       </div>
-  
-      <h2>Report Data</h2>
+    </div>
+
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Dane wybranego raportu</h2>
       {isReportGenerated && renderReportTable()}
     </div>
-  );
+  </div>
+  </div>
+);
+
 }
 
 export default ReportsPage;
