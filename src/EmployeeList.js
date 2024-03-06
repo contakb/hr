@@ -369,22 +369,28 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     const contractEndDate = new Date(endDate);
     return contractEndDate < today;
 };
-  const contractStatus = isContractTerminated(employee.contractEndDate) ? 'Terminated' : 'Active';
+  const contractStatus = isContractTerminated(employee.contractEndDate) ? 'Nieaktywny' : 'Aktywny';
   const statusColor = contractStatus === 'Terminated' ? 'red' : 'green';
 
+   // If user is null, component will show a loading message or a minimal UI instead of immediately returning null
+   if (!user) {
+    return (
+      <div>Loading... If you are not redirected, <a href="/loginUser">click here to login</a>.</div>
+    );
+  }
  
   if (detailView) {
     // Render the detailed view of the selected employee
   return (
-    <div className="bg-white p-4 shadow rounded-lg">
+    <div>
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Employee Details</h3>
+        <h3 className="text-lg font-semibold">Dane szczegółowe</h3>
         <span style={{ color: statusColor }}>{contractStatus}</span>
       </div>
       
       <div className="mb-4">
-        <p><strong>Name:</strong> {name}</p>
-        <p><strong>Surname:</strong> {surname}</p>
+        <p><strong>Imię:</strong> {name}</p>
+        <p><strong>Nazwisko:</strong> {surname}</p>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -392,62 +398,62 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     className="bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded text-xs"
     onClick={toggleDetails}
   >
-    {showDetails ? 'Hide Details' : 'Show Details'}
+    {showDetails ? 'Ukryj detale' : 'detale'}
   </button>
   <button 
     className="bg-green-500 hover:bg-green-700 text-white font-medium py-1 px-2 rounded text-xs"
     onClick={toggleContracts}
   >
-    {contractsVisible ? 'Hide Contracts' : 'Show Contracts'}
+    {contractsVisible ? 'Ukryj umowy' : 'umowy'}
   </button>
   <button 
     className="bg-red-500 hover:bg-red-700 text-white font-medium py-1 px-2 rounded text-xs"
     onClick={() => handleGenerateContractPage(id)}
   >
-    Generuj
+    Generuj umowe
   </button>
   <button 
     className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
     onClick={handleMedicalExamination}
   >
-    Medical Examination
+    Badania lekarskie
   </button>
   <button 
     className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
     onClick={() => handleTerminateContractPage(id)}
   >
-    Terminate Contract
+    Zakończ umowę
   </button>
 
       </div>
 
 
       {showDetails && (
-  <div>
+  <div className="border-t pt-4">
     {editEmployeeDetailsMode ? (
       <form onSubmit={handleUpdateDetails}>
-      <label htmlFor="name">Name:</label>
+      <label htmlFor="name">Imię:</label>
       <input type="text" name="name" id="name" defaultValue={name} placeholder="Name" className="form-input" />
   
-      <label htmlFor="surname">Surname:</label>
+      <label htmlFor="surname">Nazwisko:</label>
       <input type="text" name="surname" id="surname" defaultValue={surname} placeholder="Surname"className="form-input" />
   
-      <label htmlFor="street">Street:</label>
+      <label htmlFor="street">Ulica:</label>
       <input type="text" name="street" id="street" defaultValue={street} placeholder="Street"className="form-input" />
   
-      <label htmlFor="number">Number:</label>
+      <label htmlFor="number">Numer:</label>
       <input type="text" name="number" id="number" defaultValue={number} placeholder="Number"className="form-input" />
   
-      <label htmlFor="postcode">Postcode:</label>
+      <label htmlFor="postcode">Kod pocztowy:</label>
       <input type="text" name="postcode" id="postcode" defaultValue={postcode} placeholder="Postcode"className="form-input" />
   
-      <label htmlFor="city">City:</label>
+      <label htmlFor="city">Miasto:</label>
       <input type="text" name="city" id="city" defaultValue={city} placeholder="City" className="form-input"/>
   
-      <label htmlFor="country">Country:</label>
+      <label htmlFor="country">Państwo:</label>
       <input type="text" name="country" id="country" defaultValue={country} placeholder="Country"className="form-input" />
   
-      <label>Tax Office:</label>
+      <label>Urząd Skarbowy:</label>
           <Select 
             options={taxOfficeOptions} 
             onChange={handleTaxOfficeChange}
@@ -457,56 +463,101 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
           />
       <label htmlFor="pesel">PESEL:</label>
       <input type="text" name="pesel" id="pesel" defaultValue={pesel} placeholder="PESEL"className="form-input" />
-  
-      <button type="submit">Save Changes</button>
-      <button onClick={toggleEditMode}>Cancel</button>
+      <div className="flex gap-2 mb-4">
+      <button
+       className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+      type="submit">Zapisz zmiany</button>
+      <button
+    className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+       onClick={toggleEditMode}>Anuluj</button>
+       </div>
       </form>
     ) : (
       <div>
         {updateMessage && <div className="update-message">{updateMessage}</div>}
-        <p>Name: {name}</p>
-        <p>Surname: {surname}</p>
-        <p>Street: {street} {number}</p>
-        <p>Postcode: {postcode}</p>
-        <p>City: {city}</p>
-        <p>Country: {country}</p>
-        <p>Tax Office: {tax_office}</p>
-        <p>PESEL: {pesel}</p>
-        <button onClick={toggleParameters}>{parametersVisible ? 'Hide Parameters' : 'Show Parameters'}</button>
-        <button onClick={toggleEditEmployeeDetailsMode}>Quick edit</button>
-        </div>)}
+        
+        <div className="mb-4">
+        <p><strong>Ulica:</strong> {street} {number}</p>
+        <p><strong>Kod pocztowy:</strong> {postcode}</p>
+        <p><strong>Miasto:</strong> {city}</p>
+        <p><strong>Państwo:</strong> {country}</p>
+        <p><strong>Urząd Skarbowy:</strong> {tax_office}</p>
+        <p><strong>PESEL:</strong> {pesel}</p>
+        <p></p>
+        </div>
+        
+        <div className="flex gap-2 mb-2">
+        <button 
+         
+    className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+        onClick={toggleParameters}>{parametersVisible ? 'Zamknij parametry' : 'Parametry ZUS/Podatkowe'}</button>
+        <button 
+         
+    className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+        onClick={toggleEditEmployeeDetailsMode}>Edycja danych osobowych</button>
+        </div>
+        </div>
+        )}
           {parametersVisible && (
+            <div className="border-t pt-4">
   <div>
-    
-    <h3>Parameters:</h3>
+    <h3 className="text-lg font-semibold">Parametetry podatkowe i ZUS</h3>
     {updateMessage && <div className="update-message">{updateMessage}</div>}
     {editParametersMode ? (
       <form onSubmit={handleUpdateParameters}>
-        
-        <input type="text" name="koszty" defaultValue={parameters.koszty} />
-        <input type="text" name="ulga" defaultValue={parameters.ulga} />
-        <input type="text" name="kod_ub" defaultValue={parameters.kod_ub} />
-        <input type="date" name="valid_from" defaultValue={parameters.valid_from} />
-        <button type="submit">Save Changes</button>
-        <button onClick={toggleEditMode}>Cancel</button>
+        <label htmlFor="koszty">Koszty:</label>
+        <input type="text" name="koszty" defaultValue={parameters.koszty} placeholder="koszty" className="form-input"/>
+
+        <label htmlFor="ulga">Ulga podatkowa:</label>
+        <input type="text" name="ulga" defaultValue={parameters.ulga} placeholder="ulga" className="form-input"/>
+
+        <label htmlFor="kod_ub">Kod ubezpieczenia:</label>
+        <input type="text" name="kod_ub" defaultValue={parameters.kod_ub} placeholder="kod_ub" className="form-input" />
+
+        <label htmlFor="valid_from">Dane ważne od:</label>
+        <input type="date" name="valid_from" defaultValue={parameters.valid_from} placeholder="valid_from" className="form-input"/>
+
+        <div className="flex gap-2 mb-2">
+        <button
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+         type="submit">Zapisz zmiany</button>
+        <button
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+         onClick={toggleEditParametersMode}>Anuluj</button>
+         </div>
       </form>
     ) : parameters ? (
       <div>
-        <p>Koszty: {parameters.koszty}</p>
-        <p>Ulga: {parameters.ulga}</p>
-        <p>Kod UB: {parameters.kod_ub}</p>
-        <p>Valid From: {parameters.valid_from && new Date(parameters.valid_from).toLocaleDateString()}</p>
-        <button onClick={toggleEditParametersMode}>Quick edit</button>
-        <button onClick={handleEditParameters}>
-  {parameters ? 'Edit Parameters' : 'Add Parameters'}
+        <div className="mb-4">
+        <p><strong>Koszty:</strong> {parameters.koszty}</p>
+        <p><strong>Ulga:</strong> {parameters.ulga}</p>
+        <p><strong>Kod UB:</strong> {parameters.kod_ub}</p>
+        <p><strong>Dane ważne od:</strong> {parameters.valid_from && new Date(parameters.valid_from).toLocaleDateString()}</p>
+        </div>
+        <div className="flex gap-2 mb-2">
+        <button
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+        onClick={toggleEditParametersMode}>Szybka edycja</button>
+        <button
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+        onClick={handleEditParameters}>
+  {parameters ? 'Edytuj paramatry' : 'Dodaj parametry'}
 </button>
+</div>
       </div>
     ) : (
       <div>
-        <p>No parameters, please add them.</p>
-        <button onClick={handleAddParameters}>Add Parameters</button>
+        <div className="mb-4">
+        <p>Brak parametrów ZUS i podatkowych, dodaj proszę.</p>
+        </div>
+        <div className="flex gap-2 mb-2">
+        <button
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+         onClick={handleAddParameters}>Dodaj parametry</button>
+        </div>
       </div>
     )}
+          </div>
           </div>
         )}
       </div>
@@ -514,12 +565,18 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
 
 
 {contractsVisible && (
-  <div>
-    <h3>Contracts:</h3>
+  <div className="border-t pt-4">
+    <h3 className="text-lg font-semibold">Umowy o pracę:</h3>
     {contracts.length === 0 ? (
       <div>
-        <p>No contracts found.</p>
-        <button onClick={handleAddContract}>Add Contract</button>
+        <div className="mb-4">
+        <p>Nie znaleziono umów..</p>
+        </div>
+        <div className="flex gap-2 mb-2">
+        <button
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+        onClick={handleAddContract}>Dodaj umowę</button>
+        </div>
       </div>
     ) : (
       contracts.map(({ original, aneks }) => (
@@ -568,18 +625,28 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
               : <span style={{ color: 'green' }}> Active</span>}
           </p>
               {aneks.length === 0 ? (
-      <button onClick={() => toggleEditContractsMode(original.id)}>Quick edit</button>
+      <button 
+      className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+      onClick={() => toggleEditContractsMode(original.id)}>Quick edit</button>
     ) : (
       <p>Do umowy istnieje aneks. Zmiany w umowie poprzez aneks</p>
     )}
-              <button onClick={() => handleFullEdit(original.id)}>Full Edit</button>
+              <button
+              className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+              onClick={() => handleFullEdit(original.id)}>Edycja umowy</button>
               {aneks.length === 0 ? (
-    <button onClick={() => handleAneks(original.id)}>Create Aneks</button>
+    <button
+    className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={() => handleAneks(original.id)}>Stwórz aneks do umowy</button>
   ) : (
-    <button onClick={() => handleAneks(original.id, aneks[aneks.length - 1].id)}>Modify Aneks</button>
+    <button
+    className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={() => handleAneks(original.id, aneks[aneks.length - 1].id)}>Zmień aneks</button>
   )
 }
-              <button onClick={handleAddContract}>Add new Contract</button>
+              <button
+              className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+              onClick={handleAddContract}>Dodaj nową umowę</button>
             </div>
           )}
 
@@ -596,7 +663,9 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
                     {/* Display details of aneks contract */}
                     <p>Gross Amount: {aneksContract.gross_amount}</p>
                     <p>Contract From: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
-                    <button onClick={() => handleAneks(original.id, aneks[aneks.length - 1].id)}>Modify Aneks</button>
+                    <button
+                    className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+                    onClick={() => handleAneks(original.id, aneks[aneks.length - 1].id)}>Zmień aneks</button>
                     
                     {/* Add more fields if needed */}
                   </div>
@@ -616,7 +685,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     className="bg-red-500 hover:bg-red-700 text-white font-medium py-1 px-2 rounded text-xs"
           onClick={() => setSelectedEmployee(null)}
         >
-          Close
+          Zamknij okno
         </button>
 
 
@@ -625,21 +694,28 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
 }else {
   // Render the summary view
   return (
-    <div className="flex justify-between">
-      {/* Summary information for the employee list */}
-      
-      <div>
-        <p className="font-bold">Id: {employee.id} {employee.name} {employee.surname} </p>
-        <span style={{ color: statusColor }}>{contractStatus}</span>
+    <div className="flex flex-col md:flex-row items-center bg-white shadow rounded-lg p-4 ">
+      <div className="flex-grow">
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}`}> 
+          {contractStatus}
+        </span>
+        <span className="ml-2 text-sm">Id: {id}</span>
       </div>
+  
+      <div className="flex-grow">
+        <p className="text-sm font-medium"><strong>Imię:</strong> {name}</p>
+        <p className="text-sm font-medium"><strong>Nazwisko:</strong> {surname}</p>
+      </div>
+      
       <button
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+        className="ml-auto bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-3 rounded transition duration-300 ease-in-out"
         onClick={() => setSelectedEmployee(employee)}
       >
         More
       </button>
     </div>
   );
+  
 }
 }
 
@@ -746,12 +822,7 @@ function EmployeeList() {
     navigate('/createEmployee');
   };
 
-  // If user is null, component will show a loading message or a minimal UI instead of immediately returning null
-  if (!user) {
-    return (
-      <div>Loading... If you are not redirected, <a href="/loginUser">click here to login</a>.</div>
-    );
-  }
+ 
 
 
   return (
@@ -759,38 +830,39 @@ function EmployeeList() {
   <div className="max-w-6xl mx-auto sm:px-6 lg:px-8">
     {/* Filters and Create Employee Button */}
     <div className="mb-4">
-      <h1 className="text-2xl font-semibold">Employee List</h1>
         <div className="flex flex-wrap gap-4 mb-4 justify-between">
           <input
             type="text"
-            placeholder="Filter by surname..."
+            placeholder="Filtruj po nazwisku..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             className="border border-gray-300 rounded-md p-2 shadow-sm w-full md:w-auto flex-1"
           />
           <select onChange={handleSortChange} className="border border-gray-300 rounded-md p-2 shadow-sm">
-            <option value="asc">Sort A-Z</option>
-            <option value="desc">Sort Z-A</option>
+            <option value="asc">Sortuj A-Z</option>
+            <option value="desc">Sortuj Z-A</option>
           </select>
           <select onChange={(e) => setFilterStatus(e.target.value)} className="border border-gray-300 rounded-md p-2 shadow-sm">
-            <option value="all">All Employees</option>
-            <option value="active">Active Employees</option>
-            <option value="terminated">Terminated Employees</option>
+            <option value="all">Wszyscy pracownicy</option>
+            <option value="active">Aktywni</option>
+            <option value="terminated">Nieaktywni</option>
           </select>
           <button 
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             onClick={handleCreateEmployeeClick}
           >
-            Create Employee
+            Wprowadź pracownika
           </button>
         </div>
         </div>
         {/* Main Content Area */}
     <div className="flex flex-col bg-white p-1 shadow rounded-lg lg:flex-row gap-4">
       {/* Employee List Section */}
-      <div className="lg:w-1/2 bg-white p-4 shadow rounded-lg">
+      
+      <div className="flex-1 bg-white p-4 shadow rounded-lg">
+      <h1 className="text-1xl font-semibold">Wybierz pracownika:</h1>
       {loading ? (
-        <div>Loading...</div>
+        <div>Ładowanie...</div>
       ) : error ? (
         <div className="text-red-500">{error}</div>
       ) : (
@@ -798,10 +870,11 @@ function EmployeeList() {
             {/* Map over your employees to render the list */}
           {filteredAndSortedEmployees.map((employee) => (
             <div
-            className="cursor-pointer p-2 hover:bg-gray-200"
+            className="cursor-pointer p-2 hover:bg-gray-200 border-t pt-4"
             onClick={() => handleEmployeeSelect(employee)}
             key={employee.id}
           >
+            
             <Employee
               employee={employee}
               updateEmployeeInList={updateEmployeeInList}
@@ -817,6 +890,7 @@ function EmployeeList() {
       {selectedEmployee && (
             <div className="lg:w-1/2 bg-white p-4 shadow rounded-lg">
               {/* Display selected employee details */}
+              
               <Employee
                 employee={selectedEmployee}
                 updateEmployeeInList={updateEmployeeInList}
