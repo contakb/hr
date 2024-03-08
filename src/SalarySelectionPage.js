@@ -9,6 +9,11 @@ import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { parseISO } from 'date-fns';
 import moment from 'moment-timezone';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlusCircle, faTrashAlt, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
+import { useRequireAuth } from './useRequireAuth';
+import { useSetup } from './SetupContext'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct pat
 // Set the default timezone to Warsaw, Poland
 moment.tz.setDefault("Europe/Warsaw");
 
@@ -77,6 +82,7 @@ const [isAverageManuallySet, setIsAverageManuallySet] = useState(false);
 
 
 
+
 const [notification, setNotification] = useState({ show: false, employeeId: null });
 const [isSalarySaved, setIsSalarySaved] = useState(false);
 const [areBreaksSaved, setAreBreaksSaved] = useState(false);
@@ -84,6 +90,7 @@ const [areBreaksSaved, setAreBreaksSaved] = useState(false);
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1); // Months from 1 to 12
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: 51 }, (_, i) => currentYear - 25 + i); // Last 25 years to next 25 years
+const user = useRequireAuth();
 
   
 
@@ -516,46 +523,43 @@ if (validContracts.length > 0 && workingHours && holidays.length >= 0 && year &&
 }
 }, [validContracts, workingHours, holidays, year, month]);
 
+
+
 const fetchCompanyData = async () => {
-  axiosInstance.get('http://localhost:3001/api/created_company')
-  .then(response => {
-    if (response.data && response.data.company_id) {
-      setCompanyData(response.data);
+  try {
+    const response = await axiosInstance.get('http://localhost:3001/api/created_company');
+    const company = response.data.length > 0 ? response.data[0] : null;
 
-      // Parse the wypadkowe rate as a float (remove "%" and convert to float)
-      const parsedWypadkoweRate = parseFloat(response.data.wypadkowe.replace('%', ''));
+    if (company && company.company_id) {
+      setCompanyData(company);
 
-      setWypadkoweRate(parsedWypadkoweRate); // Update the state with the parsed value
-// Parse the wypadkowe rate as a float (remove "%" and convert to float
-
-      console.log('wypadkoweRate in fetchCompanyData:', wypadkoweRate); // Add this log
+      // Ensure that company.wypadkowe is a string before attempting to replace
+      if (typeof company.wypadkowe === 'string') {
+        const parsedWypadkoweRate = parseFloat(company.wypadkowe.replace('%', ''));
+        setWypadkoweRate(parsedWypadkoweRate); // Update the state with the parsed value
+        console.log('wypadkoweRate in fetchCompanyData:', parsedWypadkoweRate);
+      }
 
       setError(''); // Clear any previous error messages
-      
-      // Handle the calculatedValues as needed
     } else {
       setCompanyData(null); // Set to null if no data is returned
-    }
-    setIsLoading(false);
-  })
-  .catch(error => {
-    console.error('Error fetching company data:', error);
-    // Check if the error is due to no data found and set an appropriate message
-    if (error.response && error.response.status === 404) {
       setError('No existing company data found. Please fill out the form to create a new company.');
-    } else {
-      setError('Failed to fetch company data.');
     }
-
-    setCompanyData(null); // Set companyData to null when fetch fails
-    setIsLoading(false);
-  });
+  } catch (error) {
+    console.error('Error fetching company data:', error);
+    setError(error.response && error.response.status === 404
+      ? 'No existing company data found. Please fill out the form to create a new company.'
+      : 'Failed to fetch company data.'
+    );
+    setCompanyData(null);
+  }
 };
 
-
 useEffect(() => {
-fetchCompanyData();
+  fetchCompanyData();
 }, []);
+
+
 
 // Define the employeeParameters array at the top-level scope
 // Assuming employeeParameters is now an object
@@ -2301,35 +2305,38 @@ calculatedContracts.forEach(employee => {
 
 
 const renderEmployeeTable = () => {
-if (loading) return <div>Loading...</div>;
-if (error) return <div>{error}</div>;
-if (validContracts.length === 0) {
-  return <div>No employees with valid contracts for the selected month and year.</div>;
-}
+  if (loading) return <div className="text-center">Loading...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
+  if (validContracts.length === 0) {
+    return <div>No employees with valid contracts for the selected month and year.</div>;
+  }
 
 return (
-  <div className="table-responsive">
-     <h2>Lista płac za {month} {year}</h2>
-     {renderHistoricalSalariesTable()}
-    <label htmlFor="salaryDate">Salary Date:</label>
-    <input
+  <div className="salary-selection-page bg-gray-100 p-4 overflow-x-auto">
+    <h2 className="text-lg font-bold mb-4">Lista płac za {month} / {year}</h2>
+    {renderHistoricalSalariesTable()}
+    <div className="my-4 flex flex-col md:flex-row gap-4 items-end">
+     <div>
+     <p><label htmlFor="salaryDate" className="block text-sm font-medium text-gray-700">Salary Date:</label></p>
+     <p><input
       type="date"
       id="salaryDate"
       value={salaryDate}
       onChange={(e) => setSalaryDate(e.target.value)}
+      className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
     />
-    <button onClick={calculateSalaryForAll}>Calculate Salary for All</button>
-    <button onClick={handleSaveBreaksData} disabled={areBreaksSaved}>
-      
-  Save Breaks Data
-</button>
-<button onClick={handleSaveSalaryData} disabled={isSalarySaved} >
-{isEditMode ? "Update Salary" : "Save Salary Data"}
-</button>
-<button onClick={handleBack}>
-{isEditMode ? "Back to Salary List" : ""}
-  
-</button>
+    </p>
+    <p></p>
+    </div>
+    <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-1 rounded focus:outline-none focus:shadow-outline" onClick={calculateSalaryForAll}>Calculate Salary for All</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-1 rounded focus:outline-none focus:shadow-outline" onClick={handleSaveBreaksData} disabled={areBreaksSaved}>Save Breaks Data</button>
+        <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-1 rounded focus:outline-none focus:shadow-outline" onClick={handleSaveSalaryData} disabled={isSalarySaved}>
+          {isEditMode ? "Update Salary" : "Save Salary Data"}
+        </button>
+        <button className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-1 rounded focus:outline-none focus:shadow-outline" onClick={handleBack}>
+          {isEditMode ? "Back to Salary List" :"Powrót" }
+        </button>
+</div>
 
     {notification.show && 
       <Notification 
@@ -2338,55 +2345,55 @@ return (
       />
     } 
 
-    <div className="table-responsive">
-  <table>
-    <thead>
+<div className="overflow-x-auto">
+<table className=" min-w-full">
+      <thead className="bg-gray-50">
       <tr>
-      <th>ID</th>
-        <th>Name</th>
-        <th>Surname</th>
-        <th>Wyn.zasadnicze</th>
-        <th>Netto</th>
-        <th>Start Date</th>
+      <th className="px-1 py-1 text-xs">ID</th>
+        <th className="px-1 py-1 text-xs">Name</th>
+        <th className="px-1 py-1 text-xs">Surname</th>
+        <th className="px-1 py-1 text-xs">Wyn.zasadnicze</th>
+        <th className="px-1 py-1 text-xs">Netto</th>
+        <th className="px-1 py-1 text-xs">Start Date</th>
         
-        <th>Days</th>
-        <th>Health Break Type</th>
-        <th>Pods_społ</th>
-        <th>Dodatek ZUS</th>
-    <th>wyn.chorobowe</th>
-          <th>em.pr</th>
-          <th>em.ub</th>
-          <th>rent.pr</th>
-          <th>rent.ub</th>
-          <th>chorobowe</th>
-          <th>wypadkowe</th>
-          <th>FP</th>
-          <th>FGSP</th>
+        <th className="px-1 py-1 text-xs">Days</th>
+        <th className="px-1 py-1 text-xs">Health Break Type</th>
+        <th className="px-1 py-1 text-xs">Podstawa</th>
+        <th className="px-1 py-1 text-xs w-20">Dodatek</th>
+    <th className="px-1 py-1 text-xs">wyn</th>
+          <th className="px-1 py-1 text-xs">em.pr</th>
+          <th className="px-1 py-1 text-xs">em.ub</th>
+          <th className="px-1 py-1 text-xs">rent.pr</th>
+          <th className="px-1 py-1 text-xs">rent.ub</th>
+          <th className="px-1 py-1 text-xs">chorobowe</th>
+          <th className="px-1 py-1 text-xs">wypadkowe</th>
+          <th className="px-1 py-1 text-xs">FP</th>
+          <th className="px-1 py-1 text-xs">FGSP</th>
           </tr>
           <tr>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th>End Date</th>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th>Pods_zdrow</th>
+          <th className="px-1 py-1 text-xs"></th>
+          <th className="px-1 py-1 text-xs"></th>
+          <th className="px-1 py-1 text-xs"></th>
+          <th className="px-1 py-1 text-xs"></th>
+          <th className="px-1 py-1 text-xs"></th>
+          <th className="px-1 py-1 text-xs">End Date</th>
+          <th className="px-1 py-1 text-xs"></th>
+          <th className="px-1 py-1 text-xs"></th>
+          <th className="px-1 py-1 text-xs">ub. społ.</th>
+          <th className="px-1 py-1 text-xs w-20">ZUS</th>
+          <th className="px-1 py-1 text-xs">chorobowe</th>
+          <th className="px-1 py-1 text-xs">Pods_zdrow</th>
           
-          <th>zdrow</th>
-    <th>koszty</th>
-          <th>podstawa_zaliczki</th>
-    <th>ulga</th>
-          <th>zaliczka</th>
-          <th>zal_2021</th>
-          <th>Netto</th>
+          <th className="px-1 py-1 text-xs">zdrow</th>
+    <th className="px-1 py-1 text-xs">koszty</th>
+          <th className="px-1 py-1 text-xs">podstawa_zaliczki</th>
+    <th className="px-1 py-1 text-xs">ulga</th>
+          <th className="px-1 py-1 text-xs">zaliczka</th>
+          <th className="px-1 py-1 text-xs">zal_2021</th>
+          <th className="px-1 py-1 text-xs">Netto</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody className="bg-white divide-y divide-gray-200">
     {calculatedContracts.map((employee, index) => {
       console.log('Employee object:', employee); 
       // Debug log to check if employee has parameters
@@ -2421,12 +2428,12 @@ const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
                       return (
                         <React.Fragment key={employee.employee_id || index}>
                           <tr>
-                              <td>{employee.employee_id}</td>
-                              <td>{employee.name}</td>
-                              <td>{employee.surname}</td>
-                              <td>{employee.gross_amount}</td>
-                              <td>{employee.contracts?.[0]?.netAmount}</td>
-                              <td>
+                              <td  className="text-xs p-1 rounded">{employee.employee_id}</td>
+                              <td  className="text-xs p-1 rounded">{employee.name}</td>
+                              <td  className="text-xs p-1 rounded">{employee.surname}</td>
+                              <td  className="text-xs p-1 rounded">{employee.gross_amount}</td>
+                              <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.netAmount}</td>
+                              <td  className="text-xs p-1 rounded">
                               <DatePicker
   key={`start-date-picker-${index}`} // Unique key for each DatePicker
   selected={healthBreak.startDate 
@@ -2447,13 +2454,12 @@ const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
 
 
           </td>
+          <td  className="text-xs p-1 rounded">{healthBreak.days}</td>
 
-         
-
-          <td>{healthBreak.days}</td>
-
-          <td>
+          <td td className="p-1">
+          <div className="flex items-center space-x-1">
               <select
+              className="text-xs p-1 rounded border-gray-300" // Added border color
                   value={healthBreak?.type || ''}
                   onChange={(e) => handleHealthBreakTypeChange(e, index)}
               >
@@ -2468,40 +2474,37 @@ const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
                   <option value="zasiłek">zasiłek ZUS</option>
               </select>
               
-              <button onClick={() => addAdditionalBreak(employee.employee_id)}>Add Przerwa</button>
-              <button onClick={() => deletePrimaryBreak(employee.employee_id)}>
-  Delete Primary Break
-</button>
-              <button onClick={resetBreakFields}>Clear Break Fields</button>
-
               
-          </td>
+  </div>
+</td>
 
-      <td>{employee.contracts?.[0]?.social_base}</td> 
-      <td><input
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.social_base}</td> 
+      <td  className="text-xs p-1 rounded"><input
 type="number"
+className="w-12 p-1 text-xs border-gray-300 rounded-md" // Constrain the width with w-12 and reduce padding with p-1
 value={employeeBonuses[employee.employee_id] || 0}
 onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
 /></td>
                     
-      <td>{employee.contracts?.[0]?.wyn_chorobowe}</td>                        
-      <td>{employee.contracts?.[0]?.emeryt_pr}</td>
-  <td>{employee.contracts?.[0]?.emeryt_ub}</td>
-  <td>{employee.contracts?.[0]?.rent_pr}</td>
-  <td>{employee.contracts?.[0]?.rent_ub}</td>
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.wyn_chorobowe}</td>                        
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.emeryt_pr}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.emeryt_ub}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.rent_pr}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.rent_ub}</td>
   
-  <td>{employee.contracts?.[0]?.chorobowe}</td>
-  <td>{employee.contracts?.[0]?.wypadkowe}</td>
-  <td>{employee.contracts?.[0]?.FP}</td>
-  <td>{employee.contracts?.[0]?.FGSP}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.chorobowe}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.wypadkowe}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.FP}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.FGSP}</td>
   </tr>
   <tr>
-  <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>
+  <td  className="text-xs p-1 rounded"></td>
+            <td  className="text-xs p-1 rounded"></td>
+            <td  className="text-xs p-1 rounded"></td>
+            <td  className="text-xs p-1 rounded"></td>
+            <td  className="text-xs p-1 rounded"></td>
+            <td
+              className="text-xs p-1 rounded">
             <DatePicker
   selected={healthBreak.endDate 
             ? moment.utc(healthBreak.endDate).tz("Europe/Warsaw").toDate()
@@ -2517,26 +2520,46 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
   dateFormat="yyyy/MM/dd"
 />
 
-
             </td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td  className="text-xs p-1 rounded"></td>
+            <td>
+              <div className="flex items-center space-x-1">
+              <button
+              className="p-1 rounded text-green-500 hover:text-green-700"
+              onClick={() => addAdditionalBreak(employee.employee_id)}title="Add Break" // Tooltip text
+              >
+                <FontAwesomeIcon icon={faPlusCircle} /> 
+                <i className="fas fa-plus-circle"></i> {/* Icon from FontAwesome */}
+              </button>
+              <button
+              className="p-1 rounded text-red-500 hover:text-red-700"
+              onClick={() => deletePrimaryBreak(employee.employee_id)}title="Delete Primary Break" // Tooltip text
+    >
+      <FontAwesomeIcon icon={faTrashAlt} />
+      <i className="fas fa-trash-alt"></i> {/* Icon from FontAwesome */}
+    </button>
+    <button
+      className="p-1 rounded text-blue-500 hover:text-blue-700"
+      onClick={resetBreakFields}
+      title="Clear Break Fields" // Tooltip text
+    >
+      <FontAwesomeIcon icon={faUndoAlt} /> 
+      <i className="fas fa-undo-alt"></i> {/* Icon from FontAwesome */}
+    </button>
+  </div>
+</td>
+            <td  className="text-xs p-1 rounded"></td>
+            <td  className="text-xs p-1 rounded"></td>
+            <td  className="text-xs p-1 rounded"></td>
             
-  <td>{employee.contracts?.[0]?.podstawa_zdrow}</td>
-  <td>{employee.contracts?.[0]?.zdrowotne}</td>
-  <td>{employee.koszty !== undefined ? employee.koszty : 250}</td>
-  <td>{employee.contracts?.[0]?.podstawa_zaliczki}</td>
-  <td>{employee.ulga !== undefined ? employee.ulga : 300}</td>
-  <td>{employee.contracts?.[0]?.zaliczka}</td>
-  <td>{employee.contracts?.[0]?.zal_2021}</td>
-  <td>{employee.contracts?.[0]?.netAmount}</td>
-  <td>
-
-
-              </td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.podstawa_zdrow}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.zdrowotne}</td>
+  <td  className="text-xs p-1 rounded">{employee.koszty !== undefined ? employee.koszty : 250}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.podstawa_zaliczki}</td>
+  <td  className="text-xs p-1 rounded">{employee.ulga !== undefined ? employee.ulga : 300}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.zaliczka}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.zal_2021}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.netAmount}</td>
                               </tr>
                               
                               
@@ -2545,7 +2568,9 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
                                 console.log(`Employee ID ${employee.employee_id} - Additional Break ${breakIndex} Parsed startDate:`, breakItem.startDate ? parseISO(breakItem.startDate) : null),
                                
               <tr key={`additional-${index}-${breakIndex}`}>
-                  <td colSpan={27}> {/* You can adjust colSpan according to the number of columns you have */}
+                  <td 
+                  className="text-xs p-1 rounded"
+                  colSpan={27}> {/* You can adjust colSpan according to the number of columns you have */}
                       <React.Fragment>
                           <td>
                           <DatePicker
@@ -2610,7 +2635,9 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
     </button>
 )}
           
-          <button onClick={async () => {
+          <button 
+          className="text-xs p-1 rounded"
+          onClick={async () => {
       const updatedEmployee = await fetchAllParameters(employee);
       console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
 
@@ -2775,24 +2802,29 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
     </tbody>
   </table>
   </div>
-
-
-
   </div>
+
+
+
+  
+  
 );
 };
 
 
 
-
 return (
-  <div className="salary-selection-page">
-    <h1>{isEditMode ? "Edit Salary" : "Salary Selection"}</h1>
+  <div className="min-h-screen bg-gray-100 p-4">
+    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+      <h1 className="text-2xl font-semibold mb-4 text-center"></h1>
     {!isEditMode && (
-      <div className="filter-container">
-        <label>
+       <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 flex flex-col gap-4">
+       <div className="mb-4">
+       <label className="block text-gray-700 text-sm font-bold mb-2">
           Month:
-          <select value={month} onChange={handleMonthChange}>
+          <select 
+          className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          value={month} onChange={handleMonthChange}>
             {monthOptions.map((m) => (
               <option key={m} value={m}>
                 {m}
@@ -2800,9 +2832,13 @@ return (
             ))}
           </select>
         </label>
-        <label>
+        </div>
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
           Year:
-          <select value={year} onChange={handleYearChange}>
+          <select
+          className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          value={year} onChange={handleYearChange}>
             {yearOptions.map((y) => (
               <option key={y} value={y}>
                 {y}
@@ -2810,11 +2846,20 @@ return (
             ))}
           </select>
         </label>
-        <button onClick={fetchValidContracts}>Fetch Valid Contracts</button>
-        <button onClick={handleBack}>Back to Salary List</button>
+        </div>
+        <div className="flex items-center justify-between">
+        <button
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        onClick={fetchValidContracts}>Fetch Valid Contracts</button>
+        <button
+        className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+        onClick={handleBack}>Back to Salary List</button>
+      </div>
       </div>
     )}
-    <div className="employee-list-container">{renderEmployeeTable()}</div>
+    <div className="employee-list-container bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      {renderEmployeeTable()}</div>
+  </div>
   </div>
 );
 }

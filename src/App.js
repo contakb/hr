@@ -27,8 +27,7 @@ import SetupPage from './setup';
 import { SetupProvider } from './SetupContext';
 import { UserProvider } from './UserContext'; // Adjust the import path as necessary
 
-import AddEmployees from './EmployeeForm';
-import SalarySetup from './SalarySelectionPage';
+import AddEmployees from './EmployeeForm'
 import AddContractToEmployee from './AddContractForm'; // Import your new component
 import AddParamsToEmployee from './EmployeeParam'; // Import your new component
 
@@ -83,7 +82,6 @@ function App() {
       <Route path="/createcompany" element={<CreateCompany />} />
       <Route path="/setup" element={<SetupPage />} />
       <Route path="/createEmployee" element={<AddEmployees />} />
-      <Route path="/salary-selection" element={<SalarySetup />} />
       <Route path="/add-contract/:employeeId"  element={<AddContractToEmployee />} /> {/* New route */}
       <Route path="/employee-param/:employeeId" element={<AddParamsToEmployee />} /> {/* New route */}
 
