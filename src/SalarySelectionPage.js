@@ -732,29 +732,30 @@ const renderHistoricalSalariesTable = () => {
   const employeeId = historicalSalaries[0]?.employee_id || 'N/A';
 
   return (
-      <div>
-          <h3>Historical Salaries for Employee ID: {employeeId}</h3>
-          <table>
-              <thead>
+      <div className="mt-4">
+          <h3 className="text-lg font-semibold mb-3">Wynagrodzenie dla pracownika: {employeeId} za okresy:</h3>
+          <div className="overflow-x-auto">
+          <table className="min-w-full table-auto bg-white rounded-md shadow overflow-hidden">
+              <thead className="bg-gray-200">
                   <tr>
-                  <th></th>
-                  <th>Okres</th>
-                      <th>Data wyplaty</th>
-                      <th>Podstawa brutto</th>
-                      <th>Uzupełnione Wynagrodzenie</th>
-                      <th>Amount Used for Average</th>
-                      <th>Dni miesiąca</th>
-                      <th>Dni miesiąca przepracowane</th>
-                      <th>Dni pracy</th>
-                      <th>Dni przepracowane</th>
-                      <th>Dni zwolnienia/ciąży robocze</th> 
-                      {!hideBreakBezplatny && <th>Dni bezpłatny</th>}
-                      {!hideBreakNieobecnosc && <th>Dni nieobecność</th>}
-    {!hideBreakZwolnienie && <th>Dni zwolnienia</th>}
-    {!hideCombinedBreaks && <th>Dni zwolnienia</th>}
+                  <th className="px-3 py-2 text-xs font-medium text-gray-700"></th>
+                  <th className="px-3 py-2 text-xs font-medium text-gray-700">Okres</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Data wyplaty</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Podstawa brutto</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Uzupełnione Wynagrodzenie</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Amount Used for Average</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni miesiąca</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni miesiąca przepracowane</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni pracy</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni przepracowane</th>
+                      <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni zwolnienia/ciąży robocze</th> 
+                      {!hideBreakBezplatny && <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni bezpłatny</th>}
+                      {!hideBreakNieobecnosc && <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni nieobecność</th>}
+    {!hideBreakZwolnienie && <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni zwolnienia</th>}
+    {!hideCombinedBreaks && <th className="px-3 py-2 text-xs font-medium text-gray-700">Dni zwolnienia</th>}
                   </tr>
               </thead>
-              <tbody>
+              <tbody className="text-xs divide-y divide-gray-200">
                   {historicalSalaries.map((salary, index) => {
                     const daysInMonth = getDaysInMonth(salary.salary_year, salary.salary_month);
                     const hasNieobecnosc = salary.break_nieobecnosc > 0; // Check for 'nieobecność' break
@@ -774,10 +775,10 @@ const renderHistoricalSalariesTable = () => {
 
                     return (
                       <tr key={index}>
-                          <td>{isMoreThanHalfMonthWorked ? "More than half month worked ujęty do średniej" : "Less than half month worked - pominięty"}</td>
-                       <td>{salary.salary_month}/{salary.salary_year} ({daysInMonth} days)</td>
-                          <td>{salary.salary_date}</td>
-                          <td>
+                          <td className="px-3 py-1">{isMoreThanHalfMonthWorked ? "Przepracowana ponad połowa mca - ujęte do średniej" : "Mniej niż połowa mca przepracowana - pominięte"}</td>
+                       <td className="px-3 py-1">{salary.salary_month}/{salary.salary_year} ({daysInMonth} dni)</td>
+                          <td className="px-3 py-1">{salary.salary_date}</td>
+                          <td className="px-3 py-1">
                                 <input 
                                     type="number"
                                     value={salary.social_base}
@@ -785,44 +786,51 @@ const renderHistoricalSalariesTable = () => {
                                    
                                 />
                             </td>
-                            <td>
+                            <td className="px-3 py-1">
                                     <input 
                                         type="number"
                                         value={salary.gross_total}
                                         onChange={(e) => handleSalaryChange(e, index, 'gross_total')}
                                     />
                                 </td>
-                                <td>{amountUsedForAverage}</td>
-                          <td> {daysInMonth}</td>
-                          <td>{salary.calendarWorkedDays}</td>
-                          <td>{salary.workingdays}</td>
-                          <td>{salary.actualWorkedDays}</td>
-                          <td>{salary.combinedBreaks_wd}</td>
-                          {!hideBreakBezplatny && <td>{salary.break_bezplatny}</td>}
-                          {!hideBreakNieobecnosc && <td>{salary.break_nieobecnosc}</td>}
-      {!hideBreakZwolnienie && <td>{salary.break_zwolnienie}</td>}
-      {!hideCombinedBreaks && <td>{salary.combinedBreaks}</td>}
+                                <td className="px-3 py-1">{amountUsedForAverage}</td>
+                          <td className="px-3 py-1"> {daysInMonth}</td>
+                          <td className="px-3 py-1">{salary.calendarWorkedDays}</td>
+                          <td className="px-3 py-1">{salary.workingdays}</td>
+                          <td className="px-3 py-1">{salary.actualWorkedDays}</td>
+                          <td className="px-3 py-1">{salary.combinedBreaks_wd}</td>
+                          {!hideBreakBezplatny && <td className="px-3 py-1">{salary.break_bezplatny}</td>}
+                          {!hideBreakNieobecnosc && <td className="px-3 py-1">{salary.break_nieobecnosc}</td>}
+      {!hideBreakZwolnienie && <td className="px-3 py-1">{salary.break_zwolnienie}</td>}
+      {!hideCombinedBreaks && <td className="px-3 py-1">{salary.combinedBreaks}</td>}
                       </tr>
                     );
                     })}
               </tbody>
           </table>
-          <p>Average Salary: {averageSalary.toFixed(2)} </p>
+          </div>
+          <div className="mt-4">
+          <label htmlFor="manualAverage" className="block text-sm font-medium text-gray-700">
+                Manualna korekta średniej wynagrodzenia:
+            </label>
+            <input 
+                id="manualAverage"
+                type="number"
+                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value={averageSalary}
+                onChange={handleAverageSalaryChange}
+            />
+        </div>
+          <p className="mt-2">Ujętę do podstawy chorobowego średnie wynagrodzenie: {averageSalary.toFixed(2)} </p>
           {isUsingMinimumSalary && (
-              <p className="minimum-salary-warning">
+              <p className="text-sm text-red-500">
                   Note: The calculated average was below the minimum salary. The minimum salary of {MINIMUM_SALARY} zł is being used.
               </p>
           )}
-          <div>
-    <label htmlFor="manualAverage">Manual adjustment to Average Salary:</label>
-    <input 
-        id="manualAverage"
-        type="number"
-        value={averageSalary}
-        onChange={handleAverageSalaryChange}
-    />
+          
 </div>
-      </div>
+      
+      
   );
 };
 
@@ -2353,22 +2361,28 @@ return (
         <th className="px-1 py-1 text-xs">Name</th>
         <th className="px-1 py-1 text-xs">Surname</th>
         <th className="px-1 py-1 text-xs">Wyn.zasadnicze</th>
-        <th className="px-1 py-1 text-xs">Netto</th>
+        <th className="px-1 py-1 text-xs">Premia</th>
         <th className="px-1 py-1 text-xs">Start Date</th>
         
         <th className="px-1 py-1 text-xs">Days</th>
         <th className="px-1 py-1 text-xs">Health Break Type</th>
+        <th className="whitespace-nowrap">
+        {/* Combine Start and End Date in one cell with proper labeling */}
+        <div className="flex flex-col">
         <th className="px-1 py-1 text-xs">Podstawa</th>
-        <th className="px-1 py-1 text-xs w-20">Dodatek</th>
+        <th className="px-1 py-1 text-xs">ub. społ.</th>
+            </div>
+          </th>
+        
     <th className="px-1 py-1 text-xs">wyn</th>
           <th className="px-1 py-1 text-xs">em.pr</th>
-          <th className="px-1 py-1 text-xs">em.ub</th>
           <th className="px-1 py-1 text-xs">rent.pr</th>
-          <th className="px-1 py-1 text-xs">rent.ub</th>
           <th className="px-1 py-1 text-xs">chorobowe</th>
-          <th className="px-1 py-1 text-xs">wypadkowe</th>
           <th className="px-1 py-1 text-xs">FP</th>
-          <th className="px-1 py-1 text-xs">FGSP</th>
+          <th className="px-1 py-1 text-xs">Podst.zdrow.</th>
+          <th className="px-1 py-1 text-xs">Podst.zaliczki</th>
+          <th className="px-1 py-1 text-xs">Koszty</th>
+          <th className="px-1 py-1 text-xs">Netto</th>
           </tr>
           <tr>
           <th className="px-1 py-1 text-xs"></th>
@@ -2380,16 +2394,14 @@ return (
           <th className="px-1 py-1 text-xs"></th>
           <th className="px-1 py-1 text-xs"></th>
           <th className="px-1 py-1 text-xs">ub. społ.</th>
-          <th className="px-1 py-1 text-xs w-20">ZUS</th>
           <th className="px-1 py-1 text-xs">chorobowe</th>
-          <th className="px-1 py-1 text-xs">Pods_zdrow</th>
-          
-          <th className="px-1 py-1 text-xs">zdrow</th>
-    <th className="px-1 py-1 text-xs">koszty</th>
-          <th className="px-1 py-1 text-xs">podstawa_zaliczki</th>
-    <th className="px-1 py-1 text-xs">ulga</th>
-          <th className="px-1 py-1 text-xs">zaliczka</th>
-          <th className="px-1 py-1 text-xs">zal_2021</th>
+          <th className="px-1 py-1 text-xs">em.ub</th>
+          <th className="px-1 py-1 text-xs">rent.ub</th>
+          <th className="px-1 py-1 text-xs">wypadkowe</th>
+    <th className="px-1 py-1 text-xs">FGŚP</th>
+          <th className="px-1 py-1 text-xs">ub. zdrowotne</th>
+    <th className="px-1 py-1 text-xs">zaliczka</th>
+          <th className="px-1 py-1 text-xs">ulga</th>
           <th className="px-1 py-1 text-xs">Netto</th>
       </tr>
     </thead>
@@ -2426,13 +2438,18 @@ const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
       
 
                       return (
-                        <React.Fragment key={employee.employee_id || index}>
+                        <React.Fragment key={employee.employee_id || index} className="hover:bg-gray-100">
                           <tr>
-                              <td  className="text-xs p-1 rounded">{employee.employee_id}</td>
+                              <td className="px-1 py-1 text-xs w-16">{employee.employee_id}</td>
                               <td  className="text-xs p-1 rounded">{employee.name}</td>
                               <td  className="text-xs p-1 rounded">{employee.surname}</td>
                               <td  className="text-xs p-1 rounded">{employee.gross_amount}</td>
-                              <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.netAmount}</td>
+                              <td  className="text-xs p-1 rounded"><input
+type="number"
+className="w-12 p-1 text-xs border-gray-300 rounded-md" // Constrain the width with w-12 and reduce padding with p-1
+value={employeeBonuses[employee.employee_id] || 0}
+onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
+/></td>
                               <td  className="text-xs p-1 rounded">
                               <DatePicker
   key={`start-date-picker-${index}`} // Unique key for each DatePicker
@@ -2466,7 +2483,7 @@ const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
                  
                   <option value="brak">Brak</option>
                   <option value="zwolnienie">Zwolnienie</option>
-                  <option value="ciąża">Zwolnienie 100% ciąża</option>
+                  <option value="ciąża">Zwol. 100% ciąża</option>
                   <option value="bezpłatny">Bezpłatny</option>
                   <option value="nieobecność">Nieobecność</option>
                   <option value="wychowawczy">wychowawczy</option>
@@ -2479,23 +2496,17 @@ const localDate = moment(dateStringFromBackend).tz("Europe/Warsaw").toDate();
 </td>
 
       <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.social_base}</td> 
-      <td  className="text-xs p-1 rounded"><input
-type="number"
-className="w-12 p-1 text-xs border-gray-300 rounded-md" // Constrain the width with w-12 and reduce padding with p-1
-value={employeeBonuses[employee.employee_id] || 0}
-onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
-/></td>
                     
       <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.wyn_chorobowe}</td>                        
       <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.emeryt_pr}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.emeryt_ub}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.rent_pr}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.rent_ub}</td>
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.rent_pr}</td>
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.chorobowe}</td>
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.FP}</td>
   
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.chorobowe}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.wypadkowe}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.FP}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.FGSP}</td>
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.podstawa_zdrow}</td>
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.podstawa_zaliczki}</td>
+      <td  className="text-xs p-1 rounded">{employee.koszty !== undefined ? employee.koszty : 250}</td>
+      <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.netAmount}</td>
   </tr>
   <tr>
   <td  className="text-xs p-1 rounded"></td>
@@ -2548,17 +2559,17 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
     </button>
   </div>
 </td>
-            <td  className="text-xs p-1 rounded"></td>
-            <td  className="text-xs p-1 rounded"></td>
-            <td  className="text-xs p-1 rounded"></td>
+<td  className="text-xs p-1 rounded"></td>
             
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.podstawa_zdrow}</td>
+            
+<td  className="text-xs p-1 rounded"></td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.emeryt_ub}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.rent_ub}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.wypadkowe}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.FGSP}</td>
   <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.zdrowotne}</td>
-  <td  className="text-xs p-1 rounded">{employee.koszty !== undefined ? employee.koszty : 250}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.podstawa_zaliczki}</td>
+  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.zaliczka} ({employee.contracts?.[0]?.zal_2021})</td>
   <td  className="text-xs p-1 rounded">{employee.ulga !== undefined ? employee.ulga : 300}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.zaliczka}</td>
-  <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.zal_2021}</td>
   <td  className="text-xs p-1 rounded">{employee.contracts?.[0]?.netAmount}</td>
                               </tr>
                               
@@ -2619,7 +2630,15 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
                                   <option value="rodzicielski">rodzicielski</option>
                                   <option value="zasiłek">zasiłek ZUS</option>
                               </select>
-                              <button onClick={() => deleteAdditionalBreak(employee.employee_id, breakIndex)}>Remove</button>
+                              
+                              <button
+                              className="p-1 rounded text-red-500 hover:text-red-700"
+                              onClick={() => deleteAdditionalBreak(employee.employee_id, breakIndex)}
+                                title="Delete Primary Break" // Tooltip text
+    >
+      <FontAwesomeIcon icon={faTrashAlt} />
+      <i className="fas fa-trash-alt"></i> {/* Icon from FontAwesome */}
+    </button>
 
                           </td>
                           
@@ -2628,15 +2647,18 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
               </tr>
               
     ))}
-   <div style={{ display: 'flex', alignItems: 'center' }}>
-{showRecalculateButton && (
-    <button onClick={() => handleCalculateSalary_1(employee, index)} style={{ marginRight: '10px' }}>
-        Pobierz dane z tabeli {employee.name}
-    </button>
-)}
-          
-          <button 
-          className="text-xs p-1 rounded"
+    
+     <td className="text-xs p-1 rounded">
+     {showRecalculateButton && (
+                  <button
+                    onClick={() => handleCalculateSalary_1(employee, index)}
+                    className="mr-2 p-1 rounded text-xs"
+                  >
+                    Pobierz dane z tabeli {employee.name}
+                  </button>
+                )}
+                <button
+          className="p-1 rounded text-xs"
           onClick={async () => {
       const updatedEmployee = await fetchAllParameters(employee);
       console.log(`Updated parameters: koszty=${updatedEmployee.koszty}, ulga=${updatedEmployee.ulga}`);
@@ -2785,9 +2807,10 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
   Przelicz wynagrodzenie
   
 </button>
-</div>
 
+</td>
 
+            
 
 
 
@@ -2801,6 +2824,7 @@ console.log('Koszty:', employee.koszty, 'Ulga:', employee.ulga);
 })}
     </tbody>
   </table>
+  
   </div>
   </div>
 
