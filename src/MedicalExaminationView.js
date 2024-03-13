@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'; // Add useEffect here
 
 import { useLocation } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function MedicalExaminationView() {
   const location = useLocation();
   const { employeeId } = useParams();
+  const navigate = useNavigate();
 
 console.log('Location:', location);
   // Initial state for employeeData
@@ -30,6 +31,13 @@ console.log('Location:', location);
   if (!employeeData) {
     return <div>No employee data available.</div>;
   }
+
+    // Add this function to handle the back button click
+const handleBackClick = () => {
+  navigate(-1); // This navigates to the previous page in history
+  // or you can navigate to a specific route, e.g., navigate('/dashboard');
+};
+
 
 
     return (
@@ -65,7 +73,9 @@ ze sposobu wykonywania pracy wskazanych w skierowaniu:,</p>
             <footer>
                 <p>Skierowanie na badania lekarskie jest wydawane w dwóch egzemplarzach, z których jeden otrzymuje osoba kierowana na badania.</p>
             </footer>
+            <p><button onClick={handleBackClick}>Back</button></p>
         </div>
+        
     );
 }
 

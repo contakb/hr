@@ -24,8 +24,14 @@ const [taxOffices, setTaxOffices] = useState([]);
 const [taxOffice, setTaxOffice] = useState('');
 const { currentStep, setCurrentStep, nextStep,  } = useSetup(); // Use the context to control steps
 const [employeeAdded, setEmployeeAdded] = useState(false);
+const [isEditMode, setIsEditMode] = useState(false);
+const [employees, setEmployees] = useState([]);
 const { markStepAsCompleted } = useSetup();
 const [showNextStepButton, setShowNextStepButton] = useState(false);
+const [employeeId, setEmployeeId] = useState(null); // Assume this might be set based on route or state
+const [isLoading, setIsLoading] = useState(true);
+const [isCreatingNew, setIsCreatingNew] = useState(false);
+
 
 const { setIsInSetupProcess } = useSetup();
 
@@ -149,10 +155,61 @@ useEffect(() => {
     // in a useEffect that reacts to changes in currentStep, similar to your goToNextStep setup.
   };
   
-  
+  // Function to toggle edit mode
+  const toggleEditMode = () => {
+    setIsEditMode(!isEditMode);
+  };
 
-  const handleCreateEmployee = (event) => {
-    event.preventDefault();
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      if (employeeId) {
+        setIsLoading(true);
+        try {
+          const response = await axios.get(`http://localhost:3001/employees/${employeeId}`);
+          if (response.data) {
+            const employeeData = response.data;
+            setEmployeeName(employeeData.name);
+            setEmployeeSurname(employeeData.surname);
+            setStreet(employeeData.street);
+            setNumber(employeeData.number);
+            setPostcode(employeeData.postcode);
+            setCity(employeeData.city);
+            setCountry(employeeData.country);
+            setPESEL(employeeData.pesel);
+            setTaxOffice(employeeData.tax_office);
+            setIsEditMode(true);
+            setIsCreatingNew(false);  // Not creating a new employee
+          }
+          setIsLoading(false);
+        } catch (error) {
+          console.error('Error fetching employee details:', error);
+          setIsEditMode(false);
+          setIsLoading(false);
+        }
+      } else {
+        // No employeeId means we are in add new employee mode
+        setIsEditMode(true);
+        setIsCreatingNew(true);  // Creating a new employee
+      }
+    };
+  
+    fetchEmployeeData();
+  }, [employeeId]);
+
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    if (!isCreatingNew && isEditMode && createdEmployee && createdEmployee.employeeId) {
+      await handleUpdateDetails();
+    } else {
+      await handleCreateEmployee();
+    }
+  };
+
+
+const handleCreateEmployee = async () => {
 
     if (!employeeName || !employeeSurname || !street || !number || !postcode || !city || !country || !taxOffice || !PESEL) {
       setValidationError("All fields must be entered!");  // Set the error message
@@ -195,6 +252,8 @@ useEffect(() => {
   markStepAsCompleted(2); // Mark the "Add Employees" step as completed
   nextStep(); // Move to the next step
   setEmployeeAdded(true); 
+  setIsCreatingNew(false);
+  setIsEditMode(true);
 
 // Use the returned employeeId from the server response
 const createdEmployeeData = {
@@ -206,9 +265,11 @@ const createdEmployeeData = {
   postcode,
   city,
   country,
-  taxOffice,
+  taxOffice: taxOfficeName,
   PESEL,
 };
+
+
 
 
 
@@ -277,6 +338,34 @@ setCreatedEmployee(createdEmployeeData);
       });
   };
 
+  const handleUpdateDetails = async () => {
+    const updatedDetails = {
+      name: employeeName,
+      surname: employeeSurname,
+      pesel: PESEL,
+      street: street,
+      number: number,
+      postcode: postcode,
+      city: city,
+      country: country,
+      tax_office: taxOfficeName,
+    };
+  
+    try {
+      const response = await axios.put(`http://localhost:3001/update-employee/${createdEmployee.employeeId}`, updatedDetails);
+      if (response.data.updatedEmployee) {
+        setCreatedEmployee(response.data.updatedEmployee); // Update local state with the updated employee
+        setIsEditMode(false); // Exit edit mode
+        alert('Employee data updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating employee details:', error);
+      alert('Failed to update employee data.');
+    }
+  };
+
+  
+
   const handleEmployeeNameChange = (event) => {
     setEmployeeName(event.target.value);
   };
@@ -327,94 +416,227 @@ const handleTaxOfficeChange = (selectedOption) => {
     setPESEL(event.target.value);
   };
 
+  const clearForm = () => {
+    setEmployeeName('');
+    setEmployeeSurname('');
+    setStreet('');
+    setNumber('');
+    setPostcode('');
+    setCity('');
+    setCountry('');
+    setTaxOffice('');
+    setPESEL('');
+    localStorage.removeItem('createdEmployee'); // Clear the stored employee data
+    setIsCreatingNew(true);
+    
+  };
+
+  // Additional function to handle "Edit" button click, to prevent form submission
+const handleEditClick = (event) => {
+  event.preventDefault();
+  console.log("Edit clicked, switching to edit mode...");
+  setIsEditMode(true);
+};
+
+
   return (
-    <div>
+    <div className="bg-gray-100 p-8 min-h-screen">
       {isInSetupProcess && <StepIndicator steps={steps} currentStep={currentStep} />}
       {isInSetupProcess && <StepIndicator steps={steps} isCurrentStepCompleted={employeeAdded} />}
-      <h1>Employee Form</h1>
+      <div className="max-w-3xl mx-auto">
+      <h1 className="text-2xl font-semibold text-center mb-6">Dane pracownika</h1>
       {/* Display validation error if present */}
-      {validationError && <div style={{ color: 'red' }}>{validationError}</div>}
-      <form onSubmit={handleCreateEmployee}>
-        <label>Employee Name:</label>
-        <input type="text" value={employeeName} onChange={handleEmployeeNameChange} />
+      <div className="text-red-500 text-center">{validationError}</div>
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white shadow rounded p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+      <label htmlFor="employeeName" className="block text-gray-700 text-sm font-bold mb-2">Employee Name:</label>
+  <input
+    id="employeeName"
+    type="text"
+    value={isEditMode && createdEmployee ? createdEmployee.employeeName : employeeName}
+    onChange={(e) => setEmployeeName(e.target.value)}
+    placeholder="Enter employee name"
+    readOnly={!isEditMode}
+    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+  />
+         </div>
+         <div>
+         <label htmlFor="employeeSurname" className="block text-gray-700 text-sm font-bold mb-2">Nazwisko:</label>
+        <input
+        id="employeeSurname"
+        type="text" 
+        value={isEditMode && createdEmployee ? createdEmployee.employeeSurname : employeeSurname}
+        onChange={(e) => setEmployeeSurname(e.target.value)}
+    readOnly={!isEditMode}
+    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+         />
+         </div>
+         <div className="md:col-span-2 text-xl  text-left mb-6">Miejsce zamieszkania:</div>
+         <div>
+         <label htmlFor="street" className="block text-sm font-medium text-gray-700">Ulica:</label>
+        <input type="text" 
+        value={isEditMode && createdEmployee ? createdEmployee.street : street}
+        onChange={(e) => setStreet(e.target.value)}
+        readOnly={!isEditMode}
+    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+         />
+         </div>
 
-        <label>Employee Surname:</label>
-        <input type="text" value={employeeSurname} onChange={handleEmployeeSurnameChange} />
+         <div>
+    <label htmlFor="number" className="block text-sm font-medium text-gray-700">Number:</label>
+    <input
+        id="number"
+        type="text"
+        value={isEditMode && createdEmployee ? createdEmployee.number : number}
+        onChange={(e) => setNumber(e.target.value)}
+        readOnly={!isEditMode}
+        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+</div>
 
-        <label>Street:</label>
-        <input type="text" value={street} onChange={handleStreetChange} />
+<div>
+    <label htmlFor="postcode" className="block text-sm font-medium text-gray-700">Postcode:</label>
+    <input
+        id="postcode"
+        type="text"
+        value={isEditMode && createdEmployee ? createdEmployee.postcode : postcode}
+        onChange={(e) => setPostcode(e.target.value)}
+        readOnly={!isEditMode}
+        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+</div>
 
-        <label>Number:</label>
-        <input type="text" value={number} onChange={handleNumberChange} />
+<div>
+    <label htmlFor="city" className="block text-sm font-medium text-gray-700">City:</label>
+    <input
+        id="city"
+        type="text"
+        value={isEditMode && createdEmployee ? createdEmployee.city : city}
+        onChange={(e) => setCity(e.target.value)}
+        readOnly={!isEditMode}
+        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+</div>
 
-        <label>Postcode:</label>
-        <input type="text" value={postcode} onChange={handlePostcodeChange} />
+<div>
+    <label htmlFor="country" className="block text-sm font-medium text-gray-700">Country:</label>
+    <input
+        id="country"
+        type="text"
+        value={isEditMode && createdEmployee ? createdEmployee.country : country}
+        onChange={(e) => setCountry(e.target.value)}
+        readOnly={!isEditMode}
+        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+</div>
 
-        <label>City:</label>
-        <input type="text" value={city} onChange={handleCityChange} />
-		
-		<label>Country:</label>
-        <input type="text" value={country} onChange={handleCountryChange} />
+<div className="md:col-span-2">
+    <label htmlFor="taxOffice" className="block text-sm font-medium text-gray-700">Tax Office:</label>
+    <Select
+        id="taxOffice"
+        options={taxOfficeOptions}
+        onChange={handleTaxOfficeChange}
+        isSearchable={true}
+        readOnly={!isEditMode}
+        placeholder="Select Tax Office"
+        value={taxOfficeOptions.find(option => option.value === taxOffice)}
+        classNamePrefix="react-select" // You might need to adjust this based on your Select component's props
+        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+</div>
 
-        <label>Tax Office:</label>
-            <Select 
-                options={taxOfficeOptions} 
-                onChange={handleTaxOfficeChange}
-                isSearchable={true}
-                placeholder="Wybierz US"
-                value={taxOfficeOptions.find(option => option.value === taxOffice)}
-            />
+<div>
+    <label htmlFor="pesel" className="block text-sm font-medium text-gray-700">PESEL:</label>
+    <input
+        id="pesel"
+        type="text"
+        value={isEditMode && createdEmployee ? createdEmployee.PESEL : PESEL}
+        onChange={(e) => setPESEL(e.target.value)}
+        readOnly={!isEditMode}
+        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+</div>
+<div>
+         <div className="flex justify-between">
+    <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+        {isCreatingNew ? 'Create Employee' : 'Update Employee'}
+    </button>
+    <button type="button" onClick={clearForm} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        Clear Data
+    </button>
+</div>
+</div>
 
-
-        <label>Pesel:</label>
-        <input type="text" value={PESEL} onChange={handlePESELChange} />
-
-        <button type="submit">Create Employee</button>
+        </div>
       </form>
       
       {createdEmployee ? (
-  <button onClick={() => navigate(`/medical-examination/${createdEmployee.employeeId}`)}>Medical</button>
+  <div className="flex items-center space-x-2">
+    <button 
+      onClick={() => navigate(`/medical-examination/${createdEmployee.employeeId}`)}
+      className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+      Medical
+    </button>
+
+    <button 
+      onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}
+      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+      Add/view Contract
+    </button>
+
+    <button 
+      onClick={() => navigate(`/employee-param/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}
+      className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+      Add Params
+    </button>
+  </div>
 ) : (
-  <button disabled>MedicalExam</button>
+  <div className="space-y-4 mt-4">
+    <button disabled className="bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline opacity-50 cursor-not-allowed">
+      MedicalExam
+    </button>
+    <button disabled className="bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline opacity-50 cursor-not-allowed">
+      Add Contract
+    </button>
+    <button disabled className="bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline opacity-50 cursor-not-allowed">
+      Add Params
+    </button>
+  </div>
 )}
 
-    {/* Conditionally render the Add Contract button */}
-{createdEmployee ? (
-  <button onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}>Add/view Contract</button>
-) : (
-  <button disabled>Add Contract</button>
+{createdEmployee && (
+  <div className="mt-4 bg-white shadow rounded p-4">
+    <h2 className="text-xl font-semibold mb-2">Employee id:{createdEmployee.employeeId} Created Successfully!</h2>
+    <p>ID: {createdEmployee.employeeId}</p>
+    <p>Name: {createdEmployee.employeeName}</p>
+    <p>Surname: {createdEmployee.employeeSurname}</p>
+    <p>Street: {createdEmployee.street}</p>
+    <p>Number: {createdEmployee.number}</p>
+    <p>Postcode: {createdEmployee.postcode}</p>
+    <p>City: {createdEmployee.city}</p>
+    <p>Tax Office: {createdEmployee.taxOffice}</p>
+    <p>Pesel: {createdEmployee.PESEL}</p>
+  </div>
 )}
 
-{/* Conditionally render the Add Params button */}
-{createdEmployee ? (
-  <button onClick={() => navigate(`/employee-param/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}>Add Params</button>
-) : (
-  <button disabled>Add Params</button>
-)}
-	  {createdEmployee && (
-        <div>
-          <h2>Employee id:{createdEmployee. employeeId} Created Successfully!</h2>
-          <p>ID: {createdEmployee. employeeId}</p>
-          <p>Name: {createdEmployee.employeeName}</p>
-          <p>Surname: {createdEmployee.employeeSurname}</p>
-          <p>Street: {createdEmployee.street}</p>
-          <p>Number: {createdEmployee.number}</p>
-          <p>Postcode: {createdEmployee.postcode}</p>
-          <p>City: {createdEmployee.city}</p>
-          <p>Tax Office: {createdEmployee.taxOffice}</p>
-          <p>Pesel: {createdEmployee.PESEL}</p>
-        </div>
-		)}
-    {/* Move the conditional rendering here, outside the renderForm function */}
-    {showNextStepButton && (
-          <div>
-            <button onClick={goToNextStep}>Go to Next Step</button>
-            {/* Render the Back button only if not on the first step */}
-{currentStep > 1 && (
-  <button onClick={goToPreviousStep}>Back</button>
-)}
-          </div>
+{showNextStepButton && (
+  <div className="flex justify-between mt-4">
+    <button 
+      onClick={goToNextStep}
+      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+      Go to Next Step
+    </button>
+    {currentStep > 1 && (
+      <button 
+        onClick={goToPreviousStep}
+        className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+        Back
+      </button>
     )}
+  </div>
+)}
+    </div>
     </div>
   );
 }

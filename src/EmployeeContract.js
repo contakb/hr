@@ -3,6 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import './Login.css';
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct path
+import { useRequireAuth } from './useRequireAuth';
 
 const EmployeeContract = () => {
   const [employee, setEmployee] = useState({});
@@ -19,6 +22,7 @@ const EmployeeContract = () => {
   const { employeeId } = useParams();
 
   const location = useLocation();
+  const user = useRequireAuth();
 
   useEffect(() => {
     async function fetchData() {
@@ -54,22 +58,23 @@ const EmployeeContract = () => {
     fetchData();
   }, [employeeId, location]); // This is where useEffect should e
 
-  const fetchCompanyData = () => {
-    axios.get('http://localhost:3001/api/created_company')
+  const fetchCompanyData = async () => {
+    axiosInstance.get('http://localhost:3001/api/created_company')
       .then(response => {
-        if (response.data && response.data.company_id) {
-          setCompanyData(response.data);
-          setError(''); // Clear any previous error messages
-        } else {
-          setCompanyData(null); // Set to null if no data is returned
-        }
-        setIsLoading(false);
+          const company = response.data.length > 0 ? response.data[0] : null;
+          if (company && company.company_id) {
+              setCompanyData(company);
+              setError(''); // Clear any previous error messages
+          } else {
+              setCompanyData(null); // Set to null if no data is returned
+          }
+          setIsLoading(false);
       })
       .catch(error => {
         console.error('Error fetching company data:', error);
         // Check if the error is due to no data found and set an appropriate message
         if (error.response && error.response.status === 404) {
-          setError('No existing company data found. Please fill out the form to create a new company.');
+          setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.');
         } else {
           setError('Failed to fetch company data.');
         }
