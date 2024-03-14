@@ -8,6 +8,19 @@ import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
 
 function EmployeeForm() {
+  const initialFormData = {
+    employeeName: '',
+    employeeSurnam: '',
+    street: '',
+    number: '',
+    postcode: '',
+    city: '',
+    PESEL: '',
+    country: '',
+    taxOffice: '',
+    taxOfficeName: '',
+    
+  }
   const [employeeName, setEmployeeName] = useState('');
   const [employeeSurname, setEmployeeSurname] = useState('');
   const [street, setStreet] = useState('');
@@ -31,6 +44,9 @@ const [showNextStepButton, setShowNextStepButton] = useState(false);
 const [employeeId, setEmployeeId] = useState(null); // Assume this might be set based on route or state
 const [isLoading, setIsLoading] = useState(true);
 const [isCreatingNew, setIsCreatingNew] = useState(false);
+const [employeeData, setEmployeeData] = useState(null);
+const [updateMessage, setUpdateMessage] = useState('');
+const [error, setError] = useState(null);
 
 
 const { setIsInSetupProcess } = useSetup();
@@ -97,13 +113,17 @@ useEffect(() => {
         });
 }, []); // Empty dependency array ensures this effect runs only once
 
-// This useEffect is for persisting created employee data
 useEffect(() => {
   const savedEmployee = localStorage.getItem('createdEmployee');
   if (savedEmployee) {
     setCreatedEmployee(JSON.parse(savedEmployee));
-  }
-}, []); // Will also trigger only on the initial mount of the component
+    localStorage.removeItem('createdEmployee');
+  } 
+}, []);
+
+
+
+
 
   const [validationError, setValidationError] = useState(null);  // Add this line
 
@@ -155,19 +175,14 @@ useEffect(() => {
     // in a useEffect that reacts to changes in currentStep, similar to your goToNextStep setup.
   };
   
-  // Function to toggle edit mode
-  const toggleEditMode = () => {
-    setIsEditMode(!isEditMode);
-  };
+  
 
-  useEffect(() => {
-    const fetchEmployeeData = async () => {
-      if (employeeId) {
-        setIsLoading(true);
-        try {
-          const response = await axios.get(`http://localhost:3001/employees/${employeeId}`);
-          if (response.data) {
-            const employeeData = response.data;
+const fetchEmployeeData = async () => {
+      await axios.get(`http://localhost:3001/employees/${employeeId}`)
+      .then(response => {
+        const employeeData = response.data.length > 0 ? response.data[0] : null;
+        if (employeeData && employeeData.employeeId) {
+            setEmployeeData(employeeData)
             setEmployeeName(employeeData.name);
             setEmployeeSurname(employeeData.surname);
             setStreet(employeeData.street);
@@ -177,37 +192,55 @@ useEffect(() => {
             setCountry(employeeData.country);
             setPESEL(employeeData.pesel);
             setTaxOffice(employeeData.tax_office);
-            setIsEditMode(true);
-            setIsCreatingNew(false);  // Not creating a new employee
-          }
-          setIsLoading(false);
-        } catch (error) {
-          console.error('Error fetching employee details:', error);
-          setIsEditMode(false);
-          setIsLoading(false);
+          } else {
+            setEmployeeData(null); // Set to null if no data is returned
         }
+        setIsLoading(false);
+    })
+    .catch(error => {
+      console.error('Error fetching company data:', error);
+      // Check if the error is due to no data found and set an appropriate message
+      if (error.response && error.response.status === 404) {
+        setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.');
       } else {
-        // No employeeId means we are in add new employee mode
-        setIsEditMode(true);
-        setIsCreatingNew(true);  // Creating a new employee
+        setError('Failed to fetch company data.');
       }
-    };
+
+      setEmployeeData(null); // Set companyData to null when fetch fails
+      setIsLoading(false);
+    });
+};
+
+
+
+
+  // Fix handleSubmit logic
+  const handleSubmit = async (event) => {
+    event.preventDefault();
   
-    fetchEmployeeData();
-  }, [employeeId]);
+    // Check if we are in edit mode and have an existing employee
+    if (isEditMode && employeeData && employeeData.employeeId) {
+      // When in edit mode and company data is available
+      handleUpdateDetails(event, employeeData.employeeId);
+    } else if (!isEditMode) {
+      handleCreateEmployee() 
+      .then((response) => {
+        console.log('Employee created:', response.data);
+        setUpdateMessage('Company Employee successfully. You can now move to the next step.');
+setShowNextStepButton(true); // Show the button to move to the next step
+nextStep(); // Move to the next step
 
-
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+        // Optional: Handle post-creation logic here if needed
+      })
+      .catch((error) => {
+        console.error('Error creating employee:', error);
+        // Handle errors, such as showing an error message
+      });
+  } else {
+    console.error('No valid employee data for update.');
+  }
+};// Create a new employee entry in the database
   
-    if (!isCreatingNew && isEditMode && createdEmployee && createdEmployee.employeeId) {
-      await handleUpdateDetails();
-    } else {
-      await handleCreateEmployee();
-    }
-  };
-
 
 const handleCreateEmployee = async () => {
 
@@ -251,9 +284,23 @@ const handleCreateEmployee = async () => {
   console.log('Employee created:', response.data);
   markStepAsCompleted(2); // Mark the "Add Employees" step as completed
   nextStep(); // Move to the next step
-  setEmployeeAdded(true); 
-  setIsCreatingNew(false);
-  setIsEditMode(true);
+  // Fetch the latest company data
+  fetchEmployeeData(); 
+  // Clear form fields
+  setEmployeeName('');
+  setStreet('');
+  setNumber('');
+  setPostcode('');
+  setCity('');
+setCountry('');
+  setTaxOfficeName('');
+  setPESEL('');
+
+  // Switch back to view mode after a delay
+  setTimeout(() => {
+    setIsEditMode(false);
+    setUpdateMessage('');
+}, 3000);
 
 // Use the returned employeeId from the server response
 const createdEmployeeData = {
@@ -321,16 +368,7 @@ setCreatedEmployee(createdEmployeeData);
 
 
 
-        // Clear form fields
-        setEmployeeName('');
-        setEmployeeSurname('');
-        setStreet('');
-        setNumber('');
-        setPostcode('');
-        setCity('');
-		setCountry('');
-        setTaxOffice('');
-        setPESEL('');
+        
       })
       .catch((error) => {
         // Handle create employee error
@@ -338,7 +376,9 @@ setCreatedEmployee(createdEmployeeData);
       });
   };
 
-  const handleUpdateDetails = async () => {
+const handleUpdateDetails = async (event, employeeId) => {
+    event.preventDefault();
+
     const updatedDetails = {
       name: employeeName,
       surname: employeeSurname,
@@ -351,19 +391,19 @@ setCreatedEmployee(createdEmployeeData);
       tax_office: taxOfficeName,
     };
   
-    try {
-      const response = await axios.put(`http://localhost:3001/update-employee/${createdEmployee.employeeId}`, updatedDetails);
-      if (response.data.updatedEmployee) {
-        setCreatedEmployee(response.data.updatedEmployee); // Update local state with the updated employee
-        setIsEditMode(false); // Exit edit mode
-        alert('Employee data updated successfully!');
-      }
-    } catch (error) {
-      console.error('Error updating employee details:', error);
-      alert('Failed to update employee data.');
-    }
+    await axios.put(`http://localhost:3001/update-employee/${employeeId}`, updatedDetails)
+      .then(response => {
+        console.log('Employee updated successfully:', response.data);
+        setUpdateMessage('Employee updated successfully.');
+        fetchEmployeeData(); // Fetch the latest company data
+        setIsEditMode(false); // Switch back to view mode
+        setTimeout(() => setUpdateMessage(''), 3000); // Clear message after 3 seconds
+        })
+        .catch(error => {
+            console.error('Error updating company:', error);
+            setValidationError('Failed to update company data.');
+        });
   };
-
   
 
   const handleEmployeeNameChange = (event) => {
@@ -398,6 +438,7 @@ setCreatedEmployee(createdEmployeeData);
     label: office.tax_office
 }));
 
+// Adjust the handleTaxOfficeChange function if necessary
 const handleTaxOfficeChange = (selectedOption) => {
   if (selectedOption) {
       setTaxOffice(selectedOption.value);
@@ -411,31 +452,49 @@ const handleTaxOfficeChange = (selectedOption) => {
 };
   
 
-
   const handlePESELChange = (event) => {
     setPESEL(event.target.value);
   };
 
-  const clearForm = () => {
-    setEmployeeName('');
-    setEmployeeSurname('');
-    setStreet('');
-    setNumber('');
-    setPostcode('');
-    setCity('');
-    setCountry('');
-    setTaxOffice('');
-    setPESEL('');
-    localStorage.removeItem('createdEmployee'); // Clear the stored employee data
-    setIsCreatingNew(true);
-    
-  };
+  // Clear form and local storage correctly
+const clearForm = () => {
+  setEmployeeName('');
+  setEmployeeSurname('');
+  setStreet('');
+  setNumber('');
+  setPostcode('');
+  setCity('');
+  setCountry('');
+  setTaxOfficeName('');
+  setPESEL('');
+  localStorage.removeItem('createdEmployee');
+  setCreatedEmployee(null);
+};
 
-  // Additional function to handle "Edit" button click, to prevent form submission
-const handleEditClick = (event) => {
-  event.preventDefault();
-  console.log("Edit clicked, switching to edit mode...");
-  setIsEditMode(true);
+
+const toggleEditMode = (editMode) => {
+  if (editMode && employeeData) {
+      // Populate form fields with existing employee data
+      setEmployeeName(employeeData.employeeName || '');
+      setEmployeeSurname(employeeData.employeeSurname || '');
+      setStreet(employeeData.street || '');
+      setNumber(employeeData.number || '');
+      setPostcode(employeeData.post_code || '');
+      setCity(employeeData.city || '');
+      setCountry(employeeData.country || '');
+      // Find the option that matches the taxOffice ID from companyData
+      const selectedTaxOfficeOption = taxOfficeOptions.find(option => option.label === employeeData.tax_office);
+        if (selectedTaxOfficeOption) {
+            setTaxOffice(selectedTaxOfficeOption.value); // Set the tax office ID
+            setTaxOfficeName(selectedTaxOfficeOption.label); // Update the tax office name
+        } else {
+            // Reset or set default values if no matching tax office is found
+            setTaxOffice('');
+            setTaxOfficeName('');
+        }
+      setPESEL(employeeData.PESEL || ''); // Make sure the key names match your data structure
+  }
+  setIsEditMode(editMode); // Update the state to enter/exit edit mode
 };
 
 
@@ -454,10 +513,9 @@ const handleEditClick = (event) => {
   <input
     id="employeeName"
     type="text"
-    value={isEditMode && createdEmployee ? createdEmployee.employeeName : employeeName}
-    onChange={(e) => setEmployeeName(e.target.value)}
+    value={employeeName}
+    onChange={handleEmployeeNameChange}
     placeholder="Enter employee name"
-    readOnly={!isEditMode}
     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
   />
          </div>
@@ -466,9 +524,8 @@ const handleEditClick = (event) => {
         <input
         id="employeeSurname"
         type="text" 
-        value={isEditMode && createdEmployee ? createdEmployee.employeeSurname : employeeSurname}
-        onChange={(e) => setEmployeeSurname(e.target.value)}
-    readOnly={!isEditMode}
+        value={employeeSurname}
+        onChange={handleEmployeeSurnameChange}
     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
          />
          </div>
@@ -476,9 +533,9 @@ const handleEditClick = (event) => {
          <div>
          <label htmlFor="street" className="block text-sm font-medium text-gray-700">Ulica:</label>
         <input type="text" 
-        value={isEditMode && createdEmployee ? createdEmployee.street : street}
-        onChange={(e) => setStreet(e.target.value)}
-        readOnly={!isEditMode}
+        value={street}
+        onChange={handleStreetChange}
+        
     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
          />
          </div>
@@ -488,9 +545,8 @@ const handleEditClick = (event) => {
     <input
         id="number"
         type="text"
-        value={isEditMode && createdEmployee ? createdEmployee.number : number}
-        onChange={(e) => setNumber(e.target.value)}
-        readOnly={!isEditMode}
+        value={number}
+        onChange={handleNumberChange}
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -500,9 +556,8 @@ const handleEditClick = (event) => {
     <input
         id="postcode"
         type="text"
-        value={isEditMode && createdEmployee ? createdEmployee.postcode : postcode}
-        onChange={(e) => setPostcode(e.target.value)}
-        readOnly={!isEditMode}
+        value={postcode}
+        onChange={handlePostcodeChange}
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -512,9 +567,8 @@ const handleEditClick = (event) => {
     <input
         id="city"
         type="text"
-        value={isEditMode && createdEmployee ? createdEmployee.city : city}
-        onChange={(e) => setCity(e.target.value)}
-        readOnly={!isEditMode}
+        value={city}
+        onChange={handleCityChange}
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -524,9 +578,8 @@ const handleEditClick = (event) => {
     <input
         id="country"
         type="text"
-        value={isEditMode && createdEmployee ? createdEmployee.country : country}
-        onChange={(e) => setCountry(e.target.value)}
-        readOnly={!isEditMode}
+        value={country}
+        onChange={handleCountryChange}
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -538,10 +591,8 @@ const handleEditClick = (event) => {
         options={taxOfficeOptions}
         onChange={handleTaxOfficeChange}
         isSearchable={true}
-        readOnly={!isEditMode}
-        placeholder="Select Tax Office"
-        value={taxOfficeOptions.find(option => option.value === taxOffice)}
-        classNamePrefix="react-select" // You might need to adjust this based on your Select component's props
+        value={taxOfficeOptions.find(option => option.value === taxOfficeName)}
+        classNamePrefix="react-select"
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -551,20 +602,27 @@ const handleEditClick = (event) => {
     <input
         id="pesel"
         type="text"
-        value={isEditMode && createdEmployee ? createdEmployee.PESEL : PESEL}
-        onChange={(e) => setPESEL(e.target.value)}
-        readOnly={!isEditMode}
+        value={PESEL}
+        onChange={handlePESELChange}
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
 <div>
          <div className="flex justify-between">
-    <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
-        {isCreatingNew ? 'Create Employee' : 'Update Employee'}
+         <div className="col-span-1 md:col-span-2">
+      <button className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edytuj dane firmy</button>
+      </div>
+      <div className="flex space-x-2 mt-4">
+    <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+      {isEditMode ? 'Update Company' : 'Create Company'}
     </button>
-    <button type="button" onClick={clearForm} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-        Clear Data
+    <button onClick={() => toggleEditMode(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+      Cancel
     </button>
+    <button onClick={clearForm} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+      Clear Data
+    </button>
+  </div>
 </div>
 </div>
 

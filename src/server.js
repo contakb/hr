@@ -181,7 +181,14 @@ app.post('/create-employee', async (req, res) => {
       res.send({
         employeeId,
         employeeName,
-        employeeSurname
+        employeeSurname,
+        street,
+  number,
+  postcode,
+  city,
+  country,
+  taxOfficeName,
+  PESEL,
       });
     } else {
       console.error('Unexpected response structure from Supabase');
