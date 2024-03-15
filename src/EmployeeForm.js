@@ -6,6 +6,9 @@ import MedicalExaminationView from './MedicalExaminationView';
 import { useLocation } from 'react-router-dom';
 import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct pat
+import { useRequireAuth } from './useRequireAuth';
 
 function EmployeeForm() {
   const [employeeName, setEmployeeName] = useState('');
@@ -35,6 +38,9 @@ const [employeeData, setEmployeeData] = useState(null);
 const [updateMessage, setUpdateMessage] = useState('');
 const [error, setError] = useState(null);
 const [isCreating, setIsCreating] = useState(false); // New state for tracking creation/update status
+const [isEmployeeCreated, setIsEmployeeCreated] = useState(false);
+const [isEmployeeUpdated, setIsEmployeeUpdated] = useState(false);
+const user = useRequireAuth();
 
 
 const { setIsInSetupProcess } = useSetup();
@@ -222,11 +228,19 @@ const populateFormFields = (employeeData) => {
   const getDateOfBirth = (pesel) => {
     // Assuming pesel is in the format: YYMMDDNNNNNN
     if (pesel && pesel.length === 11) {
-      const year = parseInt(pesel.substring(0, 2));
-      const month = parseInt(pesel.substring(2, 4)) - 1; // Subtract 1 as months are zero-based in JavaScript Date
-      const day = parseInt(pesel.substring(4, 6));
-      const fullYear = year < 20 ? 2000 + year : 1900 + year; // Assuming people born after 2000 have year format 20YY
-      return new Date(fullYear, month, day).toLocaleDateString(); // Format the date as desired
+      let year = parseInt(pesel.substring(0, 2), 10);
+      let month = parseInt(pesel.substring(2, 4), 10) - 1; // Subtract 1 as months are zero-based in JavaScript Date
+      const day = parseInt(pesel.substring(4, 6), 10);
+  
+      // Adjust year and month for 20th and 21st century
+      if (month >= 20) { // People born in 21st century
+        month -= 20; // Adjust month back to standard 0-11 range
+        year += 2000;
+      } else { // People born in 20th century
+        year += 1900;
+      }
+  
+      return new Date(year, month, day).toLocaleDateString(); // Format the date as desired
     }
     return '';
   };
@@ -294,7 +308,8 @@ const handleCreateEmployee = async () => {
         localStorage.setItem('createdEmployee', JSON.stringify(employeeData));
             populateFormFields(employeeData);
             setCreatedEmployee(employeeData);
-        setIsCreatingNew(false);
+            setIsCreatingNew(false); // Set flag for newly created employee
+            setIsEmployeeCreated(true); // Set flag for employee creation
         setIsEditMode(false); // Switch to edit mode after creating
     } else {
         console.error('Error creating employee: No data returned');
@@ -383,12 +398,15 @@ if (response.data && response.data.updatedEmployee) {
     PESEL: updatedEmployee.pesel
   };
   setIsCreating(false); // Reset state for next operation
+  setIsCreatingNew(false);
   // Correctly set the data in local storage
   localStorage.setItem('createdEmployee', JSON.stringify(employeeData));
   console.log('Employee updated successfully:', employeeData);
       populateFormFields(employeeData);
       
       setCreatedEmployee(employeeData);
+      setIsEmployeeCreated(false); 
+      setIsEmployeeUpdated(true); // Set flag for employee update
       setIsEditMode(false); // Switch back to view mode after update
       } else {
           console.error('Error updating employee: No data returned');
@@ -405,7 +423,7 @@ if (response.data && response.data.updatedEmployee) {
 const fetchEmployeeData = async (employeeId) => {
   console.log('Fetching data for employee ID:', employeeId);
   try {
-    const response = await axios.get(`http://localhost:3001/employees/${employeeId}`);
+    const response = await axiosInstance.get(`http://localhost:3001/employees/${employeeId}`);
     if (response.data) {
         populateFormFields(response.data);
         localStorage.setItem('createdEmployee', JSON.stringify(response.data));
@@ -752,11 +770,10 @@ const toggleEditMode = () => {
 </div>
 {createdEmployee && (
   <div className="mt-4 bg-white shadow rounded p-4">
-    {isCreating ? (
-      <h2 className="text-xl font-semibold mb-2">Employee id: {createdEmployee.employeeId} Created Successfully!</h2>
-    ) : (
-      <h2 className="text-xl font-semibold mb-2">Employee id: {createdEmployee.employeeId} Updated Successfully!</h2>
-    )}
+    <h2 className="text-xl font-semibold mb-2">
+      Employee id: {createdEmployee.employeeId} {isEmployeeCreated ? 'Created' : isEmployeeUpdated ? 'Updated' : '' }
+      Successfully!
+    </h2>
     <p>Name: {createdEmployee.employeeName}</p>
     <p>Surname: {createdEmployee.employeeSurname}</p>
     <p>Street: {createdEmployee.street}</p>
@@ -767,6 +784,13 @@ const toggleEditMode = () => {
     <p>Pesel: {createdEmployee.PESEL}</p>
   </div>
 )}
+
+
+
+
+
+
+
 
 
 {showNextStepButton && (

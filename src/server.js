@@ -239,7 +239,7 @@ app.get('/employees', async (req, res) => {
 });
 
 // Get a single employee route
-app.get('/employees/:id', async (req, res) => {
+app.get('/employees/:id',verifyJWT, async (req, res) => {
   const employeeId = req.params.id; // Get the id from the request parameters
 
   try {
