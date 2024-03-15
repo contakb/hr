@@ -238,6 +238,34 @@ app.get('/employees', async (req, res) => {
   }
 });
 
+// Get a single employee route
+app.get('/employees/:id', async (req, res) => {
+  const employeeId = req.params.id; // Get the id from the request parameters
+
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*') // Adjust to select the columns you need
+      .eq('id', employeeId); // Use the employeeId to fetch the specific record
+
+    if (error) {
+      console.error('Error retrieving employee data', error);
+      res.status(500).send('Error occurred while retrieving data.');
+    } else {
+      // Assuming 'data' will be an array of one employee or empty if not found
+      if (data.length > 0) {
+        res.send(data[0]); // Send the first employee in the array
+      } else {
+        res.status(404).send('Employee not found');
+      }
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error occurred while retrieving data.');
+  }
+});
+
+
 app.put('/update-employee/:employeeId', async (req, res) => {
   const employeeId = req.params.employeeId;
   const { name, surname, street, number, postcode, city, country, tax_office, pesel } = req.body;

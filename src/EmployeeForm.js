@@ -8,19 +8,6 @@ import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
 
 function EmployeeForm() {
-  const initialFormData = {
-    employeeName: '',
-    employeeSurnam: '',
-    street: '',
-    number: '',
-    postcode: '',
-    city: '',
-    PESEL: '',
-    country: '',
-    taxOffice: '',
-    taxOfficeName: '',
-    
-  }
   const [employeeName, setEmployeeName] = useState('');
   const [employeeSurname, setEmployeeSurname] = useState('');
   const [street, setStreet] = useState('');
@@ -47,6 +34,7 @@ const [isCreatingNew, setIsCreatingNew] = useState(false);
 const [employeeData, setEmployeeData] = useState(null);
 const [updateMessage, setUpdateMessage] = useState('');
 const [error, setError] = useState(null);
+const [isCreating, setIsCreating] = useState(false); // New state for tracking creation/update status
 
 
 const { setIsInSetupProcess } = useSetup();
@@ -107,6 +95,7 @@ useEffect(() => {
     axios.get('http://localhost:3001/tax-offices')
         .then((response) => {
             setTaxOffices(response.data);
+
         })
         .catch((error) => {
             console.error('Error fetching tax offices:', error);
@@ -116,10 +105,64 @@ useEffect(() => {
 useEffect(() => {
   const savedEmployee = localStorage.getItem('createdEmployee');
   if (savedEmployee) {
-    setCreatedEmployee(JSON.parse(savedEmployee));
-    localStorage.removeItem('createdEmployee');
-  } 
+    const employeeData = JSON.parse(savedEmployee);
+    populateFormFields(employeeData);
+
+    // Check if employee data is being updated
+    if (employeeData.employeeId) {
+      setIsCreatingNew(false); // Employee data exists, so not creating new
+      setIsEditMode(false); // Set isEditMode to false when data is being updated
+    } else {
+      setIsCreatingNew(true); // No employee data exists, so creating new
+      setIsEditMode(true); // Set isEditMode to true when creating a new employee
+    }
+
+    // Set tax office state based on employeeData.taxOffice
+    setTaxOffice(employeeData.taxOfficeName);
+
+    setCreatedEmployee(employeeData);
+  } else {
+    clearForm();
+    setIsCreatingNew(true); // Start in create mode
+    setIsEditMode(false); // Set isEditMode to false if no employee data is available
+  }
 }, []);
+
+
+const clearFormFields = () => {
+  setEmployeeName('');
+  setEmployeeSurname('');
+  setStreet('');
+  setNumber('');
+  setPostcode('');
+  setCity('');
+  setCountry('');
+  setTaxOfficeName('');
+  setPESEL('');
+};
+
+const populateFormFields = (employeeData) => {
+  if (!employeeData) {
+      console.error('No employee data available to populate form fields');
+      return;
+  }
+
+  setEmployeeName(employeeData.employeeName || '');
+  setEmployeeSurname(employeeData.employeeSurname || '');
+  setStreet(employeeData.street || '');
+  setNumber(employeeData.number || '');
+  setPostcode(employeeData.postcode || '');
+  setCity(employeeData.city || '');
+  setCountry(employeeData.country || '');
+  setPESEL(employeeData.PESEL || '');
+
+  setTaxOfficeName(employeeData.taxOfficeName|| '');
+};
+
+
+
+
+
 
 
 
@@ -176,71 +219,35 @@ useEffect(() => {
   };
   
   
-
-const fetchEmployeeData = async () => {
-      await axios.get(`http://localhost:3001/employees/${employeeId}`)
-      .then(response => {
-        const employeeData = response.data.length > 0 ? response.data[0] : null;
-        if (employeeData && employeeData.employeeId) {
-            setEmployeeData(employeeData)
-            setEmployeeName(employeeData.name);
-            setEmployeeSurname(employeeData.surname);
-            setStreet(employeeData.street);
-            setNumber(employeeData.number);
-            setPostcode(employeeData.postcode);
-            setCity(employeeData.city);
-            setCountry(employeeData.country);
-            setPESEL(employeeData.pesel);
-            setTaxOffice(employeeData.tax_office);
-          } else {
-            setEmployeeData(null); // Set to null if no data is returned
-        }
-        setIsLoading(false);
-    })
-    .catch(error => {
-      console.error('Error fetching company data:', error);
-      // Check if the error is due to no data found and set an appropriate message
-      if (error.response && error.response.status === 404) {
-        setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.');
-      } else {
-        setError('Failed to fetch company data.');
-      }
-
-      setEmployeeData(null); // Set companyData to null when fetch fails
-      setIsLoading(false);
-    });
-};
+  const getDateOfBirth = (pesel) => {
+    // Assuming pesel is in the format: YYMMDDNNNNNN
+    if (pesel && pesel.length === 11) {
+      const year = parseInt(pesel.substring(0, 2));
+      const month = parseInt(pesel.substring(2, 4)) - 1; // Subtract 1 as months are zero-based in JavaScript Date
+      const day = parseInt(pesel.substring(4, 6));
+      const fullYear = year < 20 ? 2000 + year : 1900 + year; // Assuming people born after 2000 have year format 20YY
+      return new Date(fullYear, month, day).toLocaleDateString(); // Format the date as desired
+    }
+    return '';
+  };
+  
 
 
 
 
-  // Fix handleSubmit logic
   const handleSubmit = async (event) => {
     event.preventDefault();
-  
-    // Check if we are in edit mode and have an existing employee
-    if (isEditMode && employeeData && employeeData.employeeId) {
-      // When in edit mode and company data is available
-      handleUpdateDetails(event, employeeData.employeeId);
-    } else if (!isEditMode) {
-      handleCreateEmployee() 
-      .then((response) => {
-        console.log('Employee created:', response.data);
-        setUpdateMessage('Company Employee successfully. You can now move to the next step.');
-setShowNextStepButton(true); // Show the button to move to the next step
-nextStep(); // Move to the next step
 
-        // Optional: Handle post-creation logic here if needed
-      })
-      .catch((error) => {
-        console.error('Error creating employee:', error);
-        // Handle errors, such as showing an error message
-      });
-  } else {
-    console.error('No valid employee data for update.');
-  }
-};// Create a new employee entry in the database
-  
+    // Check if we are in edit mode and have an existing employee
+    if (isEditMode && createdEmployee && createdEmployee.employeeId) {
+        // Call handleUpdateEmployee when in edit mode
+        handleUpdateEmployee(createdEmployee.employeeId);
+    } else {
+        // Call handleCreateEmployee when not in edit mode
+        handleCreateEmployee();
+    }
+};
+
 
 const handleCreateEmployee = async () => {
 
@@ -264,58 +271,35 @@ const handleCreateEmployee = async () => {
   
    
     
-  
-
-    // Perform create employee request to the server
-    axios
-      .post('http://localhost:3001/create-employee', {
-        employeeName,
-        employeeSurname,
-        street,
-        number,
-        postcode,
-        city,
-		country,
-        taxOfficeName,
-        PESEL
-      })
-      .then((response) => {
-        // Handle successful create employee
-  console.log('Employee created:', response.data);
-  markStepAsCompleted(2); // Mark the "Add Employees" step as completed
-  nextStep(); // Move to the next step
-  // Fetch the latest company data
-  fetchEmployeeData(); 
-  // Clear form fields
-  setEmployeeName('');
-  setStreet('');
-  setNumber('');
-  setPostcode('');
-  setCity('');
-setCountry('');
-  setTaxOfficeName('');
-  setPESEL('');
-
-  // Switch back to view mode after a delay
-  setTimeout(() => {
-    setIsEditMode(false);
-    setUpdateMessage('');
-}, 3000);
-
-// Use the returned employeeId from the server response
-const createdEmployeeData = {
-  employeeId: response.data.employeeId,
-  employeeName: response.data.employeeName,
-  employeeSurname: response.data.employeeSurname,
-  street,
-  number,
-  postcode,
-  city,
+  try {
+    const response = await axios.post('http://localhost:3001/create-employee', {
+      employeeName,
+      employeeSurname,
+      street,
+      number,
+      postcode,
+      city,
   country,
-  taxOffice: taxOfficeName,
-  PESEL,
-};
+      taxOfficeName,
+      PESEL,
+    });
 
+    if (response.data && response.data.employeeId) { // Assuming your API returns the employeeId on successful creation
+        console.log('Employee created:', response.data);
+        const employeeData = {
+          ...response.data,
+          taxOfficeName // Save taxOfficeName along with other employee data
+      };
+        await fetchEmployeeData(response.data.employeeId);
+        localStorage.setItem('createdEmployee', JSON.stringify(employeeData));
+            populateFormFields(employeeData);
+            setCreatedEmployee(employeeData);
+        setIsCreatingNew(false);
+        setIsEditMode(false); // Switch to edit mode after creating
+    } else {
+        console.error('Error creating employee: No data returned');
+        // Handle case where no data is returned
+    }
 
 
 
@@ -362,48 +346,77 @@ const handleAddViewContractClick = () => {
     navigate(`/employee-param/${employeeId}`);
   }
 
-// Set the created employee data in the state
-localStorage.setItem('createdEmployee', JSON.stringify(createdEmployeeData));
-setCreatedEmployee(createdEmployeeData);
-
-
-
         
-      })
-      .catch((error) => {
-        // Handle create employee error
-        console.error('Error creating employee:', error);
+} catch (error) {
+  console.error('Error creating employee:', error);
+  // Handle error appropriately
+}
+};
+const handleUpdateEmployee = async (employeeId) => {
+  try {
+      const response = await axios.put(`http://localhost:3001/update-employee/${employeeId}`, {
+          name: employeeName,
+          surname: employeeSurname,
+          pesel: PESEL,
+          street,
+          number,
+          postcode,
+          city,
+          country,
+          tax_office: taxOfficeName,
       });
-  };
 
-const handleUpdateDetails = async (event, employeeId) => {
-    event.preventDefault();
-
-    const updatedDetails = {
-      name: employeeName,
-      surname: employeeSurname,
-      pesel: PESEL,
-      street: street,
-      number: number,
-      postcode: postcode,
-      city: city,
-      country: country,
-      tax_office: taxOfficeName,
-    };
-  
-    await axios.put(`http://localhost:3001/update-employee/${employeeId}`, updatedDetails)
-      .then(response => {
-        console.log('Employee updated successfully:', response.data);
-        setUpdateMessage('Employee updated successfully.');
-        fetchEmployeeData(); // Fetch the latest company data
-        setIsEditMode(false); // Switch back to view mode
-        setTimeout(() => setUpdateMessage(''), 3000); // Clear message after 3 seconds
-        })
-        .catch(error => {
-            console.error('Error updating company:', error);
-            setValidationError('Failed to update company data.');
-        });
+      // After updating the employee
+// After updating the employee
+if (response.data && response.data.updatedEmployee) {
+  const updatedEmployee = response.data.updatedEmployee;
+  const employeeData = {
+    employeeId: updatedEmployee.id,
+    employeeName: updatedEmployee.name,
+    employeeSurname: updatedEmployee.surname,
+    street: updatedEmployee.street,
+    number: updatedEmployee.number,
+    postcode: updatedEmployee.postcode,
+    city: updatedEmployee.city,
+    country: updatedEmployee.country,
+    taxOfficeName: updatedEmployee.tax_office,
+    PESEL: updatedEmployee.pesel
   };
+  setIsCreating(false); // Reset state for next operation
+  // Correctly set the data in local storage
+  localStorage.setItem('createdEmployee', JSON.stringify(employeeData));
+  console.log('Employee updated successfully:', employeeData);
+      populateFormFields(employeeData);
+      
+      setCreatedEmployee(employeeData);
+      setIsEditMode(false); // Switch back to view mode after update
+      } else {
+          console.error('Error updating employee: No data returned');
+      }
+  } catch (error) {
+      console.error('Error updating employee:', error);
+  }
+};
+
+
+
+
+
+const fetchEmployeeData = async (employeeId) => {
+  console.log('Fetching data for employee ID:', employeeId);
+  try {
+    const response = await axios.get(`http://localhost:3001/employees/${employeeId}`);
+    if (response.data) {
+        populateFormFields(response.data);
+        localStorage.setItem('createdEmployee', JSON.stringify(response.data));
+        setCreatedEmployee(response.data);
+    }
+  } catch (error) {
+    console.error('Error fetching employee data:', error);
+  }
+};
+
+
   
 
   const handleEmployeeNameChange = (event) => {
@@ -433,7 +446,8 @@ const handleUpdateDetails = async (event, employeeId) => {
   const handleCountryChange = (event) => {
     setCountry(event.target.value);
   };
-  const taxOfficeOptions = taxOffices.map(office => ({
+
+const taxOfficeOptions = taxOffices.map(office => ({
     value: office.id,
     label: office.tax_office
 }));
@@ -456,6 +470,11 @@ const handleTaxOfficeChange = (selectedOption) => {
     setPESEL(event.target.value);
   };
 
+  const handleCancelEdit = () => {
+    // Add any additional logic here to clear form fields or reset state
+    window.location.reload();
+  };
+
   // Clear form and local storage correctly
 const clearForm = () => {
   setEmployeeName('');
@@ -469,34 +488,17 @@ const clearForm = () => {
   setPESEL('');
   localStorage.removeItem('createdEmployee');
   setCreatedEmployee(null);
+  // Reset state to reflect that there is no longer an employee loaded for editing
+  
+  setIsCreatingNew(true);
+  setIsEditMode(false);
 };
 
 
-const toggleEditMode = (editMode) => {
-  if (editMode && employeeData) {
-      // Populate form fields with existing employee data
-      setEmployeeName(employeeData.employeeName || '');
-      setEmployeeSurname(employeeData.employeeSurname || '');
-      setStreet(employeeData.street || '');
-      setNumber(employeeData.number || '');
-      setPostcode(employeeData.post_code || '');
-      setCity(employeeData.city || '');
-      setCountry(employeeData.country || '');
-      // Find the option that matches the taxOffice ID from companyData
-      const selectedTaxOfficeOption = taxOfficeOptions.find(option => option.label === employeeData.tax_office);
-        if (selectedTaxOfficeOption) {
-            setTaxOffice(selectedTaxOfficeOption.value); // Set the tax office ID
-            setTaxOfficeName(selectedTaxOfficeOption.label); // Update the tax office name
-        } else {
-            // Reset or set default values if no matching tax office is found
-            setTaxOffice('');
-            setTaxOfficeName('');
-        }
-      setPESEL(employeeData.PESEL || ''); // Make sure the key names match your data structure
-  }
-  setIsEditMode(editMode); // Update the state to enter/exit edit mode
+// toggleEditMode should be responsible only for toggling the edit mode
+const toggleEditMode = () => {
+  setIsEditMode(currentMode => !currentMode);
 };
-
 
   return (
     <div className="bg-gray-100 p-8 min-h-screen">
@@ -509,16 +511,16 @@ const toggleEditMode = (editMode) => {
       <form onSubmit={handleSubmit} className="space-y-4 bg-white shadow rounded p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-      <label htmlFor="employeeName" className="block text-gray-700 text-sm font-bold mb-2">Employee Name:</label>
+  <label htmlFor="employeeName" className="block text-gray-700 text-sm font-bold mb-2">Employee Name:</label>
   <input
     id="employeeName"
     type="text"
     value={employeeName}
     onChange={handleEmployeeNameChange}
-    placeholder="Enter employee name"
+    readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
   />
-         </div>
+</div>
          <div>
          <label htmlFor="employeeSurname" className="block text-gray-700 text-sm font-bold mb-2">Nazwisko:</label>
         <input
@@ -526,6 +528,7 @@ const toggleEditMode = (editMode) => {
         type="text" 
         value={employeeSurname}
         onChange={handleEmployeeSurnameChange}
+        readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
          />
          </div>
@@ -535,7 +538,7 @@ const toggleEditMode = (editMode) => {
         <input type="text" 
         value={street}
         onChange={handleStreetChange}
-        
+        readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
          />
          </div>
@@ -547,6 +550,7 @@ const toggleEditMode = (editMode) => {
         type="text"
         value={number}
         onChange={handleNumberChange}
+        readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -558,6 +562,7 @@ const toggleEditMode = (editMode) => {
         type="text"
         value={postcode}
         onChange={handlePostcodeChange}
+        readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -569,6 +574,7 @@ const toggleEditMode = (editMode) => {
         type="text"
         value={city}
         onChange={handleCityChange}
+        readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
@@ -580,22 +586,34 @@ const toggleEditMode = (editMode) => {
         type="text"
         value={country}
         onChange={handleCountryChange}
+        readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
 
 <div className="md:col-span-2">
-    <label htmlFor="taxOffice" className="block text-sm font-medium text-gray-700">Tax Office:</label>
+  <label htmlFor="taxOffice" className="block text-sm font-medium text-gray-700">Tax Office:</label>
+  {(isEditMode || isCreatingNew) ? (
     <Select
-        id="taxOffice"
-        options={taxOfficeOptions}
-        onChange={handleTaxOfficeChange}
-        isSearchable={true}
-        value={taxOfficeOptions.find(option => option.value === taxOfficeName)}
-        classNamePrefix="react-select"
-        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      id="taxOffice"
+      options={taxOfficeOptions}
+      onChange={handleTaxOfficeChange}
+      isSearchable={true}
+      value={taxOfficeOptions.find(option => option.label === taxOfficeName)}
+      classNamePrefix="react-select"
+      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
+  ) : (
+    <input
+      id="taxOffice"
+      type="text"
+      value={taxOfficeName}
+      readOnly
+      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+  )}
 </div>
+
 
 <div>
     <label htmlFor="pesel" className="block text-sm font-medium text-gray-700">PESEL:</label>
@@ -604,49 +622,118 @@ const toggleEditMode = (editMode) => {
         type="text"
         value={PESEL}
         onChange={handlePESELChange}
+        readOnly={!isCreatingNew && !isEditMode} // Set readOnly based on isCreatingNew and isEditMode states
         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
     />
 </div>
 <div>
-         <div className="flex justify-between">
-         <div className="col-span-1 md:col-span-2">
-      <button className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edytuj dane firmy</button>
-      </div>
-      <div className="flex space-x-2 mt-4">
-    <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-      {isEditMode ? 'Update Company' : 'Create Company'}
-    </button>
-    <button onClick={() => toggleEditMode(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-      Cancel
-    </button>
-    <button onClick={clearForm} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-      Clear Data
-    </button>
-  </div>
+  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">Data urodzenia:</label>
+  <input
+    id="dateOfBirth"
+    type="text"
+    value={getDateOfBirth(PESEL)} // Assuming you have a function getDateOfBirth to calculate the date of birth
+    readOnly
+    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+  />
 </div>
+<div>
+<div className="flex justify-between items-center space-x-2">
+  {isCreatingNew && !isEditMode && (
+    <>
+      <button 
+        type="submit" 
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Create Employee
+      </button>
+      <button 
+        onClick={clearForm} 
+        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Clear Data
+      </button>
+    </>
+  )}
+
+  {!isCreatingNew && !isEditMode && (
+    <>
+      <button 
+        onClick={() => setIsEditMode(true)} 
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Edit
+      </button>
+      <button 
+        onClick={clearForm} 
+        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Clear Data
+      </button>
+    </>
+  )}
+
+  {isEditMode && (
+    <>
+      <button 
+        type="submit" 
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Update Employee
+      </button>
+      <button 
+        onClick={() => {
+          setIsEditMode(false);
+         
+          window.location.reload(); // Reload the page
+      }} 
+        className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Cancel Edit
+      </button>
+      <button 
+        onClick={clearForm} 
+        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Clear Data
+      </button>
+    </>
+  )}
+</div>
+
+
+
+
+
+
+
+
+
+
 </div>
 
         </div>
       </form>
-      
+      <div className="mt-4 bg-white shadow rounded p-4">
+      <div className="md:col-span-2 text-xl  text-left mb-6">Następne kroki do wykonania przy zatrudnieniu pracownika:</div>
+
       {createdEmployee ? (
-  <div className="flex items-center space-x-2">
+  <div className="flex items-center space-x-2  justify-between">
     <button 
       onClick={() => navigate(`/medical-examination/${createdEmployee.employeeId}`)}
       className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
-      Medical
+      1. Medical
     </button>
 
     <button 
       onClick={() => navigate(`/add-contract/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}
       className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
-      Add/view Contract
+      2. Add/view Contract
     </button>
 
     <button 
       onClick={() => navigate(`/employee-param/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}
       className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
-      Add Params
+      3. Add Params
     </button>
   </div>
 ) : (
@@ -662,21 +749,25 @@ const toggleEditMode = (editMode) => {
     </button>
   </div>
 )}
-
+</div>
 {createdEmployee && (
   <div className="mt-4 bg-white shadow rounded p-4">
-    <h2 className="text-xl font-semibold mb-2">Employee id:{createdEmployee.employeeId} Created Successfully!</h2>
-    <p>ID: {createdEmployee.employeeId}</p>
+    {isCreating ? (
+      <h2 className="text-xl font-semibold mb-2">Employee id: {createdEmployee.employeeId} Created Successfully!</h2>
+    ) : (
+      <h2 className="text-xl font-semibold mb-2">Employee id: {createdEmployee.employeeId} Updated Successfully!</h2>
+    )}
     <p>Name: {createdEmployee.employeeName}</p>
     <p>Surname: {createdEmployee.employeeSurname}</p>
     <p>Street: {createdEmployee.street}</p>
     <p>Number: {createdEmployee.number}</p>
     <p>Postcode: {createdEmployee.postcode}</p>
     <p>City: {createdEmployee.city}</p>
-    <p>Tax Office: {createdEmployee.taxOffice}</p>
+    <p>Tax Office: {createdEmployee.taxOfficeName}</p>
     <p>Pesel: {createdEmployee.PESEL}</p>
   </div>
 )}
+
 
 {showNextStepButton && (
   <div className="flex justify-between mt-4">
