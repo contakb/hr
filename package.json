@@ -28,6 +28,7 @@
     "path-browserify": "^1.0.1",
     "pdfmake": "^0.2.7",
     "pg": "^8.11.0",
+    "puppeteer": "^22.5.0",
     "react": "^18.2.0",
     "react-datepicker": "^4.16.0",
     "react-dom": "^18.2.0",

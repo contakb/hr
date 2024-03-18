@@ -7,6 +7,9 @@ const bodyParser = require('body-parser');
 const { createClient } = require('@supabase/supabase-js');
 const moment = require('moment');
 const bcrypt = require('bcrypt');
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 
@@ -112,6 +115,39 @@ const verifyJWT = (req, res, next) => {
   }
 };
 
+async function generatePDF(htmlContent) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  // Set the HTML content
+  await page.setContent(htmlContent, {
+      waitUntil: 'networkidle0'
+  });
+
+  // Use the same settings for page.pdf() as you would for a print dialog in the browser
+  const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true
+  });
+
+  await browser.close();
+  return pdf;
+}
+
+
+app.post('/generate-pdf', async (req, res) => {
+  try {
+      const htmlContent = req.body.html;
+      const pdfBuffer = await generatePDF(htmlContent);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=contract.pdf');
+      res.send(pdfBuffer);
+  } catch (error) {
+      console.error(error);
+      res.status(500).send('An error occurred while generating the PDF.');
+  }
+});
 
 app.get('/api/user', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]; // Assuming the token is sent in the Authorization header

@@ -7,6 +7,8 @@ import axiosInstance from './axiosInstance'; // Adjust the import path as necess
 import { useUser } from './UserContext'; // Ensure correct path
 import { useRequireAuth } from './useRequireAuth';
 import './print.css'; // Adjust the path to where you saved the CSS file
+import jsPDF from 'jspdf';
+import ReactDOMServer from 'react-dom/server';
 
 
 const EmployeeContract = () => {
@@ -140,6 +142,36 @@ function combineContracts(contracts) {
   }));
 }
 
+async function handleDownloadPDFClick() {
+  // Assuming you have a way to reference the component's root DOM node
+  const element = document.querySelector('.printable-section');
+  const htmlContent = element.outerHTML;  // Captures the HTML including styles
+
+  // Send a request to your server endpoint.
+  const response = await fetch('http://localhost:3001/generate-pdf', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ html: htmlContent })
+  });
+
+  if (response.ok) {
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'contract.pdf';
+    link.click();
+    window.URL.revokeObjectURL(downloadUrl);
+  } else {
+    // Handle any errors here
+    console.error('Failed to generate PDF');
+  }
+}
+
+
+
 
 
 
@@ -204,15 +236,11 @@ return (
           <p><strong>na umowę o pracę na:</strong> {selectedContract ? selectedContract.typ_umowy : "N/A"}</p>
           <p>od {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} do {selectedContract && selectedContract.contract_to_date ? new Date(selectedContract.contract_to_date).toLocaleDateString() : "N/A"}</p>
           <div class="h-4"></div> 
-          <p><strong>Strony ustalają następujące warunki zatrudnienia:</strong></p>
+          <p>Strony ustalają następujące warunki zatrudnienia:</p>
+          <div class="h-4"></div> 
           <div class="overflow-x-auto">
   <table class="table-auto w-full text-left">
-    <thead>
-      <tr>
-        <th class="px-4 py-2">Warunek</th>
-        <th class="px-4 py-2">Szczegóły</th>
-      </tr>
-    </thead>
+    
     <tbody>
       <tr>
         <td class="border px-4 py-2"><strong>Rodzaj umówionej pracy (stanowisko):</strong></td>
@@ -267,6 +295,9 @@ return (
       <button onClick={() => window.print()} class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
   Print or Save as PDF
 </button>
+<button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Download PDF
+      </button>
     </div>
   </div>
   </div>
