@@ -20,40 +20,57 @@ function Login() {
 
   const handleRegisterSubmit = async (event) => {
     event.preventDefault();
-  
+
     if (!email || !password || password !== confirmPassword) {
-      setErrorMessage('Please check your email and password. They are required, and passwords must match.');
-      return;
+        setErrorMessage('Please check your email and password. They are required, and passwords must match.');
+        return;
     }
-  
-    // Attempt to register the user via your server endpoint
-    axios.post('http://localhost:3001/register', { email, password })
-      .then(async (response) => {
-        // Assuming the registration was successful
-        setSuccessMessage('Registration successful. Please check your email to verify your account.');
-        toast.success('Rejestracja udana!');
-  
-        // Automatically sign in the user using Supabase after successful registration
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+
+    try {
+        const { user: signUpUser, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
         });
-  
-        if (error) {
-          console.error('Error logging in after registration:', error.message);
-          setErrorMessage(error.message || 'Failed to login after registration');
-        } else {
-          console.log('Logged in successfully after registration:', email);
-          // Navigate to the Account Details page
-          navigate('/account-details', { state: { email } });
+
+        if (signUpError) {
+            console.error('Sign up error:', signUpError.message);
+            setErrorMessage(signUpError.message);
+            return;
         }
-      })
-      .catch((error) => {
-        console.error('Error registering user:', error);
-        setErrorMessage(error.response?.data?.error || 'An unexpected error occurred');
-      });
-  };
-  
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user ?? signUpUser;
+
+        if (user) {
+            const schemaName = `schema_${user.email.replace(/[@\.]/g, '_')}`;
+            
+            // Ensure you have the correct function name here
+            const { error: cloneError } = await supabase.rpc('clone_schema_with_permissions', { source_schema_name: 'public', new_schema_name: schemaName });
+
+            if (cloneError) {
+                console.error('Error cloning schema with permissions:', cloneError.message);
+                setErrorMessage('Error cloning schema with permissions');
+                return;
+            }
+
+            console.log(`Schema ${schemaName} created and structure and permissions cloned successfully`);
+            navigate('/account-details', { state: { email: user.email } });
+        } else {
+            console.error('User object is undefined after sign up');
+            setErrorMessage('User object is undefined after sign up');
+        }
+    } catch (error) {
+        console.error('Error during registration or login:', error);
+        setErrorMessage('An unexpected error occurred');
+    }
+};
+
+
+
+
+
+
+
 
   const handleEmailChange = (event) => {
     setEmail(event.target.value);

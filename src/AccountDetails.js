@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios'; // Assuming you're using axios for HTTP requests
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
+import { useRequireAuth } from './useRequireAuth';
 // In your React component, e.g., AccountDetails.js
 
 
@@ -33,6 +34,7 @@ function AccountDetails() {
     const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { user, updateUserContext } = useUser();
+  
 
 
   console.log(user); // Check if user data is available
@@ -40,48 +42,50 @@ function AccountDetails() {
 
   
   
-  // Define fetchUserDetails outside of useEffect to ensure it's accessible
   const fetchUserDetails = useCallback(async () => {
-    setIsLoading(true); // Set loading to true at the beginning of the fetch
-    if (!user || !user.email) {
-      console.error("User or user email is not defined.");
-      return;
-    }
+    setIsLoading(true);
 
-    // Optional: Reset form fields/state here before fetching new details
-  resetFormFields(); // This function would set all form fields to '' or some initial state
+    if (!user || !user.email) {
+        console.error("User or user email is not defined.");
+        setIsLoading(false);
+        return;
+    }
+    resetFormFields()
 
     try {
-      const response = await axiosInstance.get(`http://localhost:3001/getUserDetails?email=${encodeURIComponent(user.email)}`);
-      if (response.data.success && response.data.data) {
-        const userData = response.data.data;
-        setUsername(userData.username || '');
-        setName(userData.name || '');
-        setSurname(userData.surname || '');
-        setStreet(userData.street || '');
-        setNumber(userData.number || '');
-        setCity(userData.city || '');
-        setPostcode(userData.postcode || '');
-        setIsEditMode(false);
-        setUserDetailsExist(true);
-        setOriginalData(userData);
-      } else {
+        const response = await axiosInstance.get(`http://localhost:3001/getUserDetails`);
+        if (response.data.success && response.data.data) {
+            const userData = response.data.data;
+
+            // Compare the fetched user's email with the logged-in user's email
+            if (userData.email === user.email) {
+                setUsername(userData.username || '');
+                setName(userData.name || '');
+                setSurname(userData.surname || '');
+                setStreet(userData.street || '');
+                setNumber(userData.number || '');
+                setCity(userData.city || '');
+                setPostcode(userData.postcode || '');
+                setIsEditMode(false);
+                setUserDetailsExist(true);
+                setOriginalData(userData);
+            } else {
+                console.error("Fetched user details do not match the logged-in user.");
+                setIsEditMode(true);
+                setUserDetailsExist(false);
+            }
+        } else {
+            setIsEditMode(true);
+            setUserDetailsExist(false);
+        }
+    } catch (error) {
+        console.error('Error fetching user details:', error);
         setIsEditMode(true);
         setUserDetailsExist(false);
-      }
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-      setIsEditMode(true);
-      setUserDetailsExist(false);
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false); // Set loading to false once fetching is complete
-  }, [user, axiosInstance]); // Include all dependencies here
-
-useEffect(() => {
-  if (user && user.email) {
-    fetchUserDetails();
-  }
-}, [user]);
+}, [user, axiosInstance, setIsLoading, setUserDetailsExist, setIsEditMode, setOriginalData, setUsername, setName, setSurname, setStreet, setNumber, setCity, setPostcode]);
 
 
 
@@ -128,28 +132,24 @@ const handleSubmit = async (event) => {
 
   try {
     const response = await axiosInstance.post(`http://localhost:3001${endpoint}`, {
-      email: user.email, // Assuming 'user' is obtained from useUser() and contains the email
       name,
       surname,
       street,
       number,
       city,
       postcode,
+    }, {
+      headers: {
+        // Ensure you're sending the Authorization header with the JWT
+        Authorization: `Bearer ${user.token}` // Assuming 'user.token' holds the JWT
+      }
     });
 
     if (response.data.success) {
       toast.success(`${userDetailsExist ? 'Updated' : 'Saved'} successfully!`);
-      setIsEditMode(false); // Exit edit mode after successful operation
-      setUserDetailsExist(true); // Assume details now exist after successful save/update
-
-      // Update the global user context with the updated details
-      // Assuming updateUserContext is a function available via useUser() for updating the user context
-      // This step assumes you have the updated user data available. Adjust as necessary.
-      const updatedUserDetails = { ...user, name, surname, street, number, city, postcode };
-      updateUserContext(updatedUserDetails);
-
-      // Optionally, refetch user details if needed to ensure the UI is up-to-date
-      // fetchUserDetails(); // This might be redundant if you're already updating the context
+      setIsEditMode(false);
+      setUserDetailsExist(true);
+      // Update local state or context as necessary
     } else {
       setUpdateMessage('Failed to save details.');
     }
@@ -158,6 +158,8 @@ const handleSubmit = async (event) => {
     setUpdateMessage('An error occurred while saving details.');
   }
 };
+
+
 
 
 

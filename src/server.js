@@ -2088,27 +2088,31 @@ app.post('/register', async (req, res) => {
   });
   
   
-  app.post('/insertUserDetails', verifyJWT, async (req, res) => {
-    const { email, username, name, surname, street, number, city, postcode } = req.body;
-    console.log('Attempting to insert details for', email, 'with username', username);
+  // This route should be protected with JWT verification
+app.post('/insertUserDetails', verifyJWT, async (req, res) => {
+  // The user's email or ID is obtained from the decoded JWT token
+  const userEmail = req.user.email; // Assuming the decoded token includes the email
+  const schemaName = `schema_${userEmail.replace(/[@\.]/g, '_')}`;
 
-    try {
-        // Directly attempt to insert the new user details
-        const insertResponse = await supabase
-            .from('users')
-            .insert([{ email, username, name, surname, street, number,city, postcode }]); // Ensure this matches your table structure
+  const { username, name, surname, street, number, city, postcode } = req.body;
 
-        if (insertResponse.error) {
-            throw insertResponse.error;
-        }
+  try {
+      const insertResponse = await supabase
+          .from(`${schemaName}.users`)
+          .insert([{ username, name, surname, street, number, city, postcode, email: userEmail }]);
 
-        console.log('User details inserted successfully for:', email);
-        res.json({ success: true, message: 'User details inserted successfully.' });
-    } catch (error) {
-        console.error('Failed to insert user details:', error);
-        res.status(500).json({ success: false, message: 'Failed to insert user details.', error: error.message || error });
-    }
+      if (insertResponse.error) {
+          throw insertResponse.error;
+      }
+
+      res.json({ success: true, message: 'User details inserted successfully.' });
+  } catch (error) {
+      console.error('Failed to insert user details:', error);
+      res.status(500).json({ success: false, message: 'Failed to insert user details.', error: error.message || error });
+  }
 });
+
+
 
 app.post('/updateUserDetails', verifyJWT, async (req, res) => {
   const { email, username, name, surname, street, number, city, postcode } = req.body; // Add more fields as necessary
@@ -2134,15 +2138,21 @@ app.post('/updateUserDetails', verifyJWT, async (req, res) => {
 
 
 
-app.get('/getUserDetails',verifyJWT, async (req, res) => {
-  const { email } = req.query; // Assuming email is passed as a query parameter
+app.get('/getUserDetails', verifyJWT, async (req, res) => {
+  const userEmail = decodeJWT(req.headers.authorization);  // Decode JWT to get user email
+  const expectedSchemaName = `schema_${userEmail.replace(/[@\.]/g, '_')}`;
+
+  // Optionally, verify that the requested operation is for the user's schema
+  if (req.query.schemaName !== expectedSchemaName) {
+      return res.status(403).json({ success: false, message: "Access denied to the requested schema." });
+  }
 
   try {
       const { data, error } = await supabase
-          .from('users')
+          .from(`${expectedSchemaName}.users`)
           .select("*")
-          .eq('email', email)
-          .single(); // Assuming email is unique, .single() ensures you get one object instead of an array
+          .eq('email', userEmail)
+          .single();
 
       if (error) throw error;
 
@@ -2152,6 +2162,7 @@ app.get('/getUserDetails',verifyJWT, async (req, res) => {
       res.status(500).json({ success: false, message: 'Failed to fetch user details.', error: error.message });
   }
 });
+
 
 
 

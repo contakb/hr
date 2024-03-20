@@ -9,7 +9,8 @@ export const UserProvider = ({ children }) => {
     const checkSession = useCallback(async () => {
         const { data: sessionData, error } = await supabase.auth.getSession();
         if (!error && sessionData && sessionData.session) {
-            setUser(sessionData.session.user);
+            const schemaName = `schema_${sessionData.session.user.email.replace(/[@\.]/g, '_')}`;
+            setUser({ ...sessionData.session.user, schemaName });
         } else {
             setUser(null);
         }
@@ -22,7 +23,8 @@ export const UserProvider = ({ children }) => {
             if (event === 'SIGNED_OUT') {
                 setUser(null);
             } else if (event === 'SIGNED_IN' && session) {
-                setUser(session.user);
+                const schemaName = `schema_${session.user.email.replace(/[@\.]/g, '_')}`;
+                setUser({ ...session.user, schemaName });
             }
         });
 
@@ -33,10 +35,7 @@ export const UserProvider = ({ children }) => {
         };
     }, [checkSession]);
 
-    // Method to update user in context and potentially in Supabase
     const updateUserContext = async (updatedUserData) => {
-        // Update the user data in Supabase or your backend as needed
-        // For now, we'll just update the context
         setUser(updatedUserData);
     };
 
