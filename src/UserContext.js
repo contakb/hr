@@ -6,11 +6,15 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
 
+    const computeSchemaName = (email) => `schema_${email.replace(/[@\.]/g, '_')}`;
+
     const checkSession = useCallback(async () => {
         const { data: sessionData, error } = await supabase.auth.getSession();
         if (!error && sessionData && sessionData.session) {
-            const schemaName = `schema_${sessionData.session.user.email.replace(/[@\.]/g, '_')}`;
-            setUser({ ...sessionData.session.user, schemaName });
+            const schemaName = computeSchemaName(sessionData.session.user.email);
+            const newUser = { ...sessionData.session.user, schemaName };
+            console.log('Setting user with schema:', newUser);
+            setUser(newUser);
         } else {
             setUser(null);
         }
@@ -23,8 +27,10 @@ export const UserProvider = ({ children }) => {
             if (event === 'SIGNED_OUT') {
                 setUser(null);
             } else if (event === 'SIGNED_IN' && session) {
-                const schemaName = `schema_${session.user.email.replace(/[@\.]/g, '_')}`;
-                setUser({ ...session.user, schemaName });
+                const schemaName = computeSchemaName(session.user.email);
+                const newUser = { ...session.user, schemaName };
+                console.log('Setting user with schema:', newUser);
+                setUser(newUser);
             }
         });
 
@@ -35,7 +41,7 @@ export const UserProvider = ({ children }) => {
         };
     }, [checkSession]);
 
-    const updateUserContext = async (updatedUserData) => {
+    const updateUserContext = (updatedUserData) => {
         setUser(updatedUserData);
     };
 

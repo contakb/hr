@@ -131,31 +131,34 @@ const handleSubmit = async (event) => {
   const endpoint = userDetailsExist ? '/updateUserDetails' : '/insertUserDetails';
 
   try {
-    const response = await axiosInstance.post(`http://localhost:3001${endpoint}`, {
-      name,
-      surname,
-      street,
-      number,
-      city,
-      postcode,
-    }, {
-      headers: {
-        // Ensure you're sending the Authorization header with the JWT
-        Authorization: `Bearer ${user.token}` // Assuming 'user.token' holds the JWT
-      }
-    });
+      const userData = {
+          email: user.email, // Ensure user.email is correctly retrieved
+          name,
+          surname,
+          street,
+          number,
+          city,
+          postcode,
+          schemaName: user.schemaName, // Add the schemaName to the request body
+      };
 
-    if (response.data.success) {
-      toast.success(`${userDetailsExist ? 'Updated' : 'Saved'} successfully!`);
-      setIsEditMode(false);
-      setUserDetailsExist(true);
-      // Update local state or context as necessary
-    } else {
-      setUpdateMessage('Failed to save details.');
-    }
+      const response = await axiosInstance.post(`http://localhost:3001${endpoint}`, userData, {
+          headers: {
+              Authorization: `Bearer ${user.access_token}` // Use the access token from the user object
+          }
+      });
+
+      if (response.data.success) {
+          toast.success(`${userDetailsExist ? 'Updated' : 'Saved'} successfully!`);
+          setIsEditMode(false);
+          setUserDetailsExist(true);
+          // Update local state or context as necessary
+      } else {
+          setUpdateMessage('Failed to save details.');
+      }
   } catch (error) {
-    console.error('Error saving account details:', error);
-    setUpdateMessage('An error occurred while saving details.');
+      console.error('Error saving account details:', error);
+      setUpdateMessage('An error occurred while saving details.');
   }
 };
 

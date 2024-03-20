@@ -1980,28 +1980,25 @@ app.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const { user, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+      const { user, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+      });
 
-    if (signUpError) {
-      console.error('Error registering user with Supabase:', signUpError);
-      return res.status(500).json({ error: signUpError.message });
-    }
+      if (signUpError) {
+          console.error('Error registering user:', signUpError);
+          return res.status(500).json({ error: signUpError.message });
+      }
 
-    // Check if the user was created successfully
-    if (user) {
-      // Redirect or inform the client to navigate to the Account Details page
-      // The user object includes the user's ID, which can be used for further operations
-      return res.json({ message: 'Registration successful. Please complete your profile.', userId: user.id });
-    } else {
-      // This scenario is unlikely without an error, but handle just in case
-      return res.status(202).json({ message: 'Signup successful, please verify your email if required.' });
-    }
+      if (user) {
+          // Call the function to clone the schema and set permissions
+          await supabase.rpc('clone_schema_for_new_user', { email: user.email });
+
+          res.json({ message: 'User registered and schema created' });
+      }
   } catch (error) {
-    console.error('An unexpected error occurred:', error);
-    return res.status(500).json({ error: 'An unexpected error occurred', details: error.message });
+      console.error('Error during registration:', error);
+      res.status(500).json({ error: 'Error registering user' });
   }
 });
 
@@ -2088,29 +2085,28 @@ app.post('/register', async (req, res) => {
   });
   
   
-  // This route should be protected with JWT verification
-app.post('/insertUserDetails', verifyJWT, async (req, res) => {
-  // The user's email or ID is obtained from the decoded JWT token
-  const userEmail = req.user.email; // Assuming the decoded token includes the email
-  const schemaName = `schema_${userEmail.replace(/[@\.]/g, '_')}`;
+  app.post('/insertUserDetails', verifyJWT, async (req, res) => {
+    // Assuming schemaName is part of the user object decoded from the JWT token
+    const schemaName = req.user.schemaName; // Or get it from request body if passed from the client
 
-  const { username, name, surname, street, number, city, postcode } = req.body;
+    const { username, name, surname, street, number, city, postcode, email } = req.body;
 
-  try {
-      const insertResponse = await supabase
-          .from(`${schemaName}.users`)
-          .insert([{ username, name, surname, street, number, city, postcode, email: userEmail }]);
+    try {
+        const insertResponse = await supabase
+            .from(`${schemaName}.users`) // Using schemaName dynamically
+            .insert([{ username, name, surname, street, number, city, postcode, email }]);
 
-      if (insertResponse.error) {
-          throw insertResponse.error;
-      }
+        if (insertResponse.error) {
+            throw insertResponse.error;
+        }
 
-      res.json({ success: true, message: 'User details inserted successfully.' });
-  } catch (error) {
-      console.error('Failed to insert user details:', error);
-      res.status(500).json({ success: false, message: 'Failed to insert user details.', error: error.message || error });
-  }
+        res.json({ success: true, message: 'User details inserted successfully.' });
+    } catch (error) {
+        console.error('Failed to insert user details:', error);
+        res.status(500).json({ success: false, message: 'Failed to insert user details.', error: error.message || error });
+    }
 });
+
 
 
 

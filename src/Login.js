@@ -27,10 +27,7 @@ function Login() {
     }
 
     try {
-        const { user: signUpUser, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-        });
+        const { user: signUpUser, error: signUpError } = await supabase.auth.signUp({ email, password });
 
         if (signUpError) {
             console.error('Sign up error:', signUpError.message);
@@ -38,22 +35,29 @@ function Login() {
             return;
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
+        // Fetch the current session after signup to get the active user
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+            console.error('Error retrieving session:', sessionError.message);
+            setErrorMessage(sessionError.message);
+            return;
+        }
+
         const user = session?.user ?? signUpUser;
 
         if (user) {
             const schemaName = `schema_${user.email.replace(/[@\.]/g, '_')}`;
-            
+
             // Ensure you have the correct function name here
-            const { error: cloneError } = await supabase.rpc('clone_schema_with_permissions', { source_schema_name: 'public', new_schema_name: schemaName });
+            const { error: cloneError } = await supabase.rpc('clone_schema_for_user', { email: user.email });
 
             if (cloneError) {
-                console.error('Error cloning schema with permissions:', cloneError.message);
-                setErrorMessage('Error cloning schema with permissions');
+                console.error('Error cloning schema:', cloneError.message);
+                setErrorMessage('Error cloning schema');
                 return;
             }
 
-            console.log(`Schema ${schemaName} created and structure and permissions cloned successfully`);
+            console.log(`Schema ${schemaName} created and structure cloned successfully`);
             navigate('/account-details', { state: { email: user.email } });
         } else {
             console.error('User object is undefined after sign up');
@@ -64,11 +68,6 @@ function Login() {
         setErrorMessage('An unexpected error occurred');
     }
 };
-
-
-
-
-
 
 
 
