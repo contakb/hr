@@ -15,9 +15,6 @@ require('dotenv').config();
 
 
 
-
-require('dotenv').config();
-
 const generateSecretKey = () => {
   return crypto.randomBytes(32).toString('hex');
 };
@@ -27,7 +24,12 @@ const secretKey = generateSecretKey();
 const supabaseUrl = 'https://hxaxnwozubxemmygmmkw.supabase.co'; // Replace with your Supabase project URL
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXhud296dWJ4ZW1teWdtbWt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyNDk0NzAsImV4cCI6MjAxMTgyNTQ3MH0.re-MQMIldEU9bhypt54b_14IPDqjOzTQhrcMEoLeTBg'; // Replace with your Supabase API key
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXhud296dWJ4ZW1teWdtbWt3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjI0OTQ3MCwiZXhwIjoyMDExODI1NDcwfQ.oerHe3zwyuX6Ll3GfosHK8eojO2TD_vjGKl33quozEc';
+
+
+
+
+
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET_KEY = 'aTePU4aap+7hVLrFL17879WtSGGp5ELReIge3TXP9bZbj/uWhVjZL3Ez2GUItyI01NlWQvxhnnjTo9jA5TxQgQ==';
@@ -54,10 +56,13 @@ app.use(express.json());
 
 console.log('Generated secret key:', secretKey);
 
+
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
 }));
+
+
 
 
 app.get('/some-protected-route', (req, res) => {
@@ -2086,18 +2091,28 @@ app.post('/register', async (req, res) => {
   
   
   app.post('/insertUserDetails', verifyJWT, async (req, res) => {
-    // Assuming schemaName is part of the user object decoded from the JWT token
-    const schemaName = req.user.schemaName; // Or get it from request body if passed from the client
+    const { email, name, surname, street, number, city, postcode, schemaName } = req.body;
+    console.log("Received data for insertion:", { email, name, surname, street, number, city, postcode, schemaName });
 
-    const { username, name, surname, street, number, city, postcode, email } = req.body;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+    });
+    console.log('Supabase client configured for schema:', schemaName);
 
     try {
+        const qualifiedTableName = `${schemaName}.users`;  // Schema and table name
+        console.log("Qualified Table Name:", qualifiedTableName);
+
         const insertResponse = await supabase
-            .from(`${schemaName}.users`) // Using schemaName dynamically
-            .insert([{ username, name, surname, street, number, city, postcode, email }]);
+            .from('users')  // Directly using the schema name
+            .insert([{ email, name, surname, street, number, city, postcode }]);
+
+        console.log('Insert response:', insertResponse);
 
         if (insertResponse.error) {
-            throw insertResponse.error;
+            console.error('Insert response error:', insertResponse.error);
+            console.error('Detailed error:', insertResponse.error);
+            throw new Error(`Supabase insert error: ${JSON.stringify(insertResponse.error)}`);
         }
 
         res.json({ success: true, message: 'User details inserted successfully.' });
@@ -2106,6 +2121,10 @@ app.post('/register', async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to insert user details.', error: error.message || error });
     }
 });
+
+
+
+// Assuming supabase has been initialized earlier in your code
 
 
 
@@ -2121,6 +2140,7 @@ app.post('/updateUserDetails', verifyJWT, async (req, res) => {
           .eq('email', email);
 
       if (updateResponse.error) {
+        console.error('Insert response error:', insertResponse.error);
           throw updateResponse.error;
       }
 
@@ -2132,20 +2152,28 @@ app.post('/updateUserDetails', verifyJWT, async (req, res) => {
   }
 });
 
+const computeSchemaName = (email) => `schema_${email.replace(/[@\.]/g, '_')}`;
+
 
 
 app.get('/getUserDetails', verifyJWT, async (req, res) => {
-  const userEmail = decodeJWT(req.headers.authorization);  // Decode JWT to get user email
-  const expectedSchemaName = `schema_${userEmail.replace(/[@\.]/g, '_')}`;
+  const userEmail = req.user.email; // Extract the user email from the verified JWT
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
-  // Optionally, verify that the requested operation is for the user's schema
-  if (req.query.schemaName !== expectedSchemaName) {
-      return res.status(403).json({ success: false, message: "Access denied to the requested schema." });
-  }
+    console.log(`Fetching details for user: ${userEmail} in schema: ${schemaName}`);
+  
+  const qualifiedTableName = `${schemaName}.users`;  // Schema and table name
+        console.log("Qualified Table Name:", qualifiedTableName);
+        console.log("Qualified Table Name:", req.user.schemaName);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+  console.log('Supabase client configured for schema:', schemaName);
 
   try {
       const { data, error } = await supabase
-          .from(`${expectedSchemaName}.users`)
+          .from('users')
           .select("*")
           .eq('email', userEmail)
           .single();

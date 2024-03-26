@@ -27,7 +27,7 @@ function AccountDetails() {
   const [city, setCity] = useState('');
   const [postcode, setPostcode] = useState('');
   const [originalData, setOriginalData] = useState({});
-
+  const [schemaName, setschemaName] = useState({});
   const [userDetailsExist, setUserDetailsExist] = useState(false);
   const [companyData, setCompanyData] = useState(null);
     const [error, setError] = useState('');
@@ -39,13 +39,16 @@ function AccountDetails() {
 
   console.log(user); // Check if user data is available
   const userEmail = user?.email; // Safely access the email property
+  const authUser = useRequireAuth(); // Ensure the user is authenticated
 
-  
+  // If useRequireAuth redirects non-authenticated users, authUser will always be defined here
+  console.log('User from context:', user);
+  console.log('User from require auth:', authUser);
   
   const fetchUserDetails = useCallback(async () => {
     setIsLoading(true);
 
-    if (!user || !user.email) {
+    if (!user || !user.email ) {
         console.error("User or user email is not defined.");
         setIsLoading(false);
         return;
@@ -53,7 +56,12 @@ function AccountDetails() {
     resetFormFields()
 
     try {
-        const response = await axiosInstance.get(`http://localhost:3001/getUserDetails`);
+      const response = await axiosInstance.get(`http://localhost:3001/getUserDetails`, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'X-Schema-Name': user.schemaName // Pass the schemaName as a custom header
+        }
+      });
         if (response.data.success && response.data.data) {
             const userData = response.data.data;
 
@@ -66,6 +74,7 @@ function AccountDetails() {
                 setNumber(userData.number || '');
                 setCity(userData.city || '');
                 setPostcode(userData.postcode || '');
+                setschemaName(userData.schemaName || '');
                 setIsEditMode(false);
                 setUserDetailsExist(true);
                 setOriginalData(userData);
@@ -85,9 +94,13 @@ function AccountDetails() {
     } finally {
         setIsLoading(false);
     }
-}, [user, axiosInstance, setIsLoading, setUserDetailsExist, setIsEditMode, setOriginalData, setUsername, setName, setSurname, setStreet, setNumber, setCity, setPostcode]);
+}, [user, axiosInstance, setIsLoading, setUserDetailsExist, setIsEditMode, setOriginalData, setUsername, setName, setSurname, setStreet, setNumber, setCity, setPostcode, setschemaName]);
 
-
+useEffect(() => {
+  if (user && user.email) {
+    fetchUserDetails();
+  }
+}, [user]);
 
 useEffect(() => {
   const fetchCompanyData = async () => {
@@ -131,36 +144,42 @@ const handleSubmit = async (event) => {
   const endpoint = userDetailsExist ? '/updateUserDetails' : '/insertUserDetails';
 
   try {
-      const userData = {
-          email: user.email, // Ensure user.email is correctly retrieved
-          name,
-          surname,
-          street,
-          number,
-          city,
-          postcode,
-          schemaName: user.schemaName, // Add the schemaName to the request body
-      };
+    const userData = {
+      email: user.email,
+      name,
+      surname,
+      street,
+      number,
+      city,
+      postcode,
+      schemaName: user.schemaName, // Use the schemaName from the user context
+    };
+      console.log("Sending data to endpoint:", endpoint, userData)
 
-      const response = await axiosInstance.post(`http://localhost:3001${endpoint}`, userData, {
-          headers: {
-              Authorization: `Bearer ${user.access_token}` // Use the access token from the user object
-          }
-      });
-
-      if (response.data.success) {
-          toast.success(`${userDetailsExist ? 'Updated' : 'Saved'} successfully!`);
-          setIsEditMode(false);
-          setUserDetailsExist(true);
-          // Update local state or context as necessary
-      } else {
-          setUpdateMessage('Failed to save details.');
+    const response = await axiosInstance.post(`http://localhost:3001${endpoint}`, userData, {
+      headers: {
+        Authorization: `Bearer ${user.access_token}` // Use the access token from the user object
+        
       }
+    });
+    console.log("Sending data to endpoint:", endpoint, userData);
+
+
+    if (response.data.success) {
+      toast.success(`${userDetailsExist ? 'Updated' : 'Saved'} successfully!`);
+      setIsEditMode(false);
+      setUserDetailsExist(true);
+
+      console.log("Sending data to endpoint:", endpoint, userData);
+    } else {
+      setUpdateMessage('Failed to save details.');
+    }
   } catch (error) {
-      console.error('Error saving account details:', error);
-      setUpdateMessage('An error occurred while saving details.');
+    console.error('Error saving account details:', error);
+    setUpdateMessage('An error occurred while saving details.');
   }
 };
+
 
 
 
