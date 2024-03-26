@@ -2130,13 +2130,18 @@ app.post('/register', async (req, res) => {
 
 
 app.post('/updateUserDetails', verifyJWT, async (req, res) => {
-  const { email, username, name, surname, street, number, city, postcode } = req.body; // Add more fields as necessary
-  console.log('Attempting to update details for', email, 'with new username', username);
+  const { email, name, surname, street, number, city, postcode, schemaName } = req.body;
+  console.log('Attempting to update details for', email, 'with new schema', schemaName);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+  console.log('Supabase client configured for schema:', schemaName);
 
   try {
       const updateResponse = await supabase
           .from('users')
-          .update({ username, name, surname, street, number,city, postcode }) // Include other fields to update as necessary
+          .update({name, surname, street, number,city, postcode }) // Include other fields to update as necessary
           .eq('email', email);
 
       if (updateResponse.error) {
