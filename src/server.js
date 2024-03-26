@@ -243,6 +243,8 @@ app.post('/create-employee', async (req, res) => {
 
 
 app.get('/tax-offices', async (req, res) => {
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
   try {
       let { data, error } = await supabase
           .from('taxoffices')
@@ -1807,6 +1809,19 @@ app.post('/create-company', verifyJWT, async (req, res) => {
   const formaPrawna = req.body.formaPrawna;
   const wypadkowe = req.body.wypadkowe
 
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+    
+  
+  const qualifiedTableName = `${schemaName}.users`;  // Schema and table name
+        console.log("Qualified Table Name:", qualifiedTableName);
+        console.log("Qualified Table Name:", req.user.schemaName);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+  console.log('Supabase client configured for schema:', schemaName);
+
   try {
     const { data, error } = await supabase
       .from('companies')
@@ -1857,6 +1872,21 @@ app.post('/create-company', verifyJWT, async (req, res) => {
 });
 
 app.get('/api/created_company', verifyJWT, async (req, res) => {
+
+  const userEmail = req.user.email; // Extract the user email from the verified JWT
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+    console.log(`Fetching details for user: ${userEmail} in schema: ${schemaName}`);
+  
+  const qualifiedTableName = `${schemaName}.users`;  // Schema and table name
+        console.log("Qualified Table Name:", qualifiedTableName);
+        console.log("Qualified Table Name:", req.user.schemaName);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+  console.log('Supabase client configured for schema:', schemaName);
+
   try {
     const { data, error } = await supabase
       .from('companies')
@@ -1880,6 +1910,20 @@ app.get('/api/created_company', verifyJWT, async (req, res) => {
 app.put('/update-company/:companyId',verifyJWT, async (req, res) => {
   const companyId = req.params.companyId; // Get the companyId from the URL parameter
   const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+    
+  
+  const qualifiedTableName = `${schemaName}.users`;  // Schema and table name
+        console.log("Qualified Table Name:", qualifiedTableName);
+        console.log("Qualified Table Name:", req.user.schemaName);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+  console.log('Supabase client configured for schema:', schemaName);
+
 
   try {
       const { data, error } = await supabase

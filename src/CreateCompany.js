@@ -118,41 +118,47 @@ useEffect(() => {
 }, []); // Will also trigger only on the initial mount of the component
 
 const fetchCompanyData = async () => {
-  axiosInstance.get('http://localhost:3001/api/created_company')
-    .then(response => {
-        const company = response.data.length > 0 ? response.data[0] : null;
-        if (company && company.company_id) {
-            setCompanyData(company);
-            setError(''); // Clear any previous error messages
-        } else {
-            setCompanyData(null); // Set to null if no data is returned
-        }
-        setIsLoading(false);
-    })
-    .catch(error => {
-      console.error('Error fetching company data:', error);
-      // Check if the error is due to no data found and set an appropriate message
-      if (error.response && error.response.status === 404) {
-        setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.');
-      } else {
-        setError('Failed to fetch company data.');
-      }
+  
 
-      setCompanyData(null); // Set companyData to null when fetch fails
-      setIsLoading(false);
-    });
+  axiosInstance.get('http://localhost:3001/api/created_company', {
+    headers: {
+      Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+      'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+    }
+  })
+  .then(response => {
+    const company = response.data.length > 0 ? response.data[0] : null;
+    if (company && company.company_id) {
+      setCompanyData(company);
+      setError(''); // Clear any previous error messages
+    } else {
+      setCompanyData(null); // Set to null if no data is returned
+      setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.'); // No company data found message
+      setIsEditMode(false)
+    }
+    setIsLoading(false);
+  })
+  .catch(error => {
+    console.error('Error fetching company data:', error);
+    if (error.response && error.response.status === 404) {
+      setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.');
+      setIsEditMode(false)
+    } else {
+      setError('Failed to fetch company data.');
+    }
+    setCompanyData(null); // Set companyData to null when fetch fails
+    setIsLoading(false);
+  });
 };
 
 useEffect(() => {
-  // Only fetch user details if the user object is available
-  if (!user) {
-    navigate('/LoginUser');
-    
-  } else {
-    // If no user is present, navigate to login
+  if (user) {
     fetchCompanyData();
+  } else {
+    navigate('/LoginUser');
   }
-}, [user, navigate]);// Added fetchUserDetails as a dependency
+}, [user, navigate]); // useEffect will trigger when user or navigate changes
+
 
 const goToNextStep = () => {
   // Increment the current step.
@@ -273,21 +279,29 @@ const goToNextStep = () => {
 };
 
   const handleCreateCompany = async () => {
-    // Return the axios call directly as it returns a Promise
-   await axiosInstance.post('http://localhost:3001/create-company', {
-        CompanyName,
-        street,
-        number,
-        postcode,
-        city,
-		country,
-        taxOfficeName,
-        PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
-        Taxid,
-        Bankaccount,
-        formaPrawna: formData.formaPrawna,
-        wypadkowe: wypadkoweRate // Include the wypadkowe rate here
-      })
+    // Define the company data
+    const companyData = {
+      CompanyName,
+      street,
+      number,
+      postcode,
+      city,
+      country,
+      taxOfficeName,
+      PESEL: formData.formaPrawna === 'osoba_fizyczna' ? formData.PESEL : null,
+      Taxid,
+      Bankaccount,
+      formaPrawna: formData.formaPrawna,
+      wypadkowe: wypadkoweRate
+  };
+
+  // Make the API call
+  await axiosInstance.post('http://localhost:3001/create-company', companyData, {
+      headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token from the user object
+          'X-Schema-Name': user.schemaName // Pass the schemaName as a custom header
+      }
+  })
       .then((response) => {
         if (response && response.data) {
         // Handle successful create employee
@@ -492,19 +506,24 @@ const handleUpdateCompany = async (event, companyId) => {
 
     console.log('Updating company data:', companyData);
   
-    await axiosInstance.put(`http://localhost:3001/update-company/${companyId}`, companyData)
-        .then(response => {
-            console.log('Company updated successfully:', response.data);
-            setUpdateMessage('Company updated successfully.');
-        fetchCompanyData(); // Fetch the latest company data
-        setIsEditMode(false); // Switch back to view mode
-        setTimeout(() => setUpdateMessage(''), 3000); // Clear message after 3 seconds
-        })
-        .catch(error => {
-            console.error('Error updating company:', error);
-            setValidationError('Failed to update company data.');
-        });
-  };
+    try {
+      const response = await axiosInstance.put(`http://localhost:3001/update-company/${companyId}`, companyData, {
+          headers: {
+              'Authorization': `Bearer ${user.access_token}`, // Assuming 'user.access_token' is valid
+              'X-Schema-Name': user.schemaName // Pass the schemaName as a custom header
+          }
+      });
+      
+      console.log('Company updated successfully:', response.data);
+      setUpdateMessage('Company updated successfully.');
+      fetchCompanyData(); // Fetch the latest company data
+      setIsEditMode(false); // Switch back to view mode
+      setTimeout(() => setUpdateMessage(''), 3000); // Clear message after 3 seconds
+  } catch (error) {
+      console.error('Error updating company:', error);
+      setValidationError('Failed to update company data.');
+  }
+};
   
   
 
@@ -520,7 +539,7 @@ const handleUpdateCompany = async (event, companyId) => {
     {isLoading ? (
       <p>Loading...</p>
     ) : error ? (
-      <div><p className="text-red-500">{error}</p></div>
+      <div><p className="text-red-500">{error}</p>{renderForm()}</div>
     ) : companyData && !isEditMode ? (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Dynamically generated company details */}

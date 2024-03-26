@@ -105,11 +105,10 @@ useEffect(() => {
 useEffect(() => {
   const fetchCompanyData = async () => {
     setIsLoading(true); // Assuming you're managing a loading state
-    
-    // Fetch company data if user is present
+
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
+
       if (sessionError) {
         console.error('Error fetching session:', sessionError.message);
         setError('Problem z pobraniem danych sesji.'); // Problem fetching session data
@@ -117,8 +116,15 @@ useEffect(() => {
       }
 
       if (sessionData && sessionData.session) {
+        const user = sessionData.session.user;
         // We have a session, now fetch company data
-        const response = await axiosInstance.get('http://localhost:3001/api/created_company');
+        const response = await axiosInstance.get('http://localhost:3001/api/created_company', {
+          headers: {
+            Authorization: `Bearer ${sessionData.session.access_token}`, // Use the access token from the session
+            'X-Schema-Name': `schema_${user.email.replace(/[@\.]/g, '_')}` // Construct the schema name dynamically based on user email
+          }
+        });
+
         setCompanyData(response.data.length > 0 ? response.data[0] : null);
       } else {
         console.log('No user logged in.');
@@ -133,7 +139,8 @@ useEffect(() => {
   };
 
   fetchCompanyData();
-}, [navigate]); // Removed 'user' since we're directly checking the session now
+}, [navigate, supabase.auth]); // Added supabase.auth to the dependency array
+
 
 
 
