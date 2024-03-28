@@ -301,6 +301,14 @@ app.get('/employees', verifyJWT, async (req, res) => {
 app.get('/employees/:id',verifyJWT, async (req, res) => {
   const employeeId = req.params.id; // Get the id from the request parameters
 
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
   try {
     const { data, error } = await supabase
       .from('employees')

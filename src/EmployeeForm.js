@@ -374,7 +374,7 @@ const handleAddViewContractClick = () => {
 };
 const handleUpdateEmployee = async (employeeId) => {
   try {
-      const response = await axios.put(`http://localhost:3001/update-employee/${employeeId}`, {
+      const response = await axiosInstance.put(`http://localhost:3001/update-employee/${employeeId}`, {
           name: employeeName,
           surname: employeeSurname,
           pesel: PESEL,
@@ -384,7 +384,12 @@ const handleUpdateEmployee = async (employeeId) => {
           city,
           country,
           tax_office: taxOfficeName,
-      });
+    }, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
 
       // After updating the employee
 // After updating the employee
@@ -428,7 +433,12 @@ if (response.data && response.data.updatedEmployee) {
 const fetchEmployeeData = async (employeeId) => {
   console.log('Fetching data for employee ID:', employeeId);
   try {
-    const response = await axiosInstance.get(`http://localhost:3001/employees/${employeeId}`);
+    const response = await axiosInstance.get(`http://localhost:3001/employees/${employeeId}`, {
+      headers: {
+          'Authorization': `Bearer ${user.access_token}`,
+          'X-Schema-Name': user.schemaName // Include the schema name in the request headers
+      }
+  });
     if (response.data) {
         populateFormFields(response.data);
         localStorage.setItem('createdEmployee', JSON.stringify(response.data));

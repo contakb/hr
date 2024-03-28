@@ -6,7 +6,7 @@ import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
 
 function AddContractForm() {
-  const { employeeId, contractId } = useParams();
+  const { employeeId, contractId, employeeName } = useParams();
   const navigate = useNavigate();
   console.log('Employee ID:', employeeId);
 
@@ -255,41 +255,51 @@ const viewEmployeeContract = () => {
   };
   return (
     <div>
+      <div className="bg-gray-100 min-h-screen p-8">
       {isInSetupProcess && <StepIndicator steps={steps} currentStep={currentStep} />}
       {isInSetupProcess && <StepIndicator steps={steps} isCurrentStepCompleted={contractAdded} />}
       {/* Dynamically set the page title */}
-      <h2>{isEditMode ? 'Edit Contract' : 'Add Contract'} dla {employeeId}</h2>
+      <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+      <h2  className="text-2xl font-semibold mb-6">{isEditMode ? 'Edytuj umowę o pracę' : 'Dodaj umowę o pracę'} dla pracownika: {employeeId}{employeeName}</h2>
       {feedbackMessage && (
-        <div style={{ color: isError ? 'red' : 'green' }}>
+        <div className={`mb-4 p-4 rounded ${isError ? 'text-red-700 bg-red-100' : 'text-green-700 bg-green-100'}`}>
           {feedbackMessage}
         </div>
       )}
-      <form onSubmit={handleSubmit}>
-        <label>Gross Amount:</label>
-        <input type="text" value={grossAmount} onChange={handleGrossAmountChange} />
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white shadow rounded p-6">
+      <div className="flex flex-wrap -mx-2">
+            <div className="w-full px-2 mb-4">
+        <label className="block text-sm font-medium text-gray-700">Gross Amount:</label>
+        <input type="text" value={grossAmount} onChange={handleGrossAmountChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+        </div>
 
-        <label>Start Date:</label>
+        <div className="w-1/2 px-2 mb-4">
+        <label className="block text-sm font-medium text-gray-700">Start Date:</label>
 <input 
   type="date" 
   value={startDate} 
   onChange={handleStartDateChange} 
   disabled={isEditMode && isAneksPresent} 
+  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
 />
-
-<label>End Date:</label>
+</div>
+<div className="w-1/2 px-2 mb-4">
+<label className="block text-sm font-medium text-gray-700">End Date:</label>
 <input 
   type="date" 
   value={endDate} 
   onChange={handleEndDateChange} 
   disabled={isEditMode && isAneksPresent} 
+  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
 />
-
-
-        <label>Stanowisko:</label>
-        <input type="text" value={stanowisko} onChange={handleStanowisko} />
-
-        <label>Etat:</label>
-<select value={etat} onChange={handleetat}>
+</div>
+<div className="w-full px-2 mb-4">
+        <label className="block text-sm font-medium text-gray-700">Stanowisko:</label>
+        <input type="text" value={stanowisko} onChange={handleStanowisko} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"  />
+</div>
+<div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Etat:</label>
+<select value={etat} onChange={handleetat} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
 <option value="" disabled hidden>wybierz wielkość etatu</option>
   <option value="1/1">1/1</option>
   <option value="1/2">1/2</option>
@@ -301,10 +311,11 @@ const viewEmployeeContract = () => {
   <option value="3/8">3/8</option>
   <option value="7/8">7/8</option>
 </select>
+</div>
 
-
-<label>Typ umowy:</label>
-<select value={typ_umowy} onChange={handletyp_umowy} disabled={isEditMode && isAneksPresent}>
+<div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Typ umowy:</label>
+<select value={typ_umowy} onChange={handletyp_umowy} disabled={isEditMode && isAneksPresent} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
 <option value="" disabled hidden>wybierz typ umowy</option>
   <option value="próbny 1 miesiąc">okres próbny 1 miesiąc</option>
   <option value="próbny 2 miesiące">okres próbny 2 miesiące</option>
@@ -312,42 +323,61 @@ const viewEmployeeContract = () => {
   <option value="określony">czas określony</option>
   <option value="nieokreślony">czas nieokreślony</option>
 </select>
-
+</div>
+<div className="w-full px-2 mb-4">
 {typ_umowy === 'próbny 1 miesiąc' && (
     <div>
-        <label>Długość okresu umowy po okresie próbnym:</label>
+        <label className="block text-sm font-medium text-gray-700">Długość okresu umowy po okresie próbnym:</label>
         <p>okres krótszy niż 6 miesięcy</p>
     </div>
 )}
 {typ_umowy === 'próbny 2 miesiące' && (
     <div>
-        <label>Długość okresu umowy po okresie próbnym:</label>
+        <label className="block text-sm font-medium text-gray-700">Długość okresu umowy po okresie próbnym:</label>
         <p>okres od 6 do 12 mcy</p>
     </div>
 )}
 {typ_umowy === 'próbny 3 miesiące' && (
     <div>
-        <label>Długość okresu umowy po okresie próbnym:</label>
+        <label className="block text-sm font-medium text-gray-700">Długość okresu umowy po okresie próbnym:</label>
         <p>powyżej 12 mcy lub czas nieokreślony</p>
     </div>
 )}
-{['próbny 1 miesiąc', 'próbny 2 miesiące', 'próbny 3 miesiące'].includes(typ_umowy) && (
-    <div>
-<label>Wpisz długość okresu umowy po okresie próbnym (ilość miesięcy):</label> 
-<input type="text" value={period_próbny} onChange={handleperiod_próbny}/>
 </div>
+{['próbny 1 miesiąc', 'próbny 2 miesiące', 'próbny 3 miesiące'].includes(typ_umowy) && (
+  <div className="w-full px-2 mb-4">
+    <label className="block text-sm font-medium text-gray-700">
+      Wpisz długość okresu umowy po okresie próbnym (ilość miesięcy):
+    </label>
+    <input 
+      type="text" 
+      value={period_próbny} 
+      onChange={handleperiod_próbny} 
+      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+    />
+  </div>
 )}
+
         
 
-        <label>Dzień rozpoczęcia pracy:</label>
-        <input type="date" value={workstart_date} onChange={handleworkstart_date} />
-
-        <button type="submit" disabled={isSubmitting}>
+        <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Dzień rozpoczęcia pracy:</label>
+        <input type="date" value={workstart_date} onChange={handleworkstart_date} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+</div>
+</div>
+<div className="flex flex-wrap items-center justify-between gap-1 mt-2">
+        <button className={`inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${isSubmitting ? 'bg-blue-400' : 'bg-blue-500 hover:bg-blue-600'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}  type="submit" disabled={isSubmitting}>
           {isEditMode ? 'Update Contract' : 'Add Contract'}
         </button>
         
+        
+        
+      
+      <button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"onClick={viewEmployeeContract}>View Contract</button>
+      <p><button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"  onClick={handleBackClick}>Back</button></p>
+      
+      </div>
       </form>
-      <button onClick={viewEmployeeContract}>View Contract</button>
       {contract && (
   <div>
     <h2>{isEditMode ? 'Contract Updated Successfully!' : 'Contract Created Successfully!'}</h2>
@@ -364,7 +394,9 @@ const viewEmployeeContract = () => {
   </div>
 )}
 
-<p><button onClick={handleBackClick}>Back</button></p>
+
+    </div>
+    </div>
     </div>
     
   );
