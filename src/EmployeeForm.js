@@ -286,7 +286,7 @@ const handleCreateEmployee = async () => {
    
     
   try {
-    const response = await axios.post('http://localhost:3001/create-employee', {
+    const response = await axiosInstance.post('http://localhost:3001/create-employee', {
       employeeName,
       employeeSurname,
       street,
@@ -296,6 +296,11 @@ const handleCreateEmployee = async () => {
   country,
       taxOfficeName,
       PESEL,
+    }, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
     });
 
     if (response.data && response.data.employeeId) { // Assuming your API returns the employeeId on successful creation

@@ -176,7 +176,7 @@ app.get('/api/user', async (req, res) => {
 });
 
 
-app.post('/create-employee', async (req, res) => {
+app.post('/create-employee', verifyJWT, async (req, res) => {
   const employeeName = req.body.employeeName;
   const employeeSurname = req.body.employeeSurname;
   const street = req.body.street;
@@ -186,6 +186,14 @@ app.post('/create-employee', async (req, res) => {
   const country = req.body.country;
   const taxOfficeName = req.body.taxOfficeName;
   const PESEL = req.body.PESEL;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     const { data, error } = await supabase
@@ -260,7 +268,15 @@ app.get('/tax-offices', async (req, res) => {
 });
 
 // Get employees route
-app.get('/employees', async (req, res) => {
+app.get('/employees', verifyJWT, async (req, res) => {
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
   try {
     const { data, error } = await supabase
       .from('employees')
@@ -309,9 +325,17 @@ app.get('/employees/:id',verifyJWT, async (req, res) => {
 });
 
 
-app.put('/update-employee/:employeeId', async (req, res) => {
+app.put('/update-employee/:employeeId', verifyJWT, async (req, res) => {
   const employeeId = req.params.employeeId;
   const { name, surname, street, number, postcode, city, country, tax_office, pesel } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+    console.log(`Fetching employees from schema: ${schemaName}`);
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+        db: { schema: schemaName } // set your custom schema here
+    });
 
   try {
     const { data, error } = await supabase
@@ -1031,8 +1055,16 @@ app.post('/employees/:employeeId/add-params', async (req, res) => {
   }
 });
 
-app.get('/api/employee-params/:employeeId', async (req, res) => {
+app.get('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
   const employeeId = req.params.employeeId;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+    console.log(`Fetching employees from schema: ${schemaName}`);
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+        db: { schema: schemaName } // set your custom schema here
+    });
 
   try {
     const { data, error } = await supabase
@@ -1293,6 +1325,14 @@ app.get('/api/empcontracts/:contractId', async (req, res) => {
 
 app.get('/api/contracts/:employeeId', async (req, res) => {
   const employeeId = req.params.employeeId;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     // Perform the database query to fetch the contracts for the specified employee

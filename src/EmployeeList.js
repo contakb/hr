@@ -11,6 +11,7 @@ import Select from 'react-select';
 import { useSetup } from './SetupContext'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct pat
 import { useRequireAuth } from './useRequireAuth';
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 
 // Employee component
 function Employee({ employee, updateEmployeeInList, taxOffices, detailView,  setSelectedEmployee }) {
@@ -103,7 +104,12 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
   const toggleContracts = async () => {
     if (!contractsVisible) {
       try {
-        const response = await axios.get(`http://localhost:3001/api/contracts/${id}`);
+        const response = await axiosInstance.get(`http://localhost:3001/api/contracts/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
         console.log("Fetched contracts:", response.data.contracts);
         const combinedContracts = combineContracts(response.data.contracts);
         setContracts(combinedContracts);
@@ -200,7 +206,12 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
   const toggleParameters = async () => {
     if (!parametersVisible) {
       try {
-        const response = await axios.get(`http://localhost:3001/api/employee-params/${id}`);
+        const response = await axiosInstance.get(`http://localhost:3001/api/employee-params/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
         const hasParameters = response.data.parameters.length > 0;
         setParameters(hasParameters ? response.data.parameters[0] : null);
   
@@ -318,7 +329,12 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     };
   
     try {
-      const response = await axios.put(`http://localhost:3001/update-employee/${id}`, updatedDetails);
+      const response = await axiosInstance.put(`http://localhost:3001/update-employee/${id}`, updatedDetails, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       if (response.data.updatedEmployee) {
         updateEmployeeInList(id, response.data.updatedEmployee);
         setEditMode(false);
@@ -732,6 +748,7 @@ function EmployeeList() {
   const { setIsInSetupProcess } = useSetup(); // Use the hook to access context methods
   const user = useRequireAuth();
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  
 
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployee(employee);
@@ -792,22 +809,27 @@ function EmployeeList() {
     });
   
 
-  const fetchEmployees = async () => {
-    try {
-      const response = await axios.get('http://localhost:3001/employees');
-      const updatedEmployees = response.data.employees.map(employee => {
-        // Assuming the API returns a flag 'hasParams'
-        // Or you can determine it here based on some logic
-        return { ...employee, hasParams: employee.hasParams };
-      });
-      setEmployees(response.data.employees);  
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      setError('Error fetching employees. Please try again later.');
-      setLoading(false);
-    }
+    const fetchEmployees = async () => {
+      try {
+          const response = await axiosInstance.get('http://localhost:3001/employees', {
+              headers: {
+                  'Authorization': `Bearer ${user.access_token}`,
+                  'X-Schema-Name': user.schemaName // Include the schema name in the request headers
+              }
+          });
+          const updatedEmployees = response.data.employees.map(employee => {
+              // Adapt this logic based on your actual data structure
+              return { ...employee, hasParams: Boolean(employee.params) };
+          });
+          setEmployees(response.data.employees);
+      } catch (error) {
+          console.error('Error fetching employees:', error);
+          setError('Error fetching employees. Please try again later.');
+      } finally {
+          setLoading(false);
+      }
   };
+  
 
   if (loading) {
     return <div>Loading...</div>;
