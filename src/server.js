@@ -969,9 +969,17 @@ app.get('/reports/social-insurance', async (req, res) => {
 
 
 
-app.post('/employees/:employeeId/add-contract', async (req, res) => {
+app.post('/employees/:employeeId/add-contract',verifyJWT, async (req, res) => {
   const { employeeId } = req.params; // Retrieve the employeeId from the URL parameter
   const { grossAmount, startDate, endDate, stanowisko, etat, typ_umowy, workstart_date, period_próbny } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     // Construct the contract data
@@ -1282,14 +1290,41 @@ app.delete('/api/contracts/:id', async (req, res) => {
 
 
 
-app.put('/api/contracts/:contractId', async (req, res) => {
+app.put('/api/contracts/:contractId',verifyJWT, async (req, res) => {
   const contractId = req.params.contractId;
-  const { gross_amount, contract_from_date, contract_to_date, typ_umowy, stanowisko, etat, workstart_date } = req.body;
+  const { grossAmount, startDate, endDate, stanowisko, etat, typ_umowy, workstart_date, period_próbny } = req.body;
+
+  
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
+
+    // Construct the contract data
+    const contractData = {
+    
+      contract_from_date: startDate,
+      contract_to_date: endDate,
+      gross_amount: grossAmount,
+      stanowisko,
+      etat,
+      typ_umowy,
+      workstart_date,
+      period_próbny
+
+      
+
+    };
+    console.log('Aktualizacja umowy', contractData);
     const { data, error } = await supabase
       .from('contracts') // Replace 'emp_var' with your contracts table name
-      .update({ gross_amount, contract_from_date, contract_to_date, typ_umowy, stanowisko, etat, workstart_date })
+      .update([contractData])
       .eq('id', contractId) // Ensure you're updating the correct contract
       .select(); // Chain a select() after update() to get the updated data
 
@@ -1308,8 +1343,16 @@ app.put('/api/contracts/:contractId', async (req, res) => {
   }
 });
 
-app.get('/api/empcontracts/:contractId', async (req, res) => {
+app.get('/api/empcontracts/:contractId',verifyJWT, async (req, res) => {
   const contractId = req.params.contractId;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     const { data, error } = await supabase
@@ -1331,7 +1374,7 @@ app.get('/api/empcontracts/:contractId', async (req, res) => {
 });
 
 
-app.get('/api/contracts/:employeeId', async (req, res) => {
+app.get('/api/contracts/:employeeId',verifyJWT, async (req, res) => {
   const employeeId = req.params.employeeId;
 
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers

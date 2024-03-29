@@ -261,6 +261,11 @@ const populateFormFields = (employeeData) => {
         handleCreateEmployee();
     }
 };
+  // Add this function to handle the back button click
+  const handleBackClick = () => {
+    navigate(-1); // This navigates to the previous page in history
+    // or you can navigate to a specific route, e.g., navigate('/dashboard');
+  };
 
 
 const handleCreateEmployee = async () => {
@@ -670,12 +675,12 @@ const toggleEditMode = () => {
   />
 </div>
 <div>
-<div className="flex justify-between items-center space-x-2">
+<div className="flex items-center space-x-2  justify-between">
   {isCreatingNew && !isEditMode && (
     <>
       <button 
         type="submit" 
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded"
       >
         Create Employee
       </button>
@@ -685,6 +690,8 @@ const toggleEditMode = () => {
       >
         Clear Data
       </button>
+      <button
+       className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"onClick={handleBackClick}>Back</button>
     </>
   )}
 
@@ -702,6 +709,7 @@ const toggleEditMode = () => {
       >
         Clear Data
       </button>
+      <button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"  onClick={handleBackClick}>Back</button>
     </>
   )}
 
@@ -729,7 +737,9 @@ const toggleEditMode = () => {
       >
         Clear Data
       </button>
+      <button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"  onClick={handleBackClick}>Back</button>
     </>
+    
   )}
 </div>
 

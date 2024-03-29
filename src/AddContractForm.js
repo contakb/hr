@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
+import axiosInstance from './axiosInstance';
+import { useRequireAuth } from './useRequireAuth';
 
 function AddContractForm() {
   const { employeeId, contractId, employeeName } = useParams();
@@ -29,6 +31,7 @@ const { markStepAsCompleted } = useSetup();
 const [showNextStepButton, setShowNextStepButton] = useState(false);
 
 const { setIsInSetupProcess } = useSetup();
+const user = useRequireAuth();
 
 
 const location = useLocation();
@@ -70,7 +73,12 @@ useEffect(() => {
       if (contractId) {
         try {
           // Fetch the contract being edited
-          const contractResponse = await axios.get(`http://localhost:3001/api/empcontracts/${contractId}`);
+          const contractResponse = await axiosInstance.get(`http://localhost:3001/api/empcontracts/${contractId}`,{
+            headers: {
+                'Authorization': `Bearer ${user.access_token}`,
+                'X-Schema-Name': user.schemaName // Include the schema name in the request headers
+            }
+        });
           const contract = contractResponse.data;
           setGrossAmount(contract.gross_amount);
           setStartDate(contract.contract_from_date);
@@ -82,7 +90,12 @@ useEffect(() => {
           // ... Any other fields that need to be set
   
           // Fetch all contracts for the employee to check for aneks
-        const allContractsResponse = await axios.get(`http://localhost:3001/api/contracts/${contract.employee_id}`);
+        const allContractsResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${contract.employee_id}`,{
+          headers: {
+              'Authorization': `Bearer ${user.access_token}`,
+              'X-Schema-Name': user.schemaName // Include the schema name in the request headers
+          }
+      });
         const allContracts = allContractsResponse.data.contracts;
         console.log("All contracts for employee:", allContracts);
 
@@ -155,7 +168,7 @@ const viewEmployeeContract = () => {
       workstart_date,
       period_próbny
     };
-
+    console.log('Updating contract data:', contractData);
     
     // Check for overlapping contracts if it's a new contract
     if (!contractId) {
@@ -172,12 +185,22 @@ const viewEmployeeContract = () => {
       let response;
       if (contractId) {
         // Update existing contract
-        response = await axios.put(`http://localhost:3001/api/contracts/${contractId}`, contractData);
+        response = await axiosInstance.put(`http://localhost:3001/api/contracts/${contractId}`, contractData, {
+          headers: {
+              'Authorization': `Bearer ${user.access_token}`,
+              'X-Schema-Name': user.schemaName // Include the schema name in the request headers
+          }
+      });
         setFeedbackMessage('Contract updated successfully.');
         setIsSubmitting(false); // Re-enable the button only for updates
       } else {
         // Add new contract
-        response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-contract`, contractData);
+        response = await axiosInstance.post(`http://localhost:3001/employees/${employeeId}/add-contract`, contractData, {
+          headers: {
+              'Authorization': `Bearer ${user.access_token}`,
+              'X-Schema-Name': user.schemaName // Include the schema name in the request headers
+          }
+      });
         setFeedbackMessage('Contract added successfully.');
         setContract(response.data.contract);
         markStepAsCompleted(3); // Mark the "Add Employees" step as completed
@@ -214,7 +237,12 @@ const viewEmployeeContract = () => {
   // Function to check for overlapping contracts
   const checkForOverlappingContracts = async (newStart, newEnd) => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/contracts/${employeeId}`);
+      const response = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeId}`,{
+        headers: {
+            'Authorization': `Bearer ${user.access_token}`,
+            'X-Schema-Name': user.schemaName // Include the schema name in the request headers
+        }
+    });
       return response.data.contracts.some(contract => {
         const start = new Date(contract.contract_from_date);
         const end = new Date(contract.contract_to_date);
@@ -231,7 +259,25 @@ const viewEmployeeContract = () => {
   };
 
   const handleStartDateChange = (event) => {
-    setStartDate(event.target.value);
+    const newStartDate = event.target.value;
+    setStartDate(newStartDate);
+  
+    // Optionally set workstart_date to startDate if it's earlier
+    if (new Date(workstart_date) < new Date(newStartDate)) {
+      setworkstart_date(newStartDate);
+    }
+  };
+  
+  const handleWorkStartDateChange = (event) => {
+    const newWorkStartDate = event.target.value;
+  
+    // Only update workstart_date if it's the same or later than startDate
+    if (new Date(newWorkStartDate) >= new Date(startDate)) {
+      setworkstart_date(newWorkStartDate);
+    } else {
+      // If the selected date is earlier, revert to the startDate
+      setworkstart_date(startDate);
+    }
   };
 
   const handleEndDateChange = (event) => {
@@ -270,7 +316,11 @@ const viewEmployeeContract = () => {
       <div className="flex flex-wrap -mx-2">
             <div className="w-full px-2 mb-4">
         <label className="block text-sm font-medium text-gray-700">Gross Amount:</label>
-        <input type="text" value={grossAmount} onChange={handleGrossAmountChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+        <input 
+        type="text" 
+        value={grossAmount} 
+        onChange={handleGrossAmountChange} 
+        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
         </div>
 
         <div className="w-1/2 px-2 mb-4">
@@ -362,10 +412,10 @@ const viewEmployeeContract = () => {
 
         <div className="w-full px-2 mb-4">
               <label className="block text-sm font-medium text-gray-700">Dzień rozpoczęcia pracy:</label>
-        <input type="date" value={workstart_date} onChange={handleworkstart_date} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+        <input type="date" value={workstart_date} onChange={handleWorkStartDateChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
 </div>
 </div>
-<div className="flex flex-wrap items-center justify-between gap-1 mt-2">
+<div className="flex gap-2 mb-2">
         <button className={`inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${isSubmitting ? 'bg-blue-400' : 'bg-blue-500 hover:bg-blue-600'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}  type="submit" disabled={isSubmitting}>
           {isEditMode ? 'Update Contract' : 'Add Contract'}
         </button>
@@ -374,7 +424,7 @@ const viewEmployeeContract = () => {
         
       
       <button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"onClick={viewEmployeeContract}>View Contract</button>
-      <p><button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"  onClick={handleBackClick}>Back</button></p>
+      <button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"  onClick={handleBackClick}>Back</button>
       
       </div>
       </form>
