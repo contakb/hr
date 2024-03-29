@@ -31,8 +31,18 @@ const EmployeeContract = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const employeeResponse = await axios.get(`http://localhost:3001/api/employees/${employeeId}`);
-        const contractResponse = await axios.get(`http://localhost:3001/api/contracts/${employeeId}`);
+        const employeeResponse = await axiosInstance.get(`http://localhost:3001/api/employees/${employeeId}`, {
+          headers: {
+            Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+            'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+          }
+        });
+        const contractResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeId}`, {
+          headers: {
+            Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+            'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+          }
+        });
   
         console.log("Contracts fetched:", contractResponse.data.contracts);
   
@@ -63,7 +73,12 @@ const EmployeeContract = () => {
   }, [employeeId, location]); // This is where useEffect should e
 
   const fetchCompanyData = async () => {
-    axiosInstance.get('http://localhost:3001/api/created_company')
+    axiosInstance.get('http://localhost:3001/api/created_company', {
+      headers: {
+        Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+        'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+      }
+    })
       .then(response => {
           const company = response.data.length > 0 ? response.data[0] : null;
           if (company && company.company_id) {
