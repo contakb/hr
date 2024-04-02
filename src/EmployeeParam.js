@@ -258,13 +258,16 @@ const handleSubmit = async (event) => {
 
   // Below is the form where you can input the parameters
   return (
-    <div>
+    <div className="bg-gray-100 min-h-screen p-8">
       {isInSetupProcess &&<StepIndicator steps={steps} isCurrentStepCompleted={paramsAdded} />}
       {isInSetupProcess &&<StepIndicator steps={steps} currentStep={currentStep} />}
-      <h2>{hasParams ? 'Update Employee Parameters' : 'Add Employee Parameters'} dla { employeeId }</h2>
-      <form onSubmit={handleSubmit}>
-      <label>Czy pracownik pracuje poza miejscem zamieszkania?</label>
-<div>
+      <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+      <h2 className="text-2xl font-semibold mb-6">{hasParams ? 'Update Employee Parameters' : 'Add Employee Parameters'} dla { employeeId }</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex items-center space-x-4">
+      <label className="block text-sm font-medium text-gray-700">Czy pracownik pracuje poza miejscem zamieszkania?</label>
+      <div className="flex items-center space-x-2">
+      <label className="inline-flex items-center">
   <input
     type="radio"
     name="worksOutsideHome"
@@ -272,6 +275,8 @@ const handleSubmit = async (event) => {
     checked={worksOutsideHome === true}
     onChange={handleWorksOutsideHomeChange}
   /> Tak
+  </label>
+  <label className="inline-flex items-center">
   <input
     type="radio"
     name="worksOutsideHome"
@@ -279,56 +284,77 @@ const handleSubmit = async (event) => {
     checked={worksOutsideHome === false}
     onChange={handleWorksOutsideHomeChange}
   /> Nie
+  </label>
 </div>
-        <label>Koszty uzyskania przychodu:</label>
-        <input type="number" value={koszty} onChange={handleKosztyChange} />
-
-        {/* Question for pension or retirement */}
-{/* Question for retirement */}
-{/* Question for retirement */}
-{/* Question for retirement */}
-<label>Czy pracownik jest emerytem?</label>
-<div>
-  <input
-    type="radio"
-    name="retirementStatus"
-    value="yes"
-    checked={isRetired}
-    onChange={handleRetirementChange}
-  /> Tak
-  <input
-    type="radio"
-    name="retirementStatus"
-    value="no"
-    checked={!isRetired}
-    onChange={handleRetirementChange}
-  /> Nie
 </div>
+        <label className="block text-sm font-medium text-gray-700">Koszty uzyskania przychodu:</label>
+        <input type="number" value={koszty} onChange={handleKosztyChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
 
-{/* Question for disability benefit */}
-<label>Czy pracownik otrzymuje rentę?</label>
-<div>
-  <input
-    type="radio"
-    name="benefitStatus"
-    value="yes"
-    checked={hasDisabilityBenefit}
-    onChange={handleDisabilityBenefitChange}
-  /> Tak
-  <input
-    type="radio"
-    name="benefitStatus"
-    value="no"
-    checked={!hasDisabilityBenefit}
-    onChange={handleDisabilityBenefitChange}
-  /> Nie
+        <div class="grid grid-cols-2 gap-4">
+ 
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Czy pracownik jest emerytem?</label>
+    <div class="mt-1 flex space-x-2">
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="retirementStatus"
+          value="yes"
+          checked={isRetired}
+          onChange={handleRetirementChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Tak</span>
+      </label>
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="retirementStatus"
+          value="no"
+          checked={!isRetired}
+          onChange={handleRetirementChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Nie</span>
+      </label>
+    </div>
+  </div>
+
+  
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Czy pracownik otrzymuje rentę?</label>
+    <div class="mt-1 flex space-x-2">
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="benefitStatus"
+          value="yes"
+          checked={hasDisabilityBenefit}
+          onChange={handleDisabilityBenefitChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Tak</span>
+      </label>
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="benefitStatus"
+          value="no"
+          checked={!hasDisabilityBenefit}
+          onChange={handleDisabilityBenefitChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Nie</span>
+      </label>
+    </div>
+  </div>
 </div>
 
 
 
 {/* Question for the number of companies */}
-<label>Ilość firm, w których pracuje:</label>
-<select value={numOfCompanies} onChange={handleNumOfCompaniesChange}>
+<label className="block text-sm font-medium text-gray-700">Ilość firm, w których pracuje:</label>
+<select value={numOfCompanies} onChange={handleNumOfCompaniesChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
   <option value={1}>1 firma</option>
   <option value={2}>2 firmy</option>
   <option value={3}>3 firmy</option>
@@ -336,12 +362,12 @@ const handleSubmit = async (event) => {
 </select>
 
 
-        <label>Ulga podatkowa:</label>
-        <input type="number" value={ulga} onChange={handleUlgaChange} />
+        <label className="block text-sm font-medium text-gray-700">Ulga podatkowa:</label>
+        <input type="number" value={ulga} onChange={handleUlgaChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
 
         {/* Question for the degree of disability */}
-<label>Stopień niepełnosprawności:</label>
-<select value={hasDisability} onChange={handleDisabilityChange}>
+<label className="block text-sm font-medium text-gray-700">Stopień niepełnosprawności:</label>
+<select value={hasDisability} onChange={handleDisabilityChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
   <option value="0">Brak</option>
   <option value="1">Lekki</option>
   <option value="2">Umiarkowany</option>
@@ -349,14 +375,17 @@ const handleSubmit = async (event) => {
 </select>
 
 
-        <label>Kod ubezpieczenia:</label>
-        <input type="text" value={kodUb} onChange={handleKodUbChange} />
+        <label className="block text-sm font-medium text-gray-700">Kod ubezpieczenia:</label>
+        <input type="text" value={kodUb} onChange={handleKodUbChange} className="mt-1 block border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
 
-        <label>Valid From:</label>
+        <label className="block text-sm font-medium text-gray-700">Valid From:</label>
         <input type="date" value={validFrom} onChange={handleValidFromChange} />
-
-        <button type="submit">{hasParams ? 'Update Parameters' : 'Add Parameters'}</button>
-
+        <div className="flex  items-center mt-5">
+        <button type="submit" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">{hasParams ? 'Update Parameters' : 'Add Parameters'}</button>
+        <button onClick={() => navigate(-1)} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            Back
+          </button>
+        </div>
       </form>
       
       {paramData && (
@@ -372,8 +401,10 @@ const handleSubmit = async (event) => {
         </div>
       )}
 
-      <button onClick={() => navigate(-1)}>Back</button>
+      
     </div>
+    </div>
+    
   );
 }
 
