@@ -295,7 +295,12 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     };
   
     try {
-      const response = await axios.put(`http://localhost:3001/api/employee-params/${id}`, updatedParameters);
+      const response = await axiosInstance.put(`http://localhost:3001/api/employee-params/${id}`, updatedParameters, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       if (response.data.updatedParameters.length > 0) {
         setParameters(response.data.updatedParameters[0]);
         setEditMode(false);

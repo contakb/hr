@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { useRequireAuth } from './useRequireAuth';
 
 function EmployeeParam() {
   const { employeeId } = useParams();
@@ -13,7 +15,7 @@ function EmployeeParam() {
 
   // New state variables for the employee parameters
   const [koszty, setKoszty] = useState('250');
-  const [ulga, setUlga] = useState('300');
+  const [ulga, setUlga] = useState('');
   const [kodUb, setKodUb] = useState('');
   const [validFrom, setValidFrom] = useState('');
   // Add a state to store the response data for the notification
@@ -31,8 +33,15 @@ const { markStepAsCompleted } = useSetup();
 const [showNextStepButton, setShowNextStepButton] = useState(false);
 
 const { setIsInSetupProcess } = useSetup();
+const user = useRequireAuth();
 
-
+const clearForm = () => {
+  setKoszty('');
+  setUlga('');
+  setKodUb('');
+  setValidFrom('');
+  // Reset any other state variables or form fields as necessary
+};
 
 
 const queryParams = new URLSearchParams(location.search);
@@ -62,19 +71,45 @@ useEffect(() => {
   setIsInSetupProcess(isInSetupProcessNow);
 }, [location.pathname]); // Depend on location.pathname to re-evaluate when the route changes [location, setCurrentStep, steps]); // Include 'steps' in the dependency array if it's not static
 
+// Decode function for kod_ub
+const decodeKodUb = (kodUb) => {
+  const isRetired = kodUb.charAt(4) === '1';
+  const hasDisabilityBenefit = kodUb.charAt(4) === '2';
+  const hasDisability = kodUb.charAt(5); // Assuming last character represents the disability degree
+
+  return {
+    isRetired,
+    hasDisabilityBenefit,
+    hasDisability
+  };
+};
+
 
 useEffect(() => {
   // Function to fetch existing parameters
   const fetchParams = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/employee-params/${employeeId}`);
+      const response = await axiosInstance.get(`http://localhost:3001/api/employee-params/${employeeId}`, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+        }
+      });
       if (response.data && response.data.parameters.length > 0) {
         const fetchedParams = response.data.parameters[0];
+        // Decode the kod_ub
+      const { isRetired, hasDisabilityBenefit, hasDisability } = decodeKodUb(fetchedParams.kod_ub);
+
+      // Update state with the decoded values
+      setIsRetired(isRetired);
+      setHasDisabilityBenefit(hasDisabilityBenefit);
+      setHasDisability(hasDisability);
+
         setKoszty(fetchedParams.koszty);
         setUlga(fetchedParams.ulga);
         setKodUb(fetchedParams.kod_ub);
         setValidFrom(fetchedParams.valid_from);
-        // ... set other fields similarly
+        setParamData(fetchedParams); // Store fetched data in state
       }
     } catch (error) {
       console.error('Error fetching parameters:', error);
@@ -110,24 +145,39 @@ const handleSubmit = async (event) => {
     let response;
     if (paramData) {
       // If paramData exists, update existing parameters
-      response = await axios.put(`http://localhost:3001/employees/${employeeId}/update-params`, {
+      response = await axiosInstance.put(`http://localhost:3001/employees/${employeeId}/update-params`, {
         koszty,
         ulga,
         kodUb,
         validFrom
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+        }
       });
       // Update paramData with the response data
       setParamData({
         ...response.data.employeeParams,
         kod_ub: String(response.data.employeeParams.kod_ub).padStart(6, '0')
       });
+      // Clear form fields
+      setKoszty('');
+      setUlga('');
+      setKodUb('');
+      setValidFrom('');
     } else {
       // If paramData does not exist, add new parameters
-      response = await axios.post(`http://localhost:3001/employees/${employeeId}/add-params`, {
+      response = await axiosInstance.post(`http://localhost:3001/employees/${employeeId}/add-params`, {
         koszty,
         ulga,
         kodUb,
         validFrom
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+        }
       });
       setParamData({
         ...response.data.employeeParams,
@@ -136,11 +186,7 @@ const handleSubmit = async (event) => {
       markStepAsCompleted(4); // Mark the "Add Employees" step as completed
   nextStep(); // Move to the next step
   setparamsAdded(true); 
-      // Clear form fields
-      setKoszty('');
-      setUlga('');
-      setKodUb('');
-      setValidFrom('');
+      
     }
   } catch (error) {
     console.error('Error updating/adding parameters:', error);
@@ -382,9 +428,13 @@ const handleSubmit = async (event) => {
         <input type="date" value={validFrom} onChange={handleValidFromChange} />
         <div className="flex  items-center mt-5">
         <button type="submit" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">{hasParams ? 'Update Parameters' : 'Add Parameters'}</button>
-        <button onClick={() => navigate(-1)} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+        <button onClick={clearForm} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            Clear
+          </button>
+        <button onClick={() => navigate(-1)} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
             Back
           </button>
+          
         </div>
       </form>
       

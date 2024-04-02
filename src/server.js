@@ -1026,9 +1026,17 @@ app.post('/employees/:employeeId/add-contract',verifyJWT, async (req, res) => {
   }
 });
 
-app.post('/employees/:employeeId/add-params', async (req, res) => {
+app.post('/employees/:employeeId/add-params',verifyJWT, async (req, res) => {
   const { employeeId } = req.params; // Retrieve the employeeId from the URL parameter
   const { koszty, ulga, kodUb, validFrom } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     // Construct the employee parameter data
@@ -1071,6 +1079,42 @@ app.post('/employees/:employeeId/add-params', async (req, res) => {
   }
 });
 
+app.put('/employees/:employeeId/update-params', verifyJWT, async (req, res) => {
+  const { employeeId } = req.params;
+  const { koszty, ulga, kodUb, validFrom } = req.body;
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const updateResponse = await supabase
+      .from('emp_var')
+      .update({ koszty, ulga, kod_ub: kodUb, valid_from: validFrom })
+      .eq('employee_id', employeeId)
+      .select(); // Chain a select() after update()
+
+    if (updateResponse.error) {
+      console.error('Error updating employee parameters:', updateResponse.error);
+      res.status(500).send('Error occurred while updating employee parameters.');
+      return;
+    }
+
+    console.log('Employee parameters updated successfully for employee ID:', employeeId);
+    res.json({ message: 'Employee parameters updated successfully.' });
+  } catch (error) {
+    console.error('Server Error:', error);
+    res.status(500).send('Error occurred while processing your request.');
+  }
+});
+
+
+
+
+
+
+
 app.get('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
   const employeeId = req.params.employeeId;
 
@@ -1106,6 +1150,40 @@ app.get('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+app.put('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
+  const { employeeId } = req.params; // get employee ID from URL
+  const { koszty, ulga, kod_ub, valid_from } = req.body; // get updated parameters from request body
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const updateResponse = await supabase
+      .from('emp_var')
+      .update({ koszty, ulga, kod_ub, valid_from })
+      .eq('employee_id', employeeId)
+      .select(); // Chain a select() after update()
+
+    if (updateResponse.error) {
+      console.error('Error updating employee parameters:', updateResponse.error);
+      res.status(500).send('Failed to update parameters.');
+      return;
+    }
+
+    if (updateResponse.data && updateResponse.data.length > 0) {
+      res.json({ updatedParameters: updateResponse.data });
+    } else {
+      res.status(404).send('Employee parameters not found or no changes made.');
+    }
+  } catch (error) {
+    console.error('Server Error:', error);
+    res.status(500).send('Error occurred while updating parameters.');
+  }
+});
+
 
 app.post('/api/aneks', async (req, res) => {
   const { originalContractId, aneksData } = req.body;
