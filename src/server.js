@@ -1274,9 +1274,17 @@ app.post('/api/aneks', async (req, res) => {
   }
 });
 
-app.delete('/api/contracts/:id', async (req, res) => {
+app.delete('/api/contracts/:id',verifyJWT, async (req, res) => {
   const contractId = req.params.id;
   console.log('Delete request received for contract ID:', contractId);
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     const contractToDeleteResponse = await supabase

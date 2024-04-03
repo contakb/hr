@@ -257,18 +257,24 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     e.preventDefault();
   
     const updatedContractData = {
-      gross_amount: e.target.gross_amount.value,
-      contract_from_date: e.target.contract_from_date.value,
-      contract_to_date: e.target.contract_to_date.value,
+      grossAmount: e.target.gross_amount.value,
+      startDate: e.target.contract_from_date.value,
+      endDate: e.target.contract_to_date.value,
       typ_umowy: e.target.typ_umowy.value,
       stanowisko: e.target.stanowisko.value,
       etat: e.target.etat.value,
       workstart_date: e.target.workstart_date.value,
+      period_próbny: null,
       
     };
   
     try {
-      const response = await axios.put(`http://localhost:3001/api/contracts/${contractId}`, updatedContractData);
+      const response = await axiosInstance.put(`http://localhost:3001/api/contracts/${contractId}`, updatedContractData, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       // Handle success
       setEditContractsMode(false);
       setEditingContractId(null);
