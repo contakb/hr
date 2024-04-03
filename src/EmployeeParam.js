@@ -6,6 +6,7 @@ import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useRequireAuth } from './useRequireAuth';
+import { toast } from 'react-toastify';
 
 function EmployeeParam() {
   const { employeeId } = useParams();
@@ -156,16 +157,10 @@ const handleSubmit = async (event) => {
           'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
         }
       });
-      // Update paramData with the response data
-      setParamData({
-        ...response.data.employeeParams,
-        kod_ub: String(response.data.employeeParams.kod_ub).padStart(6, '0')
-      });
-      // Clear form fields
-      setKoszty('');
-      setUlga('');
-      setKodUb('');
-      setValidFrom('');
+     
+      toast.success('Parameters updated successfully for employee!'); // Success message for update
+      
+      
     } else {
       // If paramData does not exist, add new parameters
       response = await axiosInstance.post(`http://localhost:3001/employees/${employeeId}/add-params`, {
@@ -186,6 +181,7 @@ const handleSubmit = async (event) => {
       markStepAsCompleted(4); // Mark the "Add Employees" step as completed
   nextStep(); // Move to the next step
   setparamsAdded(true); 
+  toast.success('Parameters added successfully for employee!');
       
     }
   } catch (error) {

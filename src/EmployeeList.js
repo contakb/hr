@@ -39,8 +39,8 @@ function Employee({ employee, updateEmployeeInList, taxOffices, detailView,  set
   // State to track the selected employee for displaying details
 
 
-  
-  
+
+
   
   
 
@@ -347,6 +347,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
         setUpdateMessage('Employee data updated successfully!');
         console.log('Message set:', updateMessage);
         setTimeout(() => setUpdateMessage(''), 3000); // Message disappears after 3 seconds
+        
       }
     } catch (error) {
       console.error('Error updating details:', error);
@@ -355,6 +356,8 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
       // Handle error appropriately
     }
   };
+
+  
   
   
   
