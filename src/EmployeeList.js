@@ -610,31 +610,41 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
       </div>
     ) : (
       contracts.map(({ original, aneks }) => (
-        <div key={original.id}>
+        <div key={original.id} className="mb-6">
           {/* Render Original Contract Details */}
-          <p>Original Contract ID: {original.id}</p>
+          <div className="mb-2">
+          <p className="font-medium">Original Contract ID: {original.id}</p>
+          </div>
           
-          {updateMessage && <div className="update-message">{updateMessage}</div>}
+          {updateMessage && <div className="mb-2 text-green-500">{updateMessage}</div>}
           {editContractsMode && editingContractId === original.id ? (
             // Render the form for editing the original contract
-            <form onSubmit={(e) => handleUpdateContract(e, original.id)}>
+            
+            <form onSubmit={(e) => handleUpdateContract(e, original.id)} className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 ">
               {/* Add all form fields for editing the original contract */}
               <label htmlFor="gross_amount">Gross Amount:</label>
-              <input type="number" name="gross_amount" defaultValue={original.gross_amount} />
+              <input type="number" name="gross_amount" defaultValue={original.gross_amount} className="border rounded p-1" />
               <label htmlFor="contract_from_date">Contract From:</label>
-              <input type="date" name="contract_from_date" defaultValue={original.contract_from_date} />
+              <input type="date" name="contract_from_date" defaultValue={original.contract_from_date} className="border rounded p-1" />
               <label htmlFor="contract_to_date">Contract To:</label>
-              <input type="date" name="contract_to_date" defaultValue={original.contract_to_date} />
+              <input type="date" name="contract_to_date" defaultValue={original.contract_to_date} className="border rounded p-1" />
               <label htmlFor="typ_umowy">Typ Umowy:</label>
-              <input type="text" name="typ_umowy" defaultValue={original.typ_umowy} />
+              <input type="text" name="typ_umowy" defaultValue={original.typ_umowy} className="border rounded p-1" />
               <label htmlFor="stanowisko">Stanowisko:</label>
-              <input type="text" name="stanowisko" defaultValue={original.stanowisko} />
+              <input type="text" name="stanowisko" defaultValue={original.stanowisko} className="border rounded p-1" />
               <label htmlFor="etat">Etat:</label>
-              <input type="text" name="etat" defaultValue={original.etat} />
+              <input type="text" name="etat" defaultValue={original.etat} className="border rounded p-1" />
               <label htmlFor="Rozpoczęcie pracy">Rozpoczęcie pracy:</label>
-              <input type="date" name="workstart_date" defaultValue={original.workstart_date} />
-              <button type="submit">Save Changes</button>
-              <button onClick={() => toggleEditContractsMode(null)}>Cancel</button>
+              <input type="date" name="workstart_date" defaultValue={original.workstart_date} className="border rounded p-1" />
+              </div>
+              <div className="flex gap-2 mb-2">
+              <button type="submit" 
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs">Save Changes</button>
+              <button onClick={() => toggleEditContractsMode(null)}
+        className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs">Cancel</button>
+              </div>
+             
             </form>
           ) : (
             // Render the normal view of the original contract
