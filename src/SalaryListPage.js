@@ -32,7 +32,12 @@ function SalaryListPage() {
     setIsLoading(true);
   setError(null);
     try {
-      const response = await axios.get('http://localhost:3001/salary-list');
+      const response = await axiosInstance.get('http://localhost:3001/salary-list', {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
       let salaryData = response.data;
   
       for (let salary of salaryData) {
@@ -41,7 +46,12 @@ function SalaryListPage() {
         const selectedMonthEnd = new Date(salary.salary_year, salary.salary_month, 0);
   
         // Fetch and filter health breaks
-        const healthBreaksResponse = await axios.get(`http://localhost:3001/api/get-health-breaks?employee_id=${salary.employee_id}`);
+        const healthBreaksResponse = await axiosInstance.get(`http://localhost:3001/api/get-health-breaks?employee_id=${salary.employee_id}`, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
         salary.healthBreaks = healthBreaksResponse.data.filter(hb => {
           const breakStart = new Date(hb.break_start_date);
           const breakEnd = new Date(hb.break_end_date);
@@ -49,7 +59,12 @@ function SalaryListPage() {
         });
   
         // Fetch and filter contracts
-        const contractsResponse = await axios.get(`http://localhost:3001/api/contracts/${salary.employee_id}`);
+        const contractsResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${salary.employee_id}`, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
         salary.contracts = contractsResponse.data.contracts.filter(contract => {
           const contractStart = new Date(contract.contract_from_date);
           const contractEnd = contract.contract_to_date ? new Date(contract.contract_to_date) : new Date();
@@ -58,7 +73,12 @@ function SalaryListPage() {
 
         // Fetch employee parameters
       try {
-        const paramsResponse = await axios.get(`http://localhost:3001/api/employee-params/${salary.employee_id}`);
+        const paramsResponse = await axiosInstance.get(`http://localhost:3001/api/employee-params/${salary.employee_id}`, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
         if (paramsResponse.data && paramsResponse.data.parameters) {
           salary.employeeParams = paramsResponse.data.parameters;
         } else {
@@ -126,6 +146,7 @@ function SalaryListPage() {
         salary_id: salary.id,
         name: salary.employees.name,
         surname: salary.employees.surname,
+        pesel: salary.employees.pesel,
         employee_koszty: salary.koszty,
         employee_ulga: salary.ulga,
         gross_amount: salary.gross_total,
@@ -193,10 +214,20 @@ const handleDeleteSalaryByMonthYear = async (monthYear) => {
 
       // Delete health breaks if any
       if (healthBreakIdsToDelete.length > 0) {
-        await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: healthBreakIdsToDelete } });
+        await axiosInstance.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: healthBreakIdsToDelete } }, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
       }
        // Delete salary records
-      await axios.delete(`http://localhost:3001/api/delete-salary-by-month?month=${month}&year=${year}`);
+      await axiosInstance.delete(`http://localhost:3001/api/delete-salary-by-month?month=${month}&year=${year}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       fetchSalaryList();
       toast.success(`Salary records and associated health breaks for ${monthYear} successfully deleted.`);
     } catch (error) {
@@ -224,12 +255,22 @@ const handleDeleteIndividualSalary = async (salaryId) => {
 
       // Delete health breaks if any
       if (healthBreakIdsToDelete.length > 0) {
-        await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: healthBreakIdsToDelete } });
+        await axiosInstance.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: healthBreakIdsToDelete } }, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
       }
 
       // Delete the individual salary record
       
-      await axios.delete(`http://localhost:3001/api/delete-salary/${salaryId}`);
+      await axiosInstance.delete(`http://localhost:3001/api/delete-salary/${salaryId}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       toast.success('Salary entry successfully deleted.');
 
       // Refresh the details list to reflect the deletion

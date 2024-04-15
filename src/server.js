@@ -415,9 +415,17 @@ function formatTimestamp(timestampString) {
 
 // Assuming you're using Express.js for your server
 
-app.post('/api/save-health-breaks', async (req, res) => {
+app.post('/api/save-health-breaks', verifyJWT, async (req, res) => {
   console.log("Received breaks data:", req.body);
   const breaksData = req.body.breaksData;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
   
   // Loop through breaksData and insert each entry into the database
   try {
@@ -442,8 +450,16 @@ app.post('/api/save-health-breaks', async (req, res) => {
 });
 
 // API Endpoint to get health breaks for a specific employee
-app.get('/api/get-health-breaks', async (req, res) => {
+app.get('/api/get-health-breaks', verifyJWT, async (req, res) => {
   const employeeId = req.query.employee_id;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     const { data, error } = await supabase
@@ -462,9 +478,17 @@ app.get('/api/get-health-breaks', async (req, res) => {
   }
 });
 
-app.delete('/api/delete-health-breaks', async (req, res) => {
+app.delete('/api/delete-health-breaks', verifyJWT, async (req, res) => {
   console.log("Received request to delete breaks:", req.body);
   const breakIds = req.body.breakIds;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   // Loop through breakIds and delete each entry from the database
   try {
@@ -481,9 +505,17 @@ app.delete('/api/delete-health-breaks', async (req, res) => {
   }
 });
 
-app.put('/api/update-health-breaks', async (req, res) => {
+app.put('/api/update-health-breaks', verifyJWT, async (req, res) => {
   const breaksData = req.body.breaksData;
   let updatedBreaksData = [];
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     for (const breakEntry of breaksData) {
@@ -522,8 +554,16 @@ app.put('/api/update-health-breaks', async (req, res) => {
 
 
 
-app.post('/api/save-salary-data', async (req, res) => {
+app.post('/api/save-salary-data', verifyJWT, async (req, res) => {
   const salaryData = req.body; // The salary data received from the frontend
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     // Construct the array of salary records
@@ -588,8 +628,16 @@ app.post('/api/save-salary-data', async (req, res) => {
 });
 
 // Endpoint to update existing salary data
-app.put('/api/update-salary-data', async (req, res) => {
+app.put('/api/update-salary-data', verifyJWT, async (req, res) => {
   const salaryDataToUpdate = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     for (const salary of salaryDataToUpdate) {
@@ -650,10 +698,16 @@ app.put('/api/update-salary-data', async (req, res) => {
 
 
 
-app.get('/salary-list', async (req, res) => {
+app.get('/salary-list', verifyJWT,async (req, res) => {
   const { month, year } = req.query;
 
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     // Define the base query for retrieving salary data
@@ -713,7 +767,14 @@ app.get('/salary-list', async (req, res) => {
 });
 
 
-app.get('/salary-list-basic', async (req, res) => {
+app.get('/salary-list-basic', verifyJWT, async (req, res) => {
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
   try {
     // Fetch only the basic salary data
     const { data: salaryList, error } = await supabase
@@ -735,8 +796,15 @@ app.get('/salary-list-basic', async (req, res) => {
   }
 });
 
-app.delete('/api/delete-salary/:salaryId', async (req, res) => {
+app.delete('/api/delete-salary/:salaryId', verifyJWT, async (req, res) => {
   const { salaryId } = req.params;
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     const { error } = await supabase
@@ -755,8 +823,16 @@ app.delete('/api/delete-salary/:salaryId', async (req, res) => {
   }
 });
 
-app.delete('/api/delete-salary-by-month', async (req, res) => {
+app.delete('/api/delete-salary-by-month', verifyJWT, async (req, res) => {
   const { month, year } = req.query;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     const { error } = await supabase
@@ -775,8 +851,16 @@ app.delete('/api/delete-salary-by-month', async (req, res) => {
   }
 });
 
-app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
+app.get('/api/salary/historical/:employeeId/:year/:month',verifyJWT, async (req, res) => {
   const { employeeId, year, month } = req.params;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   // Calculate the start and end dates for the 12-month period
   const endDate = new Date(year, month - 1, 1); // Start of the selected month
@@ -810,9 +894,17 @@ app.get('/api/salary/historical/:employeeId/:year/:month', async (req, res) => {
   }
 });
 
-app.get('/api/salary/recent/:employeeId', async (req, res) => {
+app.get('/api/salary/recent/:employeeId',verifyJWT, async (req, res) => {
   const { employeeId } = req.params;
   const { startYear, startMonth, endYear, endMonth } = req.query;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     let query = supabase
@@ -1561,8 +1653,16 @@ const fetchData = async () => {
 
 
 
-app.post('/api/valid-employees', async (req, res) => {
+app.post('/api/valid-employees',verifyJWT, async (req, res) => {
   const { startDate, endDate } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   // Step 1: Get list of valid employee IDs
   const validEmployeeIdsResponse = await supabase
@@ -1638,6 +1738,7 @@ app.post('/api/valid-employees', async (req, res) => {
 // Fetch working hours
 app.get('/api/getWorkingHours', async (req, res) => {
   const { year, month } = req.query;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
   
   try {
     const { data, error } = await supabase
@@ -1664,6 +1765,8 @@ app.get('/api/getHolidays', async (req, res) => {
   }
   // Calculate the last day of the month
   const lastDayOfMonth = new Date(year, month, 0).getDate();
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
     const { data, error } = await supabase
@@ -1698,8 +1801,16 @@ app.get('/api/getHolidays', async (req, res) => {
 
 
 
-app.post('/api/calculate-salary', async (req, res) => {
+app.post('/api/calculate-salary',verifyJWT, async (req, res) => {
   const { month, year } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     // Calculate the start and end dates of the selected month and year

@@ -143,6 +143,7 @@ const user = useRequireAuth();
           salary_id: ed.salary_id,
           name: ed.name,
           surname: ed.surname,
+          pesel: ed.pesel,
           gross_amount: ed.gross_amount,
          
           contracts: contracts,
@@ -248,7 +249,12 @@ const initialHealthBreaks = calculatedContracts.map(() => ({ ...defaultHealthBre
 
 const fetchEmployees = async () => {
   try {
-    const response = await axios.get('http://localhost:3001/employees');
+    const response = await axiosInstance.get('http://localhost:3001/employees', {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
     console.log("Fetching employees...");
     setEmployees(response.data.employees);
     // Initialize healthBreaks for each employee
@@ -284,7 +290,12 @@ const fetchValidContracts = async () => {
   try {
       // Check for existing salary list only if the selected date is different from the current date
     // Check if a salary list for this month and year already exists
-    const savedsalaryresponse = await axios.get(`http://localhost:3001/salary-list?month=${selectedPeriodMonth}&year=${selectedPeriodYear}`);
+    const savedsalaryresponse = await axiosInstance.get(`http://localhost:3001/salary-list?month=${selectedPeriodMonth}&year=${selectedPeriodYear}`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
     if (savedsalaryresponse.data && savedsalaryresponse.data.length > 0) {
       toast.warn(`A salary list for ${selectedPeriodMonth}/${selectedPeriodYear} already exists.`);
             setToastShown(true); // Set the flag to true
@@ -304,9 +315,14 @@ const fetchValidContracts = async () => {
 
       console.log("About to make axios request...");
 
-      const response = await axios.post('http://localhost:3001/api/valid-employees', {
+      const response = await axiosInstance.post('http://localhost:3001/api/valid-employees', {
           startDate,
           endDate,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
       });
 
       console.log("Response received for valid employees:", response.data);
@@ -527,7 +543,12 @@ if (validContracts.length > 0 && workingHours && holidays.length >= 0 && year &&
 
 const fetchCompanyData = async () => {
   try {
-    const response = await axiosInstance.get('http://localhost:3001/api/created_company');
+    const response = await axiosInstance.get('http://localhost:3001/api/created_company', {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
     const company = response.data.length > 0 ? response.data[0] : null;
 
     if (company && company.company_id) {
@@ -568,7 +589,12 @@ const employeeParameters = {};
 const fetchAllParameters = async (employee) => {
 try {
     console.log(`Fetching parameters for employee ${employee.employee_id}`);
-    const response = await axios.get(`http://localhost:3001/api/employee-params/${employee.employee_id}`);
+    const response = await axiosInstance.get(`http://localhost:3001/api/employee-params/${employee.employee_id}`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
     const params = response.data.parameters[0] || {}; 
     const { koszty = 250, ulga = 300 } = params; // Default values if not present
 
@@ -585,7 +611,12 @@ try {
 const fetchHistoricalSalaries = async (employee, selectedYear, selectedMonth) => {
   try {
       console.log(`Fetching historical salaries for employee ${employee.employee_id}`);
-      const response = await axios.get(`http://localhost:3001/api/salary/historical/${employee.employee_id}/${selectedYear}/${selectedMonth}`);
+      const response = await axiosInstance.get(`http://localhost:3001/api/salary/historical/${employee.employee_id}/${selectedYear}/${selectedMonth}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       const historicalSalaries = response.data || [];
 
       // Calculate actualWorkedDays for each salary record
@@ -2137,8 +2168,13 @@ setAreBreaksSaved(true);
 if (newBreaks.length > 0) { 
   isAnyOperationPerformed = true;
   try {
-    const response = await axios.post('http://localhost:3001/api/save-health-breaks', {
-       breaksData: newBreaks });
+    const response = await axiosInstance.post('http://localhost:3001/api/save-health-breaks', {
+       breaksData: newBreaks }, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
 
       
 
@@ -2160,7 +2196,12 @@ if (newBreaks.length > 0) {
 if (updatedBreaks.length > 0) {
   isAnyOperationPerformed = true;
   try {
-    const responseUpdate = await axios.put('http://localhost:3001/api/update-health-breaks', { breaksData: updatedBreaks });
+    const responseUpdate = await axiosInstance.put('http://localhost:3001/api/update-health-breaks', { breaksData: updatedBreaks }, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
     if (responseUpdate.status === 200 && responseUpdate.data.updatedBreaksData.length > 0) {
       console.log("Breaks updated successfully.");
       toast.success("Breaks updated successfully.");
@@ -2182,7 +2223,12 @@ if (updatedBreaks.length > 0) {
 if (deletedBreakIds.length > 0) {
   isAnyOperationPerformed = true;
   try {
-    const responseDelete = await axios.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: deletedBreakIds } });
+    const responseDelete = await axiosInstance.delete('http://localhost:3001/api/delete-health-breaks', { data: { breakIds: deletedBreakIds } }, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
     if (responseDelete.status === 200) {
       console.log("Breaks deleted successfully.");
       toast.success("Breaks deleted successfully.");
@@ -2283,7 +2329,12 @@ calculatedContracts.forEach(employee => {
  // Update existing salary records
  if (salaryDataToUpdate.length > 0) {
   try {
-    await axios.put('http://localhost:3001/api/update-salary-data', salaryDataToUpdate);
+    await axiosInstance.put('http://localhost:3001/api/update-salary-data', salaryDataToUpdate, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`, // Use the access token
+        'X-Schema-Name': user.schemaName, // Send the schema name as a header
+      }
+    });
     console.log('Salary data updated successfully!');
     toast.success("Salary data updated successfully!");
   } catch (error) {
@@ -2295,7 +2346,12 @@ calculatedContracts.forEach(employee => {
 // Save new salary data
   if (newSalaryData.length > 0) {
     try {
-      await axios.post('http://localhost:3001/api/save-salary-data', newSalaryData);
+      await axiosInstance.post('http://localhost:3001/api/save-salary-data', newSalaryData, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       console.log('Salary data saved successfully!');
       toast.success("Salary data saved successfully!");
     } catch (error) {
