@@ -120,7 +120,12 @@ const handleGenerateReport = async () => {
       const [splitStartMonth, splitStartYear] = periodStart.split('/');
       const [splitEndMonth, splitEndYear] = periodEnd.split('/');
 
-      const response = await axios.get(`http://localhost:3001/api/salary/recent/${selectedEmployee}?startYear=${splitStartYear}&startMonth=${splitStartMonth}&endYear=${splitEndYear}&endMonth=${splitEndMonth}`);
+      const response = await axiosInstance.get(`http://localhost:3001/api/salary/recent/${selectedEmployee}?startYear=${splitStartYear}&startMonth=${splitStartMonth}&endYear=${splitEndYear}&endMonth=${splitEndMonth}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       
       const recentData = response.data;
   
@@ -134,13 +139,23 @@ const handleGenerateReport = async () => {
       setIsReportGenerated(true);
     } else if (reportType === 'social-insurance') {
       // Logic for fetching social insurance data
-      const response = await axios.get(`http://localhost:3001/reports/social-insurance?month=${month}&year=${year}`);
+      const response = await axiosInstance.get(`http://localhost:3001/reports/social-insurance?month=${month}&year=${year}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       responseData = processSocialInsuranceData(response.data);
       setReportData(responseData); // Set the processed data
       setIsReportGenerated(true);
     } else {
       // Existing logic for other report types
-      const response = await axios.get(`http://localhost:3001/reports?month=${month}&year=${year}`);
+      const response = await axiosInstance.get(`http://localhost:3001/reports?month=${month}&year=${year}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       responseData = response.data;
 
       if (reportType === 'total-gross-amount') {
@@ -172,7 +187,12 @@ const handlePrint = () => {
   
 
 const fetchCompanyData = async () => {
-  axiosInstance.get('http://localhost:3001/api/created_company')
+  axiosInstance.get('http://localhost:3001/api/created_company', {
+    headers: {
+      'Authorization': `Bearer ${user.access_token}`, // Use the access token
+      'X-Schema-Name': user.schemaName, // Send the schema name as a header
+    }
+  })
     .then(response => {
         const company = response.data.length > 0 ? response.data[0] : null;
         if (company && company.company_id) {
@@ -202,7 +222,12 @@ useEffect(() => {
   
   const toggleContracts = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/contracts/${selectedEmployee}`);
+        const response = await axiosInstance.get(`http://localhost:3001/api/contracts/${selectedEmployee}`, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
         console.log("Fetched contracts:", response.data.contracts);
         const combinedContracts = combineContracts(response.data.contracts);
         console.log("Combined contracts:", combinedContracts);
@@ -289,7 +314,12 @@ useEffect(() => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/employees');
+      const response = await axiosInstance.get('http://localhost:3001/employees', {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
       // Check if the response contains the 'employees' key and it's an array
       if (response.data && Array.isArray(response.data.employees)) {
         setEmployees(response.data.employees);
@@ -487,7 +517,7 @@ useEffect(() => {
           {/* ... */}
           <tr>
           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Społecznego</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalSpołeczne.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalSpołeczne.toFixed(2)}:0</td>
           </tr>
           <tr>
             <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FP+FGŚP</td>

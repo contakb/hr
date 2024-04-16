@@ -970,7 +970,17 @@ const fetchSalaryList = async () => {
 
 
 
-app.get('/distinct-salary-months-years', async (req, res) => {
+app.get('/distinct-salary-months-years',verifyJWT, async (req, res) => {
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
+
   try {
     // Construct the query to retrieve distinct months and years from the 'salary_date' column using Supabase
     const { data: distinctMonthsYears, error } = await supabase
@@ -993,8 +1003,17 @@ app.get('/distinct-salary-months-years', async (req, res) => {
 
 
 
-app.get('/reports', async (req, res) => {
+app.get('/reports',verifyJWT, async (req, res) => {
   const { month, year } = req.query;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
 
   try {
     const { data, error } = await supabase
@@ -1016,8 +1035,17 @@ app.get('/reports', async (req, res) => {
   }
 });
 
-app.get('/reports/social-insurance', async (req, res) => {
+app.get('/reports/social-insurance',verifyJWT, async (req, res) => {
   const { month, year } = req.query;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
 
   // Calculate the last day of the month
   const lastDayOfMonth = new Date(year, month, 0).getDate();
@@ -1861,8 +1889,17 @@ function calculateSalary(grossAmount) {
 
 
 // Define the API endpoint to fetch contracts' gross amount
-app.get('/api/contracts/:employee_id/gross_amount', async (req, res) => {
+app.get('/api/contracts/:employee_id/gross_amount',verifyJWT, async (req, res) => {
   const employee_id = parseInt(req.params.employee_id);
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
 
   try {
     // Perform the database query to fetch the contract's gross amount using Supabase
