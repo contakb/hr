@@ -196,6 +196,18 @@ app.post('/create-employee', verifyJWT, async (req, res) => {
   });
 
   try {
+    // First, check if an employee with the same PESEL already exists
+    const existsCheck = await supabase
+      .from('employees')
+      .select()
+      .eq('pesel', PESEL)
+      .single();
+
+    if (existsCheck.data) {
+      console.log('Employee with this PESEL already exists:', existsCheck.data);
+      res.status(409).send('Pracownik z tym numerem PESEL już istnieje.'); // HTTP 409 Conflict
+      return;
+    }
     const { data, error } = await supabase
       .from('employees')
       .insert([

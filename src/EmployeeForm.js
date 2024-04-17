@@ -9,6 +9,7 @@ import { useSetup } from './SetupContext'; // Import the context to use steps
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct pat
 import { useRequireAuth } from './useRequireAuth';
+import { toast } from 'react-toastify';
 
 function EmployeeForm() {
   const [employeeName, setEmployeeName] = useState('');
@@ -40,6 +41,7 @@ const [error, setError] = useState(null);
 const [isCreating, setIsCreating] = useState(false); // New state for tracking creation/update status
 const [isEmployeeCreated, setIsEmployeeCreated] = useState(false);
 const [isEmployeeUpdated, setIsEmployeeUpdated] = useState(false);
+const [formTouched, setFormTouched] = useState(false);  // Tracks if the form has been interacted with
 const user = useRequireAuth();
 
 
@@ -112,6 +114,7 @@ useEffect(() => {
   const savedEmployee = localStorage.getItem('createdEmployee');
   if (savedEmployee) {
     const employeeData = JSON.parse(savedEmployee);
+    setEmployeeName(employeeData.employeeName);
     populateFormFields(employeeData);
 
     // Check if employee data is being updated
@@ -131,7 +134,16 @@ useEffect(() => {
     clearForm();
     setIsCreatingNew(true); // Start in create mode
     setIsEditMode(false); // Set isEditMode to false if no employee data is available
+    
   }
+  
+
+  return () => {
+    clearFormFields(); // Make sure this function resets all form-related states
+    setError(null);
+    setFormTouched(false);
+    toast.dismiss();
+};
 }, []);
 
 
@@ -251,6 +263,7 @@ const populateFormFields = (employeeData) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setFormTouched(true);  // User has attempted to submit, so validate fields
 
     // Check if we are in edit mode and have an existing employee
     if (isEditMode && createdEmployee && createdEmployee.employeeId) {
@@ -263,28 +276,39 @@ const populateFormFields = (employeeData) => {
 };
   // Add this function to handle the back button click
   const handleBackClick = () => {
-    navigate(-1); // This navigates to the previous page in history
-    // or you can navigate to a specific route, e.g., navigate('/dashboard');
-  };
+    console.log("Clearing errors and form data...");
+    setError(null);
+    clearForm();
+    toast.dismiss(); // Clear all toasts
+
+    setTimeout(() => {
+        console.log("Navigating back...");
+        navigate(-1);
+    }, 100);
+};
 
 
 const handleCreateEmployee = async () => {
 
     if (!employeeName || !employeeSurname || !street || !number || !postcode || !city || !country || !taxOffice || !PESEL) {
       setValidationError("All fields must be entered!");  // Set the error message
+      toast.error("Proszę uzupełnić wszystkie dane!");
       return;
     }
     if (!isValidPESEL(PESEL)) {
       setValidationError("Invalid PESEL number!");  // Set the error message
+      toast.error("Błędny numer PESEL!");
       return;
     }
     if (!isValidPostcode(postcode)) {
       setValidationError("Invalid postcode format! It should be XX-XXX.");
+      toast.error("Błędny format kodu pocztowego. Prawidłowy XX-XXX !");
       return;
     }
     
     if (!taxOffice) {
       setValidationError("Please select a tax office from the dropdown!");
+      toast.error("Proszę wybierz dane Urzędu Skarbowego z listy!");
       return;
   }
   
@@ -310,6 +334,7 @@ const handleCreateEmployee = async () => {
 
     if (response.data && response.data.employeeId) { // Assuming your API returns the employeeId on successful creation
         console.log('Employee created:', response.data);
+        toast.success("Pracownik został dodany do kartoteki");
         const employeeData = {
           ...response.data,
           taxOfficeName // Save taxOfficeName along with other employee data
@@ -374,7 +399,11 @@ const handleAddViewContractClick = () => {
         
 } catch (error) {
   console.error('Error creating employee:', error);
-  // Handle error appropriately
+  if (error.response) {
+      toast.error(`Błąd: ${error.response.data}`);
+  } else {
+      toast.error("Błąd przy wprowadzaniu danych nowego pracownika. Spórbuj ponownie.");
+  }
 }
 };
 const handleUpdateEmployee = async (employeeId) => {
@@ -757,7 +786,7 @@ const toggleEditMode = () => {
         </div>
       </form>
       <div className="mt-4 bg-white shadow rounded p-4">
-      <div className="md:col-span-2 text-xl  text-left mb-6">Następne kroki do wykonania przy zatrudnieniu pracownika:</div>
+      <div className="md:col-span-2 text-xl  text-left mb-6">Następne kroki do zatrudnienia pracownika:</div>
 
       {createdEmployee ? (
   <div className="flex items-center space-x-2  justify-between">
