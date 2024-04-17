@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import './Login.css';
+import { toast } from 'react-toastify';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
 import { useRequireAuth } from './useRequireAuth';
@@ -20,6 +21,7 @@ const EmployeeContract = () => {
     const [error, setError] = useState(null);
     const [updateMessage, setUpdateMessage] = useState('');
     const [userInput, setUserInput] = useState(''); // State to hold the user input
+    const hasErrorBeenShown = useRef(false); // Ref to track if the error toast has been shown
   
   const navigate = useNavigate();
 
@@ -73,40 +75,46 @@ const EmployeeContract = () => {
   }, [employeeId, location]); // This is where useEffect should e
 
   const fetchCompanyData = async () => {
+    if (isLoading === false) return;  // Guard against unnecessary invocation
+    setIsLoading(true);
     axiosInstance.get('http://localhost:3001/api/created_company', {
       headers: {
-        Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
-        'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
+        Authorization: `Bearer ${user.access_token}`,
+        'x-schema-name': user.schemaName,
       }
     })
-      .then(response => {
-          const company = response.data.length > 0 ? response.data[0] : null;
-          if (company && company.company_id) {
-              setCompanyData(company);
-              setError(''); // Clear any previous error messages
-          } else {
-              setCompanyData(null); // Set to null if no data is returned
-          }
-          setIsLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching company data:', error);
-        // Check if the error is due to no data found and set an appropriate message
-        if (error.response && error.response.status === 404) {
-          setError('Nie odnaleziono danych firmy. Proszę uzupełnić poniższe dane.');
+    .then(response => {
+        const company = response.data.length > 0 ? response.data[0] : null;
+        if (company && company.company_id) {
+            setCompanyData(company);
+            hasErrorBeenShown.current = false; // Reset the ref if data is successfully fetched
         } else {
-          setError('Failed to fetch company data.');
+            if (!hasErrorBeenShown.current) {
+                toast.error("No company data found. Please complete the company setup.");
+                hasErrorBeenShown.current = true;
+            }
+            setCompanyData(null);
         }
-  
-        setCompanyData(null); // Set companyData to null when fetch fails
         setIsLoading(false);
-      });
+    })
+    .catch(error => {
+        console.error('Error fetching company data:', error);
+        if (!hasErrorBeenShown.current) {
+            const errorMessage = (error.response && error.response.status === 404) 
+                                 ? "Nie odnaleziono danych firmy. Proszę uzupełnić dane w ustawieniach konta."
+                                 : "Brak danych.";
+            toast.error(errorMessage);
+            hasErrorBeenShown.current = true;
+        }
+        setCompanyData(null);
+        setIsLoading(false);
+    });
   };
-  
+
   useEffect(() => {
     fetchCompanyData();
-  }, []);
-
+    return () => { hasErrorBeenShown.current = false; }; // Reset on unmount
+  }, []);  // Dependency array is empty to ensure this runs only once on mount
   const handleInputChange = (event) => {
     setUserInput(event.target.value); // Update the state when the input changes
   };
@@ -187,9 +195,39 @@ async function handleDownloadPDFClick() {
 
 
 
+if (isLoading) {
+  return <div>Loading...</div>;
+}
 
+if (!companyData) {
+  // Adjust this to handle both no company data and any other logical conditions that aren't technically errors
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-10">
+  <div className="ToDo bg-white shadow-md rounded px-3 py-6 max-w-xl sm:max-w-md w-full">
 
+      <h1 className="text-2xl font-semibold mb-2">Generowanie umowy:</h1>
+      <p className="text-red-500 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">Nie udało się pobrać danych firmy bądź dane te nie zostały wprowadzone.</p>
+      <button onClick={() => navigate('/account-details')} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
+        Szczegóły konta
+      </button>
+    </div>
+    </div>
+   
+  );
+}
 
+if (error) {
+  // This should now be a catch-all for any other types of errors not handled by the specific checks above
+  return (
+    <div className="flex space-x-2 mt-4">
+      <h1>Błąd:</h1>
+      <p>{error}</p>
+      <button onClick={() => navigate('/account-details')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+        Przejdź do ustawień
+      </button>
+    </div>
+  );
+}
 
 
 return (
