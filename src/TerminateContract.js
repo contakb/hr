@@ -3,6 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
+import { useRequireAuth } from './useRequireAuth';
+import { toast } from 'react-toastify';
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 
 const TerminateContract = () => {
   const [employee, setEmployee] = useState({});
@@ -23,6 +26,7 @@ const TerminateContract = () => {
   const [initialTerminationEndDate, setInitialTerminationEndDate] = useState('');
   const [currentContractEndDate, setCurrentContractEndDate] = useState('');
   const componentRef = useRef();
+  const user = useRequireAuth();
 
    
 
@@ -41,8 +45,18 @@ const TerminateContract = () => {
   useEffect(() => {
     async function fetchData() {
         try {
-            const employeeResponse = await axios.get(`http://localhost:3001/api/employees/${employeeId}`);
-            const contractResponse = await axios.get(`http://localhost:3001/api/contracts/${employeeId}`);
+            const employeeResponse = await axiosInstance.get(`http://localhost:3001/api/employees/${employeeId}`, {
+              headers: {
+                'Authorization': `Bearer ${user.access_token}`, // Use the access token
+                'X-Schema-Name': user.schemaName, // Send the schema name as a header
+              }
+            });
+            const contractResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeId}`, {
+              headers: {
+                'Authorization': `Bearer ${user.access_token}`, // Use the access token
+                'X-Schema-Name': user.schemaName, // Send the schema name as a header
+              }
+            });
 
             console.log("Contracts fetched:", contractResponse.data.contracts);
 
@@ -253,6 +267,8 @@ const handleSubmitTermination = async (e) => {
       termination_date: finalTerminationDate, // Directly use terminationDate
       deregistration_code: deregistrationCode || null,
       initiated_by_employee: initiatedByEmployee || null,
+      dataWypowiedzenia
+
     };
     
     console.log("Submitting Termination for Contract ID:", selectedContractId);
@@ -260,7 +276,12 @@ const handleSubmitTermination = async (e) => {
     
     try {
         // Use the `put` method to send a request to your server endpoint
-        const response = await axios.put(`http://localhost:3001/api/contracts/${selectedContractId}/terminate`, updatedContractData);
+        const response = await axiosInstance.put(`http://localhost:3001/api/contracts/${selectedContractId}/terminate`, updatedContractData, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
         console.log("Termination Response:", response.data);
         
         // Handle success - maybe navigate back to the employee list or show a success message

@@ -958,30 +958,6 @@ app.get('/api/salary/recent/:employeeId',verifyJWT, async (req, res) => {
 
 
 
-
-
-
-const fetchSalaryList = async () => {
-  try {
-    const response = await axios.get('http://localhost:3001/salary-list');
-    if (response.data) {
-      setSalaryList(response.data);
-      setLoading(false);
-    } else {
-      console.error('No data received from the server.');
-      setError('No data received from the server.');
-      setLoading(false);
-    }
-  } catch (error) {
-    console.error('Error fetching salary list:', error);
-    setError('Error fetching salary list. Please try again later.');
-    setLoading(false);
-  }
-};
-
-
-
-
 app.get('/distinct-salary-months-years',verifyJWT, async (req, res) => {
 
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
@@ -1317,8 +1293,14 @@ app.put('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
 });
 
 
-app.post('/api/aneks', async (req, res) => {
+app.post('/api/aneks', verifyJWT, async (req, res) => {
   const { originalContractId, aneksData } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
 
   try {
     // Fetch the original contract to get the end date and employee_id
@@ -1642,9 +1624,17 @@ app.get('/api/contracts/:employeeId',verifyJWT, async (req, res) => {
 
 // ... (other imports and setup)
 
-app.put('/api/contracts/:contractId/terminate', async (req, res) => {
+app.put('/api/contracts/:contractId/terminate',verifyJWT, async (req, res) => {
   const contractId = req.params.contractId;
-  const { termination_type, termination_date, deregistration_code, initiated_by_employee } = req.body;
+  const { termination_type, termination_date, deregistration_code, initiated_by_employee, dataWypowiedzenia } = req.body;
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employees from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
     const { data, error } = await supabase
@@ -1652,6 +1642,7 @@ app.put('/api/contracts/:contractId/terminate', async (req, res) => {
       .update({
         contract_to_date: termination_date,
         termination_type: termination_type,
+        termination_date: dataWypowiedzenia,
         deregistration_code: deregistration_code,
         initiated_by_employee: initiated_by_employee
       })
@@ -1675,22 +1666,6 @@ app.put('/api/contracts/:contractId/terminate', async (req, res) => {
     res.status(500).send('Error occurred while terminating contract.');
   }
 });
-
-
-
-
-const fetchData = async () => {
-  const { data, error } = await supabase
-      .rpc('fetch_valid_employees', { start_date: '2023-01-01', end_date: '2023-01-31' });
-  
-  if (error) {
-      console.error("Error fetching data:", error);
-  } else {
-      // Use the 'data' however you want in your application
-      console.log(data);
-  }
-}
-
 
 
 app.post('/api/valid-employees',verifyJWT, async (req, res) => {
