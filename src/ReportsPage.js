@@ -84,6 +84,34 @@ const processSocialInsuranceData = (data) => {
   };
 };
 
+function formatNumber(value) {
+  // First, convert value to a number if it's not already.
+  // This handles non-numeric strings and other non-number types turning them into NaN if they cannot be converted to numbers.
+  const num = Number(value);
+
+  // Check if num is NaN or zero (after attempted conversion from whatever value was passed)
+  if (isNaN(num) || num === 0) {
+    return "brak danych";  // Return a placeholder message when there's no meaningful number
+  }
+
+  // If it's a valid number, format it to two decimal places
+  return num.toFixed(2);
+}
+
+
+function formatNumber(value) {
+  // Convert the input to a number first, to handle strings and nulls uniformly
+  const numericValue = Number(value);
+  
+  // Check if the value is numeric and meaningful (not NaN and not zero)
+  if (isNaN(numericValue) || numericValue === 0) {
+    return "brak danych";  // Return this message if there's effectively "no data"
+  }
+  
+  // If it's a valid number and not zero, format it to two decimal places
+  return numericValue.toFixed(2);
+}
+
 
 const handleGenerateReport = async () => {
   setIsReportGenerated(false); // Reset the flag before generating a new report
@@ -377,7 +405,7 @@ useEffect(() => {
         </div>
       );
     } else {
-      return <p>No company data available.</p>;
+      return <p>Brak danych firmy. Proszę uzupełnić dane w ustawieniach konta.</p>;
     }
   };
 
@@ -419,7 +447,7 @@ useEffect(() => {
               <p>zam. adres: {selectedEmployeeData.city}</p>
              
 
-              jest zatrudniony w {companyData.company_name}
+              <p>jest zatrudniony w {companyData?.company_name ?? "Brak danych firmy"}</p>
               {/* Add more details as needed */}
             </div>
           )}
@@ -437,8 +465,8 @@ useEffect(() => {
     ))}
   </div>
   <h3>Średnie wynagrodzenie z ostanich: ({selectedRange}) miesięcy za okres od {periodStart} to {periodEnd}</h3>
-          <p>Average Gross Amount : {totalGrossAmount.toFixed(2)}</p>
-          <p>Average Net Amount : {totalNetAmount.toFixed(2)}</p>
+          <p>Average Gross Amount : {formatNumber(totalGrossAmount)}</p>
+          <p>Average Net Amount : {formatNumber(totalNetAmount)}</p>
 
           <p>Pracownik nie jest w okresie wypowiedzenia.</p>
           <p>Firma nie znajduje się w stanie likwidacji ani upadłości.</p>
@@ -456,48 +484,49 @@ useEffect(() => {
           
         </>
       )}
-      {reportType === 'total-gross-amount'&& (
-        <>
-          <h3>Total Gross Amount for {monthName} {year}: {totalGrossAmount.toFixed(2)}</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Name and surname</th>
-                <th>Gross Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((report, index) => (
-                <tr key={index}>
-                  <td>{getEmployeeName(report.employee_id)}</td>
-                  <td>{report.gross_total.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-      {reportType === 'total-net-amount'&& (
-        <>
-          <h3>Total Net Amount for {monthName} {year}: {totalNetAmount.toFixed(2)}</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Name and surname</th>
-                <th>Net Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((report, index) => (
-                <tr key={index}>
-                  <td>{getEmployeeName(report.employee_id)}</td>
-                  <td>{report.net_amount.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-       )}
+      {reportType === 'total-gross-amount' && (
+  <>
+    <h3>Total Gross Amount for {monthName} {year}: {formatNumber(totalGrossAmount)}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name and surname</th>
+          <th>Gross Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {Array.isArray(reportData) && reportData.map((report, index) => (
+          <tr key={index}>
+            <td>{getEmployeeName(report.employee_id)}</td>
+            <td>{formatNumber(report.gross_total)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </>
+)}
+{reportType === 'total-net-amount' && (
+  <>
+    <h3>Total Net Amount for {monthName} {year}: {formatNumber(totalNetAmount)}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name and surname</th>
+          <th>Net Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {Array.isArray(reportData) && reportData.map((report, index) => (
+          <tr key={index}>
+            <td>{getEmployeeName(report.employee_id)}</td>
+            <td>{formatNumber(report.net_amount)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </>
+ )}
+
        <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
        {reportType === 'social-insurance' && (
   <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-4xl">
@@ -516,20 +545,26 @@ useEffect(() => {
           {/* Repeat for other insurance types */}
           {/* ... */}
           <tr>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Społecznego</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalSpołeczne.toFixed(2)}:0</td>
-          </tr>
-          <tr>
-            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FP+FGŚP</td>
-            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalFPFGŚP.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Zdrowotnego</td>
-            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">{reportData.totalHealthAmount.toFixed(2)}</td>
-          </tr>
+    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Społecznego</td>
+    <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">
+        {formatNumber(reportData.totalSpołeczne)}
+    </td>
+</tr>
+<tr>
+    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FP+FGŚP</td>
+    <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">
+        {formatNumber(reportData.totalFPFGŚP)}
+    </td>
+</tr>
+<tr>
+    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Zdrowotnego</td>
+    <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500">
+        {formatNumber(reportData.totalHealthAmount)}
+    </td>
+</tr>
           <tr>
             <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Łącznie</td>
-            <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-right text-gray-900">{reportData.grandTotal.toFixed(2)}</td>
+            <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-right text-gray-900">{formatNumber(reportData.grandTotal)}</td>
           </tr>
         </tbody>
       </table>
@@ -550,67 +585,67 @@ useEffect(() => {
         {/* Example row for pension insurance */}
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Emerytalne</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{reportData.totalEmrytUb.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{reportData.totalEmerytPr.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{reportData.totalemeryt.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{formatNumber(reportData.totalEmrytUb)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{formatNumber(reportData.totalEmerytPr)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500">{formatNumber(reportData.totalemeryt)}</td>
         </tr>
         {/* Similar rows for other types of insurance */}
         {/* ... */}
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Rentowe</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalRentUb.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalRentPr.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalrentowe.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{formatNumber(reportData.totalRentUb)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{formatNumber(reportData.totalRentPr)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{formatNumber(reportData.totalrentowe)}</td>
         </tr>
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">wypadkowe</td>
           <td>-</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalWypadkowe.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalWypadkowe.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{formatNumber(reportData.totalWypadkowe)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{formatNumber(reportData.totalWypadkowe)}</td>
         </tr>
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Chorobowe</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalChorobowe.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{formatNumber(reportData.totalChorobowe)}</td>
           <td>-</td> {/* Assuming employer doesn't contribute */}
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{reportData.totalChorobowe.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-500 uppercase tracking-wider">{formatNumber(reportData.totalChorobowe)}</td>
         </tr>
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Suma społeczne:</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalSpołeczneUb.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalSpołecznePr.toFixed(2)}</td> {/* Assuming employer doesn't contribute */}
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalSpołeczne.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalSpołeczneUb)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalSpołecznePr)}</td> {/* Assuming employer doesn't contribute */}
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalSpołeczne)}</td>
         </tr>
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FP </td>
           <td>-</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFp.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFp.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{formatNumber(reportData.totalFp)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{formatNumber(reportData.totalFp)}</td>
         </tr>
 
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">FGSP</td>
           <td>-</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFgsp.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{reportData.totalFgsp.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{formatNumber(reportData.totalFgsp)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{formatNumber(reportData.totalFgsp)}</td>
         </tr>
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">FP i FGŚP łącznie</td>
           <td>-</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalFPFGŚP.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalFPFGŚP.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalFPFGŚP)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalFPFGŚP)}</td>
         </tr>
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Zdrowotne</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalHealthAmount.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalHealthAmount)}</td>
           <td>-</td> {/* Assuming employer doesn't contribute */}
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalHealthAmount.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalHealthAmount)}</td>
         </tr>
         {/* ... */}
         <tr className="bg-gray-100">
           <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">Łącznie</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalEmployeeContribution.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.totalEmployerContribution.toFixed(2)}</td>
-          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{reportData.grandTotal.toFixed(2)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalEmployeeContribution)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.totalEmployerContribution)}</td>
+          <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900">{formatNumber(reportData.grandTotal)}</td>
         </tr>
       </tbody>
     </table>
