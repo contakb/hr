@@ -1,6 +1,9 @@
 import React, {useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import { useUser } from './UserContext'; // Ensure correct path
+import { useRequireAuth } from './useRequireAuth';
 
 function Aneks() {
   const { employeeId, contractId } = useParams();
@@ -24,6 +27,7 @@ function Aneks() {
 const [showStanowisko, setShowStanowisko] = useState(false);
 const [showEtat, setShowEtat] = useState(false);
 const [relatedContracts, setRelatedContracts] = useState([]);
+const { user, updateUserContext } = useUser();
 
 
   
@@ -32,7 +36,12 @@ const [relatedContracts, setRelatedContracts] = useState([]);
   // Load contract data if contractId is provided
   useEffect(() => {
     if (contractId) {
-      axios.get(`http://localhost:3001/api/empcontracts/${contractId}`)
+      axiosInstance.get(`http://localhost:3001/api/empcontracts/${contractId}`, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'X-Schema-Name': user.schemaName // Pass the schemaName as a custom header
+        }
+      })
         .then(response => {
           const contract = response.data;
           setGrossAmount(contract.gross_amount);
@@ -78,9 +87,15 @@ const handleSubmit = async (event) => {
     if (showEtat) updatedFields.etat = etat;
   
     try {
-      const response = await axios.post('http://localhost:3001/api/aneks', {
+      const response = await axiosInstance.post('http://localhost:3001/api/aneks', 
+      {
         originalContractId: contractId,
-        aneksData: updatedFields
+        aneksData: updatedFields,
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'X-Schema-Name': user.schemaName // Pass the schemaName as a custom header
+        }
       });
   
       setFeedbackMessage('Aneks added successfully.');
@@ -117,7 +132,12 @@ const handleSubmit = async (event) => {
 
   const fetchRelatedContracts = async (employeeId) => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/contracts/${employeeId}`);
+      const response = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeId}`, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'X-Schema-Name': user.schemaName // Pass the schemaName as a custom header
+        }
+      });
       return response.data.contracts;
     } catch (error) {
       console.error('Error fetching related contracts:', error);
@@ -192,7 +212,12 @@ const handleSubmit = async (event) => {
         return;
       }
   
-      await axios.delete(`http://localhost:3001/api/contracts/${contractId}`);
+      await axiosInstance.delete(`http://localhost:3001/api/contracts/${contractId}`, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
+          'X-Schema-Name': user.schemaName // Pass the schemaName as a custom header
+        }
+      });
       setFeedbackMessage('Annex deleted successfully.');
       // Redirect or update UI as needed
     } catch (error) {

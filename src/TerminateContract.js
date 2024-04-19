@@ -485,11 +485,12 @@ console.log("Current Termination End Date:", terminationEndDate);
 
   
 return (
-  <div className="contract">
-    <div className="header">Umowa o pracę</div>
+  <div className="bg-gray-100 p-8">
+    <div className="max-w-4xl mx-auto">
+    <div className="text-lg font-semibold mb-4">Umowa o pracę</div>
     {/* Dropdown for selecting a contract */}
-    <select onChange={handleContractSelection} value={selectedContractId} required>
-  <option value="" disabled={selectedContractId !== ''}>Select a contract</option>
+    <select onChange={handleContractSelection} value={selectedContractId} required className="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mb-4">
+  <option value="" disabled={selectedContractId !== ''}>Wybierz umowę:</option>
   {contracts.map((contract) => (
     <option key={contract.id} value={contract.id}>
       Na okres: {contract.typ_umowy} from {new Date(contract.contract_from_date).toLocaleDateString()} to {new Date(contract.contract_to_date).toLocaleDateString()}
@@ -501,37 +502,42 @@ return (
 
     {/* Contract details */}
     {selectedContractId && (
-      <div className="contract-details">
-        <div className="employee-info">
+       <div className="bg-white shadow rounded p-6 mt-4">
+       <div className="mb-4">
           <p><strong>Name:</strong> {employee.name}</p>
           <p><strong>Surname:</strong> {employee.surname}</p>
           {/* Add more employee information here */}
         </div>
-        <div className="contract-terms">
-        <form onSubmit={handleSubmitTermination}>
+        <form onSubmit={handleSubmitTermination} className="space-y-4">
   {/* Termination Type Selection */}
-  <label>
+  <div className="grid grid-cols-2 gap-4">
+              <div>
+  <label className="block text-sm font-medium text-gray-700"></label>
     Data rozwiązania umowy:
   <input 
   type="date" 
   name="dataWypowiedzenia" 
   value={dataWypowiedzenia} 
   onChange={(e) => setDataWypowiedzenia(e.target.value)}
+  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
 />
- </label>
-
+</div>
+ 
+<div>
+                <label className="block text-sm font-medium text-gray-700">Typ rozwiązania umowy:</label>
  <select 
     name="terminationType" 
     value={terminationType} 
     onChange={handleTerminationTypeChange}
+    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
 >
-    <option value="" disabled>Select Termination Type</option>
+    <option value="" disabled>Wybierz typ rozwiązania</option>
     <option value="mutual_agreement">Porozumienie stron</option>
     <option value="contract_expiry">Z upływem czasu na jaki została zawarta</option>
     <option value="with_notice">Za wypowiedzeniem</option>
     <option value="without_notice">Bez okresu wypowiedzenia</option>
 </select>
-
+</div>
 
 
 {terminationType === 'with_notice' && (
@@ -551,6 +557,7 @@ return (
                 name="manualTerminationDate" 
                 value={terminationEndDate} 
                 onChange={(e) => setTerminationEndDate(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
         )}
 
@@ -573,27 +580,35 @@ return (
 )}
 
 {terminationType !== 'with_notice' && (
+  <div>
+  <label className="block text-sm font-medium text-gray-700">Dzień zakończenia umowy:</label>
     <input 
         type="date" 
         name="terminationDate" 
         value={terminationDate} 
         onChange={handleTerminationDateChange}
+        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
     />
+    </div>
 )}
 
 
 
   {/* Deregistration Code Selection */}
+  <div>
+                <label className="block text-sm font-medium text-gray-700">kod zwolnienia:</label>
   <select 
     name="deregistrationCode" 
     value={deregistrationCode} 
     onChange={handleDeregistrationCodeChange}
+    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
   >
-    <option value="" disabled selected>kod zwolnienia</option>
+    <option value="" disabled selected>wybierz kod zwolnienia</option>
     <option value="100">100 - Ustanie ubezpieczenia</option>
     <option value="500">500 - Zgon os.ub.</option>
     <option value="600">600 - Inna</option>
   </select>
+  </div>
 
   {/* Checkbox for Initiated by Employee */}
   <label>
@@ -603,12 +618,14 @@ return (
       name="initiatedByEmployee" 
       checked={initiatedByEmployee} 
       onChange={handleInitiatedByEmployeeChange}
+      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
     />
   </label>
-
-  <button type="submit" disabled={isTerminated}>Terminate Contract</button>
+  </div>
+  <button type="submit" disabled={isTerminated} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Terminate Contract</button>
   </form>
-  <button onClick={toggleDocumentVisibility}>
+  
+  <button onClick={toggleDocumentVisibility} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mt-4">
       {showDocument ? 'Hide Document' : 'Create Document'}
     </button>
     {showDocument && renderTerminationDocument()}
@@ -620,14 +637,15 @@ return (
         )}
 
 {updateMessage && <div>{updateMessage}</div>}
-            <button onClick={handleBackToEmployeeList}>Back to EmployeeList</button>
-
+            <button onClick={handleBackToEmployeeList} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4">Back to EmployeeList</button>
+            
             
         </div>
-      </div>
+      
     )}
+    <p><button onClick={handleBackClick} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4">Back</button></p>
     
-    <p><button onClick={handleBackClick}>Back</button></p>
+  </div>
   </div>
 );
 };

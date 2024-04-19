@@ -1624,48 +1624,84 @@ app.get('/api/contracts/:employeeId',verifyJWT, async (req, res) => {
 
 // ... (other imports and setup)
 
-app.put('/api/contracts/:contractId/terminate',verifyJWT, async (req, res) => {
+
+app.put('/api/contracts/:contractId/terminate', verifyJWT, async (req, res) => {
   const contractId = req.params.contractId;
   const { termination_type, termination_date, deregistration_code, initiated_by_employee, dataWypowiedzenia } = req.body;
-
-  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
-
-  console.log(`Fetching employees from schema: ${schemaName}`);
+  const schemaName = req.headers['x-schema-name'];
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      db: { schema: schemaName } // set your custom schema here
+    db: { schema: schemaName }
   });
 
   try {
-    const { data, error } = await supabase
+    // Fetch the contract and check if it's an original or an annex
+    const { data: contractData, error: contractFetchError } = await supabase
+      .from('contracts')
+      .select('*')
+      .eq('id', contractId);
+
+    if (contractFetchError || contractData.length === 0) {
+      console.error('Contract not found:', contractFetchError);
+      return res.status(404).json({ message: 'Contract not found' });
+    }
+
+    const contract = contractData[0];
+    const isAnnex = contract.kontynuacja !== null;
+
+    // Find the most recent contract or annex to update
+    let updateContractId = contractId;
+    if (!isAnnex) { // if it's an original contract, check for the latest annex
+      const { data: annexData, error: annexFetchError } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('kontynuacja', contractId)
+        .order('contract_to_date', { ascending: false });
+
+      if (annexFetchError) {
+        console.error('Error fetching annexes:', annexFetchError);
+        return res.status(500).json({ error: annexFetchError.message });
+      }
+
+      if (annexData && annexData.length > 0) {
+        updateContractId = annexData[0].id; // the most recent annex
+      }
+    }
+
+    // Update the termination details for the correct contract or annex
+    const { data: updateData, error: updateError } = await supabase
       .from('contracts')
       .update({
-        contract_to_date: termination_date,
+        contract_to_date: termination_date,  // Adjust this field as per your business logic
         termination_type: termination_type,
         termination_date: dataWypowiedzenia,
         deregistration_code: deregistration_code,
         initiated_by_employee: initiated_by_employee
       })
-      .eq('id', contractId)
-      .select(); // Chain a select() after update()
+      .eq('id', updateContractId)  // Ensure the update targets the correct contract or annex
+      .select();  // Chain a select() after update() to return updated data
 
-    if (error) {
-      console.error('Error updating contract:', error);
-      res.status(500).json({ error: error.message });
-    } else if (data && data.length > 0) {
+    if (updateError) {
+      console.error('Error updating contract:', updateError);
+      return res.status(500).json({ error: updateError.message });
+    }
+
+    if (updateData && updateData.length > 0) {
       res.json({
         message: 'Contract terminated successfully',
-        updatedContract: data[0]
+        updatedContract: updateData[0]
       });
     } else {
-      // No rows updated, which means no contract was found with that ID
-      res.status(404).send('Contract not found or no updates made.');
+      res.status(404).send('No updates made or contract not found.');
     }
   } catch (error) {
     console.error('Server error:', error);
     res.status(500).send('Error occurred while terminating contract.');
   }
 });
+
+
+
 
 
 app.post('/api/valid-employees',verifyJWT, async (req, res) => {
