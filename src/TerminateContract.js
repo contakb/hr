@@ -45,125 +45,150 @@ const TerminateContract = () => {
   useEffect(() => {
     async function fetchData() {
         try {
-            const employeeResponse = await axiosInstance.get(`http://localhost:3001/api/employees/${employeeId}`, {
-              headers: {
-                'Authorization': `Bearer ${user.access_token}`, // Use the access token
-                'X-Schema-Name': user.schemaName, // Send the schema name as a header
-              }
-            });
-            const contractResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeId}`, {
-              headers: {
-                'Authorization': `Bearer ${user.access_token}`, // Use the access token
-                'X-Schema-Name': user.schemaName, // Send the schema name as a header
-              }
-            });
+            const [employeeResponse, contractResponse] = await Promise.all([
+                axiosInstance.get(`http://localhost:3001/api/employees/${employeeId}`, {
+                    headers: { 'Authorization': `Bearer ${user.access_token}`, 'X-Schema-Name': user.schemaName },
+                }),
+                axiosInstance.get(`http://localhost:3001/api/contracts/${employeeId}`, {
+                    headers: { 'Authorization': `Bearer ${user.access_token}`, 'X-Schema-Name': user.schemaName },
+                })
+            ]);
 
-            console.log("Contracts fetched:", contractResponse.data.contracts);
-
+            if (contractResponse.data.contracts) {
+                const combinedContracts = combineContracts(contractResponse.data.contracts);
+                const mostRecentContract = combinedContracts.reduce((latest, current) => 
+                    new Date(current.contract_to_date) > new Date(latest.contract_to_date) ? current : latest, combinedContracts[0]);
+                setContracts(combinedContracts);
+                setSelectedContractId(mostRecentContract.id);
+                setCurrentContractEndDate(mostRecentContract.contract_to_date);
+                updateFormFields(mostRecentContract);
+            }
             setEmployee(employeeResponse.data.employee);
-            setContracts(contractResponse.data.contracts);
-
-              // Assuming contractResponse.data.contracts is an array of contracts
-        const combinedContracts = combineContracts(contractResponse.data.contracts);
-        setContracts(combinedContracts);
-        
-
-            const state = location.state || {};
-            const newContractId = state.newContractId;
-
-            let selectedContract;
-            if (newContractId) {
-                selectedContract = contractResponse.data.contracts.find(contract => contract.id === newContractId);
-                setSelectedContractId(newContractId);
-            } else if (contractResponse.data.contracts.length > 0) {
-                selectedContract = contractResponse.data.contracts[0];
-                setSelectedContractId(selectedContract.id);
-            } else {
-                setSelectedContractId(null);
-            }
-
-            // Check if the contract is already terminated
-            if (selectedContract && (selectedContract.termination_type || selectedContract.termination_date || selectedContract.deregistration_code)) {
-                setIsTerminated(true);
-            } else {
-                setIsTerminated(false);
-            }
-
-            console.log("Employee fetched:", employeeResponse.data.employee);
-            console.log("Contracts fetched:", contractResponse.data.contracts);
         } catch (error) {
             console.error('Error fetching data:', error);
+            setContracts([]);
+            setEmployee({});
         }
     }
-
     fetchData();
-}, [employeeId, location]);
+}, [employeeId, axiosInstance]);
+
+
 
 function combineContracts(contracts) {
-    // Sort contracts by contract_from_date in ascending order
-    contracts.sort((a, b) => new Date(a.contract_from_date) - new Date(b.contract_from_date));
-  
-    let contractMap = new Map();
-  
-    contracts.forEach(contract => {
-      const originalId = contract.kontynuacja || contract.id;
-  
-      if (!contract.kontynuacja) {
-        // Original contract
-        contractMap.set(originalId, {
-          ...contract,
-          latestEndDate: contract.contract_to_date
-        });
-      } else {
-        // Aneks
-        const existing = contractMap.get(originalId);
-        contractMap.set(originalId, {
-          ...existing,
-          latestEndDate: contract.contract_to_date,
-          stanowisko: existing?.stanowisko || contract.stanowisko,
-          etat: existing?.etat || contract.etat,
-        });
-      }
-    });
-  
-    return Array.from(contractMap.values()).map(contract => ({
-      ...contract,
-      contract_to_date: contract.latestEndDate
-    }));
+  let contractMap = new Map();
+
+  contracts.forEach(contract => {
+    const originalId = contract.kontynuacja || contract.id;
+    
+    if (!contractMap.has(originalId)) {
+      contractMap.set(originalId, { ...contract });
+    } else {
+      let existing = contractMap.get(originalId);
+      // Ensuring that the original contract_from_date is maintained
+      contractMap.set(originalId, {
+        ...existing,
+        ...contract,
+        contract_from_date: existing.contract_from_date, // Preserves the original start date
+        contract_to_date: contract.contract_to_date, // Updates to the latest end date from aneks
+        gross_amount: contract.gross_amount || existing.gross_amount,
+        stanowisko: contract.stanowisko || existing.stanowisko,
+        etat: contract.etat || existing.etat,
+        typ_umowy: contract.typ_umowy || existing.typ_umowy
+      });
+    }
+  });
+
+  return Array.from(contractMap.values());
+}
+
+useEffect(() => {
+  // When contracts data is available, determine the most recent contract and update fields accordingly
+  if (contracts.length > 0) {
+      const mostRecentContract = contracts.reduce((latest, current) => 
+          new Date(current.contract_to_date) > new Date(latest.contract_to_date) ? current : latest, contracts[0]);
+      setSelectedContractId(mostRecentContract.id);
+      setCurrentContractEndDate(mostRecentContract.contract_to_date);
+      updateFormFields(mostRecentContract); // Ensure initial setup reflects the correct contract details
   }
+}, [contracts]);
+
+
+// Adjust updateFormFields to handle setting termination date based on contract type and status
+function updateFormFields(contract) {
+  console.log("Updating form fields with contract:", contract);
+  const isContractTerminated = !!contract.termination_type || !!contract.termination_date || !!contract.deregistration_code;
+  setIsTerminated(isContractTerminated);
+  setTerminationType(contract.termination_type || '');
+  setDataWypowiedzenia(contract.termination_date || '');
+  setDeregistrationCode(contract.deregistration_code || '');
+  setInitiatedByEmployee(!!contract.initiated_by_employee);
+
+  // Decide on the termination date logic based on the state and type of termination
+  if (isContractTerminated) {
+      // If the contract is terminated, show the termination date if it exists, otherwise show the contract end date
+      setTerminationDate(contract.contract_to_date || contract.termination_date);
+  } else if (contract.termination_type === 'contract_expiry' || new Date(contract.contract_to_date) < new Date()) {
+      // For contracts that are set to expire or have expired without a specific termination action
+      setTerminationDate(contract.contract_to_date);
+  } else {
+      // If none of the above conditions apply, clear the termination date
+      setTerminationDate('');
+  }
+}
+
+function updateTerminationDate(contract, isTerminated) {
+  // This function now purely ensures that termination dates are managed correctly without overriding manual inputs.
+  if (!isTerminated) {
+    if (terminationType !== 'contract_expiry' && terminationType !== 'with_notice') {
+      setTerminationDate('');
+    }
+  }
+}
+
+
+
+
+
+
+
+
     // Add this function to handle the back button click
 const handleBackClick = () => {
   navigate(-1); // This navigates to the previous page in history
   // or you can navigate to a specific route, e.g., navigate('/dashboard');
 };
 
-const handleContractSelection = (e) => {
-    const selectedId = e.target.value;
-    console.log("Contract Selected:", selectedId);
-    setSelectedContractId(selectedId);
+const handleContractSelection = (event) => {
+  const selectedId = event.target.value;
+  setSelectedContractId(selectedId);
+
+  const selectedContract = contracts.find(contract => contract.id.toString() === selectedId);
+  if (selectedContract) {
+      updateFormFields(selectedContract);
+  }
 };
+
 // Function to toggle the document visibility
 const toggleDocumentVisibility = () => {
     setShowDocument(!showDocument);
   };
   
   
-
   const handleTerminationTypeChange = (e) => {
     const selectedTerminationType = e.target.value;
     setTerminationType(selectedTerminationType);
 
     if (selectedTerminationType === 'with_notice') {
-        // If termination type is 'za wypowiedzeniem', set terminationDate to terminationEndDate
         setTerminationDate(terminationEndDate);
-    } else if (selectedTerminationType === 'contract_expiry' && currentContractEndDate) {
-        // If termination type is 'z upływem czasu na jaki została zawarta', set terminationDate to contract's end date
+    } else if (selectedTerminationType === 'contract_expiry') {
         setTerminationDate(currentContractEndDate);
     } else {
-        // For other termination types, clear the termination date
         setTerminationDate('');
     }
 };
+
+
 
 
 
@@ -200,7 +225,7 @@ const RenderMutualAgreementDocument = React.forwardRef((props, ref) => {
           <p><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.city}</p>
           <p></p>
           <section>
-          <p>Z dniem {terminationDate} r. strony zgodnie postanawiają, za porozumieniem stron, rozwiązać umowę zawartą  w dniu {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} </p>
+          <p>Z dniem {selectedContract.contract_to_date} r. strony zgodnie postanawiają, za porozumieniem stron, rozwiązać umowę zawartą  w dniu {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} </p>
           <p><strong> Rozwiązanie umowy o pracę zostało sporządzone w dwóch egzemplarzach po jednym dla każdej ze stron</strong></p>
           </section>
 
@@ -330,12 +355,22 @@ useEffect(() => {
 }, [contracts]);
 
 useEffect(() => {
-  // Find the selected contract and update its end date
-  const selectedContract = contracts.find(contract => contract.id === selectedContractId);
+  const selectedContract = contracts.find(contract => contract.id.toString() === selectedContractId);
   if (selectedContract) {
       setCurrentContractEndDate(selectedContract.contract_to_date);
+      setDataWypowiedzenia(selectedContract.termination_date || '');
+      updateTerminationDate(selectedContract, isTerminated);
+
+      // Automatically set termination date if the contract has expired
+      if (!selectedContract.termination_date) {
+          setTerminationDate(selectedContract.contract_to_date);
+      }
+
+      console.log("Updated for selected contract:", selectedContract);
   }
-}, [contracts, selectedContractId]); // Depend on contracts and selectedContractId
+}, [contracts, selectedContractId, isTerminated]);
+
+
 
 
 // Helper function to calculate total duration from the earliest contract
@@ -622,7 +657,12 @@ return (
     />
   </label>
   </div>
-  <button type="submit" disabled={isTerminated} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Terminate Contract</button>
+  <button 
+  type="submit" 
+  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+  >
+  {isTerminated ? 'Update Termination' : 'Terminate Contract'}
+  </button>
   </form>
   
   <button onClick={toggleDocumentVisibility} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mt-4">

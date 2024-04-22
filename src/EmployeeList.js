@@ -167,6 +167,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     // You may want to ensure that you're comparing numbers, as different types (string vs number) could cause issues.
     const originalGrossAmount = Number(originalContract.gross_amount);
     const aneksGrossAmount = Number(contract.gross_amount);
+    const terminationType = Number(contract.termination_type);
 
     console.log("Aneks contract data:", contract);
     console.log("Original contract data:", originalContract);
@@ -190,6 +191,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
         <p>Aneks details (debug):</p>
         <p>Original Gross Amount: {originalContract.gross_amount}</p>
         <p>New Gross Amount: {contract.gross_amount}</p>
+        <p>New Gross Amount: {contract.termination_type}</p>
         {/* Render detected changes or a message if none */}
         {changes.length > 0 ? (
           <ul>{changes.map((change, index) => <li key={index}>{change}</li>)}</ul>
@@ -656,7 +658,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
               <p>Stanowisko: {original.stanowisko}</p>
               <p>Etat: {original.etat}</p>
               <p>Rozpoczęcie pracy: {new Date(original.workstart_date).toLocaleDateString()}</p>
-              <p>typ rozwiązania umowy: {original.termination_type}</p>
+              <p>typ rozwiązania umowy:{aneks.length > 0 ? aneks[aneks.length - 1].termination_type : original.termination_type}</p>
                {/* New row for Contract Termination Status */}
                <p>
             Contract Status: 
@@ -702,6 +704,7 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
                   <div>
                     {/* Display details of aneks contract */}
                     <p>Gross Amount: {aneksContract.gross_amount}</p>
+                    <p>Gross Amount: {aneksContract.termination_type}</p>
                     <p>Contract From: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
                     <button
                     className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
