@@ -6,6 +6,7 @@ import { useReactToPrint } from 'react-to-print';
 import { useRequireAuth } from './useRequireAuth';
 import { toast } from 'react-toastify';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import './print.css'; // Adjust the path to where you saved the CSS file
 
 const TerminateContract = () => {
   const [employee, setEmployee] = useState({});
@@ -25,22 +26,36 @@ const TerminateContract = () => {
   const [manualEndDate, setManualEndDate] = useState(false);
   const [initialTerminationEndDate, setInitialTerminationEndDate] = useState('');
   const [currentContractEndDate, setCurrentContractEndDate] = useState('');
+  const [companyData, setCompanyData] = useState(null);
+  const [userInput, setUserInput] = useState(''); // Proper initial state setup
+
+  const [error, setError] = useState(null);
   const componentRef = useRef();
   const user = useRequireAuth();
+  const printRef = useRef();
+  const inputRef = useRef(null);
 
    
-
-
+  useEffect(() => {
+    if(inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [userInput]);  // Re-focus every time userInput changes, though typically you might not need this unless there are specific reasons for refocusing.
+  
+    
+  
+  const handlePrint = () => {
+    window.print();
+  };
 
     
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-  });
   const navigate = useNavigate();
 
   const { employeeId } = useParams();
 
   const location = useLocation();
+
+  
 
   useEffect(() => {
     async function fetchData() {
@@ -173,6 +188,12 @@ const handleContractSelection = (event) => {
 const toggleDocumentVisibility = () => {
     setShowDocument(!showDocument);
   };
+
+  const handleInputChange = (event) => {
+    setUserInput(event.target.value);
+    inputRef.current.focus(); // Keep the focus on the input element
+};
+
   
   
   const handleTerminationTypeChange = (e) => {
@@ -196,10 +217,15 @@ const toggleDocumentVisibility = () => {
 const renderTerminationDocument = () => {
     switch(terminationType) {
       case 'mutual_agreement':
-        return <RenderMutualAgreementDocument ref={componentRef} />;
+        return <RenderMutualAgreementDocument ref={printRef} />;
       case 'with_notice':
         // Add more cases as needed
-        return <RenderNoticeOfTerminationDocument ref={componentRef}/>;
+        return <RenderNoticeOfTerminationDocument ref={printRef}/>;
+      case 'without_notice':  
+        return <Renderwithout_noticeTerminationDocument ref={printRef}/>;
+      // ... other cases ...
+      case 'contract_expiry':  
+        return <Rendercontract_expiryTerminationDocument ref={printRef}/>;
       // ... other cases ...
       default:
         return <p>Select a termination type to view the document.</p>;
@@ -207,49 +233,168 @@ const renderTerminationDocument = () => {
   };
 
 // Function to render the Mutual Agreement Document
+// Function to render the Mutual Agreement Document
 const RenderMutualAgreementDocument = React.forwardRef((props, ref) => {
   return (
-  <div ref={ref}>
-        <h2>Porozumienie Stron</h2>
-          <p>Data: {dataWypowiedzenia}</p>
-          <p>This employment contract ("Contract") is entered into on 
-           
-          na umowę o pracę na: {selectedContract ? selectedContract.typ_umowy : "N/A"} 
-          od {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} 
-          do {selectedContract && selectedContract.contract_to_date ? new Date(selectedContract.contract_to_date).toLocaleDateString() : "N/A"} 
-          </p>
-          <p><strong>stanowisko: </strong> {selectedContract?.stanowisko}</p>
-          <p><strong>etat: </strong> {selectedContract?.etat}</p>
-          <p><strong>okres, na który strony mają zawrzeć umowę na czas określony po umowie na okres próbny: </strong> {selectedContract?.period_próbny} miesiące</p>
-          <p><strong>Pracodawca:</strong> Your Company Name, located at Your Company Address</p>
-          <p><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.city}</p>
-          <p></p>
-          <section>
-          <p>Z dniem {selectedContract.contract_to_date} r. strony zgodnie postanawiają, za porozumieniem stron, rozwiązać umowę zawartą  w dniu {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} </p>
-          <p><strong> Rozwiązanie umowy o pracę zostało sporządzone w dwóch egzemplarzach po jednym dla każdej ze stron</strong></p>
-          </section>
+    <div ref={ref} className="printable-section">
+    <div className="bg-white shadow rounded p-6 mt-4 max-w-4xl mx-auto mb-6">
+      <h1 className="text-xl font-bold text-center mb-8">Wypowiedzenie umowy za porozumieniem stron</h1>
+      
+        <p className="text-sm font-medium text-right mb-6">Dnia: {new Date(dataWypowiedzenia).toLocaleDateString()}</p>
+        <p className="text-sm font-medium text-left mb-1">Dane firmy:</p>
+          <p className="text-sm font-medium text-left mb-1">{companyData.company_name}</p>
+          <p className="text-sm font-medium text-left mb-6">{companyData.street} {companyData.number}, {companyData.post_code} {companyData.city}</p>
+          
+        <p><strong>Pracodawca:</strong> {companyData.company_name},{companyData.street} {companyData.number},{companyData.post_code} {companyData.city} reprezentowany przez:</p> 
+        <div className="flex flex-col sm:flex-row justify-between items-end mb-6">
+      <div className="flex-1">
+        <input
+          ref={inputRef}
+          type="text"
+          id="userInputField"
+          className="form-input block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-blue-500 focus:outline-none"
+          value={userInput}
+          onChange={handleInputChange}
+          placeholder="wprowadź dane reprezentanta"
+        />
+      </div>
+    </div>
+        <p className="mb-6 text-left"><strong>Pracownik:</strong> {employee.name} {employee.surname}, zam. ul. {employee.street} {employee.number} {employee.city}</p>
+        <p className="mb-8 text-left"><strong>Z dniem {new Date(terminationDate).toLocaleDateString()} r. strony zgodnie postanawiają, za porozumieniem stron, rozwiązać umowę zawartą  w dniu {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"}.</strong></p>
+        <p className="mb-8 text-left">Rozwiązanie umowy o pracę zostało sporządzone w dwóch egzemplarzach po jednym dla każdej ze stron.</p>
+      </div>
+      <div className="flex justify-between mt-6 mb-6">
+        <div className="text-center">
+          <div className="mb-6">______________________________</div>
+          <p>Podpis pracodawcy</p>
+          <p>(osoby upoważnionej do reprezentowania firmy - {userInput})</p>
+        </div>
+        <div className="text-center">
+          <div className="mb-1">______________________________</div>
+          <p>Podpis pracownika</p>
+        </div>
+      </div>
+    </div>
+  );
+});
 
-          <section>
-        <div className="signatures">
-          <p>______________________________</p>
-          <p>Employer's Signature</p>
-          <p>______________________________</p>
-          <p>Employee's Signature</p>
-        </div>
-        </section>
-        </div>
-      );
-  });
+
   
   // Function to render the Notice of Termination Document
   const RenderNoticeOfTerminationDocument = React.forwardRef((props, ref) => {
     // Your JSX here
     return (
-      <div ref={ref}>
-        Za wypowiedzeniem
+      <div ref={ref} className="printable-section">
+      <div className="bg-white shadow rounded p-6 mt-4 max-w-4xl mx-auto">
+        <h1 className="text-xl font-bold text-center mb-4">Rozwiązanie umowy za wypowiedzeniem</h1>
+        <div>
+        <p className="text-sm font-medium text-right mb-6">Dnia: {new Date(dataWypowiedzenia).toLocaleDateString()}</p>
+        <p className="text-sm font-medium text-left mb-1">Dane firmy:</p>
+          <p className="text-sm font-medium text-left mb-1">{companyData.company_name}</p>
+          <p className="text-sm font-medium text-left mb-8">{companyData.street} {companyData.number}, {companyData.post_code} {companyData.city}</p>
+          
+          <p><strong>Pracodawca:</strong> {companyData.company_name}, ul. {companyData.street} {companyData.number}, {companyData.post_code} {companyData.city} reprezentowany przez:</p> 
+          <div className="flex flex-col sm:flex-row justify-between items-end mb-6">
+      <div className="flex-1">
+        <input
+          ref={inputRef}
+          type="text"
+          id="userInputField"
+          className="form-input block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-blue-500 focus:outline-none"
+          value={userInput}
+          onChange={handleInputChange}
+          placeholder="wprowadź dane reprezentanta"
+        />
+      </div>
+    </div>
+          <p className="mb-8 text-right"><strong>Pracownik:</strong> {employee.name} {employee.surname}, zam. ul. {employee.street} {employee.number} {employee.city}</p>
+          
+          <p className="mb-8 text-left"><strong>Rozwiązuję z Panem umowę o pracę zawartą w dniu {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} z zachowaniem  okresu wypowiedzenia {terminationPeriod}, który upłynie z dniem {new Date(terminationEndDate).toLocaleDateString()}</strong></p>
+          <p className="mb-8 text-left"><strong>Rozwiązanie umowy o pracę zostało sporządzone w dwóch egzemplarzach po jednym dla każdej ze stron.</strong></p>
+          <p className="mb-10 text-left">Jednocześnie informuję, iż w terminie 21 dni od dnia doręczenia niniejszego pisma przysługuje Panu prawo wniesienia odwołania do Sądu Rejonowego w Łodzi- Sądu Pracy al. Kościuszki 107/109, 90-928 Łódź</p>
+        </div>
+        
+        <div className="flex justify-between mt-6 mb-6">
+          <div className="text-center">
+            <div className="mb-1">______________________________</div>
+            <p>Podpis pracodawcy</p>
+          <p>(osoby upoważnionej do reprezentowania firmy - {userInput})</p>
+          </div>
+          <div className="text-center">
+            <div className="mb-1">______________________________</div>
+            <p>Podpis pracownika</p>
+          </div>
+        </div>
+      </div>
       </div>
     );
-  });  
+  }); 
+
+  // Function to render the Notice of Termination Document
+  const Renderwithout_noticeTerminationDocument = React.forwardRef((props, ref) => {
+    // Your JSX here
+    return (
+      <div ref={ref} className="printable-section">
+      <div ref={ref} className="bg-white shadow rounded p-6 mt-4 max-w-4xl mx-auto">
+        <h1 className="text-xl font-bold text-center mb-4">Rozwiązanie Umowy o Pracę bez wypowiedzenia</h1>
+        <div>
+        <p className="text-sm font-medium text-right mb-6">Dnia: {new Date(dataWypowiedzenia).toLocaleDateString()}</p>
+        <p className="text-sm font-medium text-left mb-1">Dane firmy:</p>
+          <p className="text-sm font-medium text-left mb-1">{companyData.company_name}</p>
+          <p className="text-sm font-medium text-left mb-8">{companyData.street} {companyData.number}, {companyData.post_code} {companyData.city}</p>
+          
+    <p className="mb-8 text-left"><strong>Pracodawca:</strong> {companyData.company_name},{companyData.street} {companyData.number},{companyData.post_code} {companyData.city} reprezentowany przez </p> 
+    <div className="flex flex-col sm:flex-row justify-between items-end mb-6">
+      
+      <div className="flex-1">
+        <input
+          ref={inputRef}
+          type="text"
+          id="userInputField"
+          className="form-input block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-blue-500 focus:outline-none"
+          value={userInput}
+          onChange={handleInputChange}
+          placeholder="wprowadź dane reprezentanta"
+        />
+      </div>
+    </div>
+          <p className="mb-8 text-right"><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.city}</p>
+          <p className="mb-8 text-center"><strong>§ 1</strong></p>
+          <p className="mb-8 text-left"><strong>Z dniem {new Date(terminationDate).toLocaleDateString()} r. rozwiązuję w trybie art. 52 § 1 k.p. z Panem bez  zachowaniem  okresu wypowiedzenia umowę o pracę zawartą w dniu {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"} z powodu:</strong></p>
+          <p className="mb-8 text-center"><strong>§ 2</strong></p>
+          <p className="mb-8 text-left"><strong>Rozwiązanie umowy o pracę zostało sporządzone w dwóch egzemplarzach po jednym dla każdej ze stron.</strong></p>
+          <p className="mb-8 text-left">Jednocześnie informuję, iż w terminie 21 dni od dnia doręczenia niniejszego pisma przysługuje Panu prawo wniesienia odwołania do Sądu Rejonowego w Łodzi- Sądu Pracy al. Kościuszki 107/109, 90-928 Łódź</p>
+        </div>
+        
+        <div className="flex justify-between mt-6">
+          <div className="text-center">
+            <div className="mb-1">______________________________</div>
+            <p>Podpis pracodawcy</p>
+          <p>(osoby upoważnionej do reprezentowania firmy - {userInput})</p>
+          </div>
+          <div className="text-center">
+            <div className="mb-1">______________________________</div>
+            <p>Podpis pracownika</p>
+            <p>{employee.name} {employee.surname}</p>
+          </div>
+        </div>
+      </div>
+      </div>
+    );
+  }); 
+
+  const Rendercontract_expiryTerminationDocument = React.forwardRef((props, ref) => {
+    // Your JSX here
+    return (
+      <div ref={ref} className="printable-section">
+      <div ref={ref} className="bg-white shadow rounded p-6 mt-4 max-w-4xl mx-auto">
+        <h1 className="text-xl text-center mb-4">Umowa wygaśnie z dniem {new Date(terminationDate).toLocaleDateString()} r. </h1>
+        <p className="mb-8 text-left"><strong>Dokument nie jest wymagany dla tego typu ustania stosunku pracy.</strong></p>
+        </div>
+        </div>
+          
+    );
+  }); 
 
 const handleDeregistrationCodeChange = (e) => {
     setDeregistrationCode(e.target.value);
@@ -336,13 +481,13 @@ useEffect(() => {
     if (isTrialPeriod) {
         switch (currentContract.typ_umowy) {
             case 'próbny 1 miesiąc':
-                setTerminationPeriod('3 days');
+                setTerminationPeriod('3 dni');
                 break;
             case 'próbny 2 miesiące':
-                setTerminationPeriod('1 week');
+                setTerminationPeriod('1 tydzień');
                 break;
             case 'próbny 3 miesiące':
-                setTerminationPeriod('2 weeks');
+                setTerminationPeriod('2 tygodnie');
                 break;
             default:
                 // Handle other trial period types if any
@@ -408,24 +553,24 @@ useEffect(() => {
       if (isTrialPeriod) {
           switch (mostRecentContract.typ_umowy) {
               case 'próbny 1 miesiąc':
-                  period = '3 days';
+                  period = '3 dni';
                   break;
               case 'próbny 2 miesiące':
-                  period = '1 week';
+                  period = '1 tydzień';
                   break;
               case 'próbny 3 miesiące':
-                  period = '2 weeks';
+                  period = '2 tygodnie';
                   break;
               default:
                   break; // Default case for trial period contracts
           }
       } else {
           if (totalDurationMonths === 0 || totalDurationMonths < 6) {
-              period = '2 weeks'; // This should cover contracts shorter than 6 months
+              period = '2 tygodnie'; // This should cover contracts shorter than 6 months
           } else if (totalDurationMonths < 36) {
-              period = '1 month';
+              period = '1 miesiąc';
           } else {
-              period = '3 months';
+              period = '3 miesiące';
           }
       }
       console.log("Determined Termination Period:", period);
@@ -469,7 +614,7 @@ const calculateTerminationEndDate = (startDate, period) => {
             }
             break;
         }
-        case '1 week': {
+        case '1 tydzień': {
             // Find the next Saturday
             while (endDate.getDay() !== 6) {
                 endDate.setDate(endDate.getDate() + 1);
@@ -478,7 +623,7 @@ const calculateTerminationEndDate = (startDate, period) => {
             endDate.setDate(endDate.getDate() + 7);
             break;
         }
-        case '2 weeks': {
+        case '2 tygodnie': {
             // Find the next Saturday
             while (endDate.getDay() !== 6) {
                 endDate.setDate(endDate.getDate() + 1);
@@ -487,7 +632,7 @@ const calculateTerminationEndDate = (startDate, period) => {
             endDate.setDate(endDate.getDate() + 14);
             break;
         }
-        case '1 month': {
+        case '1 miesiąc': {
             // Move to the next month and find the last day
              // Move to the start of the next month
              endDate.setMonth(endDate.getMonth() + 1, 1); 
@@ -495,7 +640,7 @@ const calculateTerminationEndDate = (startDate, period) => {
              endDate.setMonth(endDate.getMonth() + 1, 0); 
              break;
         }
-        case '3 months': {
+        case '3 miesiące': {
             // Move to the start of the next month from the notice date
     endDate.setMonth(endDate.getMonth() + 1, 1); 
 
@@ -517,6 +662,40 @@ const calculateTerminationEndDate = (startDate, period) => {
 
 // ... rest of your code
 console.log("Current Termination End Date:", terminationEndDate);
+
+const fetchCompanyData = async () => {
+  axiosInstance.get('http://localhost:3001/api/created_company', {
+    headers: {
+      'Authorization': `Bearer ${user.access_token}`, // Use the access token
+      'X-Schema-Name': user.schemaName, // Send the schema name as a header
+    }
+  })
+    .then(response => {
+        const company = response.data.length > 0 ? response.data[0] : null;
+        if (company && company.company_id) {
+            setCompanyData(company);
+            setError(''); // Clear any previous error messages
+        } else {
+            setCompanyData(null); // Set to null if no data is returned
+        }
+        
+    })
+    .catch(error => {
+      console.error('Error fetching company data:', error);
+      // Check if the error is due to no data found and set an appropriate message
+      if (error.response && error.response.status === 404) {
+        setError('No existing company data found. Please fill out the form to create a new company.');
+      } else {
+        setError('Failed to fetch company data.');
+      }
+
+      setCompanyData(null); // Set companyData to null when fetch fails
+    });
+};
+
+useEffect(() => {
+  fetchCompanyData();
+}, []);
 
   
 return (
@@ -661,29 +840,32 @@ return (
   type="submit" 
   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
   >
-  {isTerminated ? 'Update Termination' : 'Terminate Contract'}
+  {isTerminated ? 'Uaktualnij wypowiedzenie' : 'Zakończ umowę'}
   </button>
+  {updateMessage && <div>{updateMessage}</div>}
+            <button onClick={handleBackToEmployeeList} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4">Lista pracowników</button>
   </form>
   
   <button onClick={toggleDocumentVisibility} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mt-4">
-      {showDocument ? 'Hide Document' : 'Create Document'}
+      {showDocument ? 'Zamknij dokument' : 'Utwórz wypowiedzenie'}
     </button>
     {showDocument && renderTerminationDocument()}
 
      
     
         {showDocument && (
-            <button onClick={handlePrint}>Save as PDF</button>
+            <button onClick={handlePrint} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
+            Drukuj albo zapisz PDF
+          </button>
         )}
 
-{updateMessage && <div>{updateMessage}</div>}
-            <button onClick={handleBackToEmployeeList} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4">Back to EmployeeList</button>
+
             
             
         </div>
       
     )}
-    <p><button onClick={handleBackClick} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4">Back</button></p>
+    <p><button onClick={handleBackClick} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4">Powrót</button></p>
     
   </div>
   </div>

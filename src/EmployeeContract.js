@@ -327,14 +327,14 @@ return (
         <div class="h-8"></div> 
         <div class="grid grid-cols-2 gap-4 text-center">
           <div>
-            <p>Employee Signature</p>
+            <p>Podpis pracownika</p>
             <div class="signature-line w-full border-t border-gray-400"></div>
-            <p>Name: [Employee Name]</p>
+            <p>{employee.name} {employee.surname}</p>
           </div>
           <div>
-            <p>Company Representative Signature</p>
+            <p>Podpis osoby reprezentującej firmę</p>
             <div class="signature-line w-full border-t border-gray-400"></div>
-            <p>Name: [Company Representative Name]</p>
+            <p>{userInput}</p>
           </div>
         </div>
       </div>
