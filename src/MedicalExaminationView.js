@@ -299,7 +299,7 @@ const opisstanowiska = [
             ))}
           </select>
         </div>
-        <div class="printable-section">
+        <div className="printable-section bg-white p-8 text-xs"> {/* Makes all text within smaller */}
         <div class="contract-container bg-100 p-4 rounded-lg shadow">
         {/* Contract details */}
         {selectedContract ? (
@@ -318,7 +318,16 @@ const opisstanowiska = [
             </header>
     
             <section class="contract-section mb-4">
-            <h1 class="contract-title text-2xl font-bold mb-2 text-center">SKIEROWANIE NA BADANIA LEKARSKIE (okresowe/wstępne/kontrolne)</h1>
+              
+            <div class="text-center mb-2">
+    <h1 class="text-lg font-bold">SKIEROWANIE NA BADANIA LEKARSKIE</h1>
+    <select class="form-select block w-1/5 mx-auto mt-1 text-xs font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none">
+        <option value="okresowe">wstępne</option>
+        <option value="wstepne">okresowe</option>
+        <option value="kontrolne">kontrolne</option>
+    </select>
+</div>
+
             <div class="h-8"></div> 
               <p>Działając na podstawie art.229 § 4a ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy (Dz.U. z 2020 r. poz. 1320 z późn. zm.), kieruję na badania lekarskie:</p>
               
@@ -339,10 +348,17 @@ const opisstanowiska = [
             options={opisstanowiska}
             value={stanowisko}
             onChange={setStanowisko}
-            placeholder="brak lub dodaj pyły......"
+            placeholder="dodaj opis......"
           />
         </td>
       </div>
+      <div class="h-4"></div> 
+              <p>Opis warunków pracy uwzględniający informacje o występowaniu na stanowisku lub
+stanowiskach  pracy  czynników niebezpiecznych, szkodliwych dla zdrowia lub czynników
+uciążliwych i innych wynikających ze sposobu wykonywania pracy, z podaniem wielkości
+narażenia oraz aktualnych wyników badań i pomiarów czynników szkodliwych dla zdrowia,
+wykonanych  na  tym  stanowisku/stanowiskach  – należy wpisać nazwę czynnika/czynników
+i wielkość/wielkości narażenia(****): </p>
               <div class="h-2"></div> 
               <div class="overflow-x-auto">
       <table class="table-auto w-full text-left">
@@ -422,13 +438,45 @@ const opisstanowiska = [
   ))}
 </select>
             </section>
-            <div class="h-4"></div> 
+            <div class="h-10"></div> 
             <div class="grid grid-cols-2 gap-2 text-center">
               <div>
                 <p>Podpis osoby reprezentującej firmę</p>
                 <div class="signature-line w-full border-t border-gray-400"></div>
               </div>
             </div>
+            <div className="text-xs mt-4"> {/* Using text-xs to make the font smaller */}
+            <h2 className="font-bold mb-2">Objaśnienia:</h2>
+            <p>(*) Niepotrzebne skreślić.</p>
+            <p>(**) W przypadku osoby, której nie nadano numeru PESEL – seria, numer i nazwa dokumentu potwierdzającego
+tożsamość, a w przypadku osoby przyjmowanej do pracy - data urodzenia</p>
+<p>(***) Opisać: rodzaj pracy, podstawowe czynności, sposób i czas ich wykonywania</p>
+<p>(****) Opis warunków pracy uwzględniający w szczególności przepisy:</p>
+<ul>1) wydane na podstawie:
+        <li>a) art. 222 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu substancji
+chemicznych, ich mieszanin, czynników lub procesów technologicznych o działaniu
+rakotwórczym lub mutagennym</li>
+<li>a) art. 222 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu substancji
+chemicznych, ich mieszanin, czynników lub procesów technologicznych o działaniu
+rakotwórczym lub mutagennym</li>
+<li>b) art. 2221 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu szkodliwych
+czynników biologicznych,</li>
+<li>c) art. 227 § 2 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące badań i pomiarów
+czynników szkodliwych dla zdrowia,</li>
+<li>d) art. 228 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu najwyższych
+dopuszczalnych stężeń i natężeń czynników szkodliwych dla zdrowia w środowisku pracy,</li>
+<li>e) art. 25 pkt 1 ustawy z dnia 29 listopada 2000 r. – Prawo atomowe (Dz. U. z 2021 r. poz. 1941 oraz
+z 2022 r. poz. 974) dotyczące wskaźników pozwalających na wyznaczenie dawek
+promieniowania jonizującego stosowanych przy ocenie narażenia na promieniowanie jonizujące;</li>
+<p>2) załącznika nr 1 do rozporządzenia Ministra Zdrowia i Opieki Społecznej  z  dnia  30  maja  1996  r.
+w sprawie przeprowadzania badań lekarskich pracowników, zakresu profilaktycznej opieki zdrowotnej
+nad pracownikami oraz orzeczeń lekarskich wydawanych do celów przewidzianych w Kodeksie pracy
+(Dz. U. z 2023 r. poz. 607)</p>
+</ul>
+<div class="h-2"></div>
+<p>Skierowanie na badania lekarskie jest wydawane w dwóch egzemplarzach, z których jeden otrzymuje osoba kierowana
+na badania.</p>
+</div>
           </div>
         ) : (
           <p>No contract selected.</p>

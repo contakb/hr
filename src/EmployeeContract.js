@@ -22,6 +22,7 @@ const EmployeeContract = () => {
     const [updateMessage, setUpdateMessage] = useState('');
     const [userInput, setUserInput] = useState(''); // State to hold the user input
     const hasErrorBeenShown = useRef(false); // Ref to track if the error toast has been shown
+    const [showEmployeeInfo, setShowEmployeeInfo] = useState(false); // State to manage the visibility of employee info
   
   const navigate = useNavigate();
 
@@ -29,6 +30,7 @@ const EmployeeContract = () => {
 
   const location = useLocation();
   const user = useRequireAuth();
+  const employeeInfoRef = useRef(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -193,6 +195,69 @@ async function handleDownloadPDFClick() {
   }
 }
 
+const scrollToEmployeeInfo = () => {
+  setShowEmployeeInfo(true); // Show the employee info section
+  employeeInfoRef.current?.scrollIntoView({ behavior: 'smooth' });
+};
+
+const closeEmployeeInfo = () => {
+  setShowEmployeeInfo(false);
+};
+
+const calculateTerminationPeriod = (contract) => {
+  const durationInDays = (new Date(contract.contract_to_date) - new Date(contract.contract_from_date)) / (1000 * 60 * 60 * 24);
+
+  if (contract.typ_umowy === "próbny 1 miesiąc"|| contract.typ_umowy === "próbny 2 miesiące"|| contract.typ_umowy === "okres próbny 3 miesiące") {
+    if (durationInDays <= 14) {
+      return "3 dni robocze – jeżeli okres próbny nie przekracza 2 tygodni";
+    } else if (durationInDays > 14 && durationInDays < 90) {
+      return "1 tydzień – jeżeli okres próbny jest dłuższy niż 2 tygodnie";
+    } else if (durationInDays === 90) {
+      return "2 tygodnie – jeżeli okres próbny wynosi 3 miesiące";
+    }
+  } else if (contract.typ_umowy === "określony"|| contract.typ_umowy === "nieokreślony") {
+    if (durationInDays <= 182) { // 6 months
+      return "2 tygodnie – przy zatrudnieniu nieprzekraczającym 6 miesięcy";
+    } else if (durationInDays > 182 && durationInDays < 1095) { // 3 years
+      return "1 miesiąc – jeżeli zatrudnienie wynosi co najmniej 6 miesięcy";
+    } else if (durationInDays >= 1095) {
+      return "3 miesiące – gdy zatrudnienie trwa minimum 3 lata";
+    }
+  
+
+}
+  return "Nie dotyczy";
+};
+
+const calculateWorkingHours = (etat) => {
+  // Ensure etat is a string
+  const etatStr = String(etat);
+  const [numerator, denominator] = etatStr.split('/').map(Number);
+  const fraction = numerator / denominator;
+
+  // Standard full-time hours
+  const fullTimeDailyHours = 8;
+  const fullTimeWeeklyHours = 40;
+
+  // Calculate fractional hours
+  const dailyHours = fullTimeDailyHours * fraction;
+  const weeklyHours = fullTimeWeeklyHours * fraction;
+
+  // Format hours to hours and minutes
+  const formatHours = (hours) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h} godz. ${m > 0 ? `${m} min.` : ''}`;
+  };
+
+  return {
+    dailyHours: formatHours(dailyHours),
+    weeklyHours: formatHours(weeklyHours)
+  };
+};
+
+const workingHours = selectedContract ? calculateWorkingHours(selectedContract.etat) : { dailyHours: "N/A", weeklyHours: "N/A" };
+
 
 
 if (isLoading) {
@@ -244,6 +309,17 @@ return (
           </option>
         ))}
       </select>
+    </div>
+    <div class="mt-4">
+    <button onClick={scrollToEmployeeInfo} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Informacja dla Pracownika</button>
+      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
+      <button onClick={() => window.print()} class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+  Print or Save as PDF
+</button>
+<button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Download PDF
+      </button>
+      
     </div>
     <div class="printable-section">
     <div class="contract-container bg-100 p-4 rounded-lg shadow">
@@ -342,16 +418,105 @@ return (
       <p>No contract selected.</p>
     )}
     </div>
+    {/* Add Employee Info Section here */}
+    <div ref={employeeInfoRef} className="mt-8 break-before-page">
+    <div class="contract-container bg-100 p-4 rounded-lg shadow">
+    <div class="border border-gray-300 p-4">
+        <header class="header mb-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p>{companyData.company_name}</p>
+              <p><strong>ul:</strong> {companyData.street} {companyData.number}, {companyData.post_code}, {companyData.city}, {companyData.country}</p>
+              <p><strong>NIP:</strong> {companyData.taxid}</p>
+            </div>
+            <div>
+              <p>{companyData.city}, dnia {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"}</p>
+            </div>
+          </div>
+        </header>
+          
+          <h1 class="contract-title text-2xl font-bold mb-3 text-center">Informacja dla pacownika</h1>
+            <p>Działając na podstawie art.29 § 3 KP informuję  <strong>Panią/Pana: {employee.name} {employee.surname}</strong> że:</p>
+            <ol className="list-decimal list-inside mt-4 space-y-2">
+            <li>Obowiązuje Panią:
+                <ul className="list-disc list-inside ml-4">
+                <li>{workingHours.dailyHours} norma dobowa</li>
+                  <li>{workingHours.weeklyHours} norma tygodniowa</li>
+                </ul>
+              </li>
+              <li>Obowiązujący Panią wymiar czasu pracy ustalany jest na podstawie art. 129 Kodeksu pracy i wynosi:
+                <ul className="list-disc list-inside ml-4">
+                  <li>dobowo – {workingHours.dailyHours}</li>
+                  <li>tygodniowo – {workingHours.weeklyHours}</li>
+                </ul>
+              </li>
+              <li>Przysługują Pani następujące przerwy w pracy wliczane do czasu pracy:
+                <ul className="list-disc list-inside ml-4">
+                  <li>jedna co najmniej 15 minutowa przerwa</li>
+                </ul>
+              </li>
+              <li>Przysługują Pani odpoczynki dobowe i tygodniowe:
+                <ul className="list-disc list-inside ml-4">
+                  <li>11 godzin nieprzerwanego odpoczynku w każdej dobie pracowniczej</li>
+                  <li>35 godzin nieprzerwanego odpoczynku w każdym tygodniu pracy</li>
+                </ul>
+              </li>
+              <li>Obowiązują Panią następujące zasady dotyczące pracy w godzinach nadliczbowych i rekompensaty za nie: nie dotyczy</li>
+              <li>Obowiązują Panią następujące zasady przechodzenia ze zmiany na zmianę: nie dotyczy</li>
+              <li>Obowiązują Panią następujące zasady przemieszczania się między miejscami wykonywania pracy: nie dotyczy</li>
+              <li>Przysługują Pani inne niż określone w umowie o pracę składniki wynagrodzenia oraz świadczenia pieniężne lub rzeczowe: nie dotyczy</li>
+              <li>Przysługuje Pani następujący wymiar płatnego urlopu:
+                <ul className="list-disc list-inside ml-4">
+                  <li>Z upływem każdego miesiąca pracy uzyskuje Pani prawo do urlopu wypoczynkowego w wymiarze 1/12 wymiaru całorocznego. Wymiar całoroczny wynosi 20 dni. Na dzień 01.04.2024 r. przysługuje 0 dni urlopu.</li>
+                  <li>Urlop zaległy wynosi: 0 dni</li>
+                  <li>Urlop wykorzystany: 0 dni</li>
+                  <li>Pozostało do wykorzystania: 0 dni</li>
+                </ul>
+              </li>
+              <li>Obowiązują Panią następujące zasady rozwiązania stosunku pracy:
+                <ul className="list-disc list-inside ml-4">
+                  <li>Umowa o pracę może zostać rozwiązana:</li>
+                  <li>na mocy porozumienia stron</li>
+                  <li>przez oświadczenie jednej ze stron z zachowaniem okresu wypowiedzenia</li>
+                  <li>przez oświadczenie jednej ze stron bez zachowania okresu wypowiedzenia</li>
+                  <li>z upływem czasu na który była zawarta</li>
+                </ul>
+                <p>Długość okresu wypowiedzenia umowy o pracę <strong>na czas: {selectedContract ? selectedContract.typ_umowy : "N/A"}</strong>  wynosi: {selectedContract ? calculateTerminationPeriod(selectedContract) : "N/A"}.</p>
+                <p>Termin odwołania się do sądu pracy wynosi 21 dni od dnia doręczenia wypowiedzenia.</p>
+              </li>
+              <li>Przysługuje Pani prawo do szkoleń: nie dotyczy</li>
+              <li>Nie obejmuje Panią żaden zakładowy układ zbiorowy pracy.</li>
+              <li>Dodatkowe zapisy:
+                <ul className="list-disc list-inside ml-4">
+                  <li>Wynagrodzenie za pracę wypłacane jest raz w miesiącu z dołu ostatniego dnia miesiąca kalendarzowego przelewem na podany nr rachunku bankowego lub po złożeniu przez Panią oświadczenia na piśmie – gotówką w siedzibie firmy.</li>
+                  <li>Pora nocna obejmuje: godz.: 22 - 8</li>
+                  <li>Obecność w pracy potwierdza się przez podpisanie listy obecności znajdującej się w siedzibie firmy. Każde wyjście poza siedzibę firmy wymaga zgody przełożonego.</li>
+                  <li>Nieobecność w pracy usprawiedliwia się najpóźniej w drugim dniu jej trwania przez zgłoszenie tego faktu bezpośredniemu przełożonemu lub pracownikowi działu kadr.</li>
+                </ul>
+              </li>
+              <li>Nazwa instytucji zabezpieczenia społecznego do której wpływają składki na ubezpieczenia społeczne związane ze stosunkiem pracy: Zakład Ubezpieczeń Społecznych</li>
+              <li>Nazwa instytucji związanej z zabezpieczeniem społecznym zapewnianej przez pracodawcę: nie dotyczy</li>
+            </ol>
+            <div class="h-8"></div> 
+        <div class="grid grid-cols-2 gap-4 text-center">
+          <div>
+            <p>Podpis pracownika</p>
+            <div class="signature-line w-full border-t border-gray-400"></div>
+            <p>{employee.name} {employee.surname}</p>
+          </div>
+          <div>
+            <p>Podpis osoby reprezentującej firmę</p>
+            <div class="signature-line w-full border-t border-gray-400"></div>
+            <p>{userInput}</p>
+          </div>
+        </div>
+      
+          </div>
+          </div>
+          </div>
     </div>
-    <div class="mt-4">
-      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
-      <button onClick={() => window.print()} class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-  Print or Save as PDF
-</button>
-<button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Download PDF
-      </button>
-    </div>
+    
+    
   </div>
   </div>
   
