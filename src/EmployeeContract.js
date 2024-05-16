@@ -23,6 +23,11 @@ const EmployeeContract = () => {
     const [userInput, setUserInput] = useState(''); // State to hold the user input
     const hasErrorBeenShown = useRef(false); // Ref to track if the error toast has been shown
     const [showEmployeeInfo, setShowEmployeeInfo] = useState(false); // State to manage the visibility of employee info
+    const [settlementPeriod, setSettlementPeriod] = useState('1-miesięczne'); // State for the settlement period
+    const [urlop, setUrlop] = useState('20'); // Default to 20 days
+    const [trainingDetails, setTrainingDetails] = useState(''); // Default to an empty string
+
+
   
   const navigate = useNavigate();
 
@@ -130,6 +135,18 @@ const handleBackClick = () => {
 const handleContractSelection = (e) => {
   setSelectedContractId(e.target.value);
 };
+
+const handleSettlementPeriodChange = (event) => {
+  setSettlementPeriod(event.target.value);
+};
+const handleUrlopChange = (event) => {
+  setUrlop(event.target.value);
+};
+const handleTrainingDetailsChange = (event) => {
+  setTrainingDetails(event.target.value);
+};
+
+
 
 // Convert selectedContractId to a number for comparison if contract IDs are numbers
 const selectedContract = contracts.find(contract => contract.id === Number(selectedContractId));
@@ -310,6 +327,7 @@ return (
         ))}
       </select>
     </div>
+    
     <div class="mt-4">
     <button onClick={scrollToEmployeeInfo} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Informacja dla Pracownika</button>
       <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
@@ -442,6 +460,15 @@ return (
                 <ul className="list-disc list-inside ml-4">
                 <li>{workingHours.dailyHours} norma dobowa</li>
                   <li>{workingHours.weeklyHours} norma tygodniowa</li>
+                    czasu pracy w okresie rozliczeniowym wynoszącym
+                    <select value={settlementPeriod} onChange={handleSettlementPeriodChange} className="ml-2 inline-block border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                      <option value="1-miesięczne">1-miesięczne</option>
+                      <option value="2-miesięczne">2-miesięczne</option>
+                      <option value="3-miesięczne">3-miesięczne</option>
+                      <option value="4-miesięczne">4-miesięczne</option>
+                      <option value="12-miesięczne">12-miesięczne</option>
+                    </select>
+                  
                 </ul>
               </li>
               <li>Obowiązujący Panią wymiar czasu pracy ustalany jest na podstawie art. 129 Kodeksu pracy i wynosi:
@@ -467,7 +494,13 @@ return (
               <li>Przysługują Pani inne niż określone w umowie o pracę składniki wynagrodzenia oraz świadczenia pieniężne lub rzeczowe: nie dotyczy</li>
               <li>Przysługuje Pani następujący wymiar płatnego urlopu:
                 <ul className="list-disc list-inside ml-4">
-                  <li>Z upływem każdego miesiąca pracy uzyskuje Pani prawo do urlopu wypoczynkowego w wymiarze 1/12 wymiaru całorocznego. Wymiar całoroczny wynosi 20 dni. Na dzień 01.04.2024 r. przysługuje 0 dni urlopu.</li>
+
+  <p>Z upływem każdego miesiąca pracy uzyskuje Pani prawo do urlopu wypoczynkowego w wymiarze 1/12 wymiaru całorocznego. Wymiar całoroczny wynosi
+  <select value={urlop} onChange={handleUrlopChange} className="ml-2 inline-block border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+    <option value="20">20 dni</option>
+    <option value="26">26 dni</option>
+  </select>. Na dzień 01.04.2024 r. przysługuje 0 dni urlopu.</p>
+
                   <li>Urlop zaległy wynosi: 0 dni</li>
                   <li>Urlop wykorzystany: 0 dni</li>
                   <li>Pozostało do wykorzystania: 0 dni</li>
@@ -484,7 +517,16 @@ return (
                 <p>Długość okresu wypowiedzenia umowy o pracę <strong>na czas: {selectedContract ? selectedContract.typ_umowy : "N/A"}</strong>  wynosi: {selectedContract ? calculateTerminationPeriod(selectedContract) : "N/A"}.</p>
                 <p>Termin odwołania się do sądu pracy wynosi 21 dni od dnia doręczenia wypowiedzenia.</p>
               </li>
-              <li>Przysługuje Pani prawo do szkoleń: nie dotyczy</li>
+              <li>
+  Przysługuje Pani prawo do szkoleń:
+  <input 
+    type="text" 
+    value={trainingDetails} 
+    onChange={handleTrainingDetailsChange} 
+    className="ml-2 inline-block border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
+    placeholder="nie dotyczy"
+  />
+</li>
               <li>Nie obejmuje Panią żaden zakładowy układ zbiorowy pracy.</li>
               <li>Dodatkowe zapisy:
                 <ul className="list-disc list-inside ml-4">

@@ -355,7 +355,7 @@ const viewEmployeeContract = () => {
   <option value="1/2">1/2</option>
   <option value="1/3">1/3</option>
   <option value="1/4">1/4</option>
-  <option value="2/3">2/3</option>
+  <option value="2/3">2/3</option>  
   <option value="3/4">3/4</option>
   <option value="1/8">1/8</option>
   <option value="3/8">3/8</option>
