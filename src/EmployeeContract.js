@@ -36,6 +36,8 @@ const EmployeeContract = () => {
   const location = useLocation();
   const user = useRequireAuth();
   const employeeInfoRef = useRef(null);
+  const umowaRef = useRef(null);
+
 
   useEffect(() => {
     async function fetchData() {
@@ -216,6 +218,10 @@ const scrollToEmployeeInfo = () => {
   setShowEmployeeInfo(true); // Show the employee info section
   employeeInfoRef.current?.scrollIntoView({ behavior: 'smooth' });
 };
+const scrollToUmowa = () => {
+  umowaRef.current?.scrollIntoView({ behavior: 'smooth' });
+};
+
 
 const closeEmployeeInfo = () => {
   setShowEmployeeInfo(false);
@@ -328,21 +334,47 @@ return (
       </select>
     </div>
     
-    <div class="mt-4">
-    <button onClick={scrollToEmployeeInfo} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Informacja dla Pracownika</button>
-      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
-      <button onClick={() => window.print()} class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-  Print or Save as PDF
-</button>
-<button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Download PDF
-      </button>
-      
-    </div>
+    <div className="mt-4 flex flex-wrap gap-2 justify-center">
+  <button
+    onClick={scrollToEmployeeInfo}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Info dla Pracownika
+  </button>
+  <button
+    onClick={scrollToUmowa}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+   Umowa o pracę
+  </button>
+  <button
+    onClick={handleBackClick}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Back
+  </button>
+  <button
+    onClick={() => window.print()}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Print or Save as PDF
+  </button>
+  <button
+    onClick={handleDownloadPDFClick}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Download PDF
+  </button>
+</div>
+
+
+
+
     <div class="printable-section">
     <div class="contract-container bg-100 p-4 rounded-lg shadow">
     {/* Contract details */}
     {selectedContract ? (
+      <div ref={umowaRef} className="mt-8 break-before-page">
       <div class="border border-gray-300 p-4">
         <header class="header mb-4">
           <div class="grid grid-cols-2 gap-4">
@@ -431,6 +463,7 @@ return (
             <p>{userInput}</p>
           </div>
         </div>
+      </div>
       </div>
     ) : (
       <p>No contract selected.</p>
@@ -557,7 +590,41 @@ return (
           </div>
           </div>
     </div>
-    
+    <div className="mt-4 flex flex-wrap gap-2 justify-center">
+  <button
+    onClick={scrollToEmployeeInfo}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Info dla Pracownika
+  </button>
+  <button
+    onClick={scrollToUmowa}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+   Umowa o pracę
+  </button>
+  <button
+    onClick={handleBackClick}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Back
+  </button>
+  <button
+    onClick={() => window.print()}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Print or Save as PDF
+  </button>
+  <button
+    onClick={handleDownloadPDFClick}
+    className="w-32 h-8 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs py-1 px-2 rounded whitespace-nowrap"
+  >
+    Download PDF
+  </button>
+</div>
+
+
+
     
   </div>
   </div>

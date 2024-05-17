@@ -8,6 +8,7 @@ import axios from 'axios'; // Assuming you're using axios for HTTP requests
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
 import { useRequireAuth } from './useRequireAuth';
+import CalendarPage from './CalendarPage'; // Import the CalendarPage component
 // In your React component, e.g., AccountDetails.js
 
 
@@ -365,7 +366,8 @@ return (
     </form>
     {updateMessage && <p className="mt-4">{updateMessage}</p>}
     </div>
-    <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md lg:flex lg:flex-col">
+    <div className="flex flex-col lg:flex-col w-full lg:max-w-md lg:space-y-8">
+          <div className="bg-white shadow rounded-lg p-6">
         <h2 className="font-bold text-xl mb-4">Dane Twojej firmy:</h2>
         {error && <p className="text-red-500 mb-2">{error}</p>}
       {companyData ? (
@@ -383,11 +385,15 @@ return (
       >
         {companyData ? 'Uaktualnij dane firmy' : 'Dodaj dane firmy'}
       </button>
+      </div>
+          <div className="bg-white shadow rounded-lg p-6 mt-8 lg:mt-0">
+            <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
+            <CalendarPage />
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-  </div> 
-  
-);
+  );
 }
 
 export default AccountDetails;

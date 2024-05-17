@@ -5,7 +5,10 @@
 @tailwind components;
 @tailwind utilities;
 
-
+/* Custom styles */
+.react-calendar__tile.highlight-tile {
+  @apply bg-red-500 text-white rounded-full !important;
+}
 
 hr {
   border: 0;

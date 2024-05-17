@@ -30,6 +30,7 @@ import { UserProvider } from './UserContext'; // Adjust the import path as neces
 import AddEmployees from './EmployeeForm'
 import AddContractToEmployee from './AddContractForm'; // Import your new component
 import AddParamsToEmployee from './EmployeeParam'; // Import your new component
+import CalendarPage from './CalendarPage';
 
 
 
@@ -84,6 +85,7 @@ function App() {
       <Route path="/createEmployee" element={<AddEmployees />} />
       <Route path="/add-contract/:employeeId"  element={<AddContractToEmployee />} /> {/* New route */}
       <Route path="/employee-param/:employeeId" element={<AddParamsToEmployee />} /> {/* New route */}
+      <Route path="/calendar" element={<CalendarPage />} />
 
 
        
