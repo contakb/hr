@@ -12,11 +12,13 @@ import { useSetup } from './SetupContext'; // Adjust the import path as necessar
 import { useUser } from './UserContext'; // Ensure correct pat
 import { useRequireAuth } from './useRequireAuth';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import EmployeeBreaksCalendar from './EmployeeBreaksCalendar'; // Import the calendar component
 
 // Employee component
 function Employee({ employee, updateEmployeeInList, taxOffices, detailView,  setSelectedEmployee }) {
   const { id, name, surname, street, number, postcode, city, country, tax_office, pesel } = employee;
   const [showDetails, setShowDetails] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false); // Add state for showing calendar
   const [contractsVisible, setContractsVisible] = useState(false);
   const [contracts, setContracts] = useState([]);
   const [generateContractVisible, setGenerateContractVisible] = useState(false);
@@ -97,6 +99,10 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
 
   const toggleEditMode = () => {
     setEditMode(!editMode);
+  };
+
+  const toggleCalendar = () => {
+    setShowCalendar(!showCalendar); // Toggle calendar visibility
   };
   
   
@@ -456,8 +462,19 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
   >
     Zakończ umowę
   </button>
+  <button 
+              className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+              onClick={toggleCalendar}
+            >
+              {showCalendar ? 'Ukryj kalendarz' : 'Kalendarz nieobecności'}
+            </button>
 
       </div>
+      {showCalendar && (
+            <div className="border-t pt-4">
+              <EmployeeBreaksCalendar employeeId={id}/>
+            </div>
+          )}
 
 
       {showDetails && (
