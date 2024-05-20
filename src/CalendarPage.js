@@ -61,8 +61,8 @@ const CalendarPage = () => {
         }}
       />
       <div>
-        <h2>Wydarzenia na {format(date, 'EEEE, do MMMM yyyy', { locale: pl })}:</h2>
-        {renderEvents(date)}
+        <h2 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">Wydarzenia na {format(date, 'EEEE, do MMMM yyyy', { locale: pl })}:</h2>
+        <p  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{renderEvents(date)}</p>
       </div>
     </div>
   );

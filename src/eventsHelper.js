@@ -30,24 +30,24 @@ export const generateRecurringEvents = (year) => {
     // Social insurance payment due
     events.push({
       id: `social_insurance_${year}_${month}`,
-      title: 'Pay Social Insurance',
-      description: 'Payment due for social insurance',
+      title: 'Płatność składek ZUS',
+      description: 'Wykonaj przelew na konto indywidualne w ZUS',
       date: socialInsuranceDate,
     });
 
     // Declaration to ZUS due
     events.push({
       id: `zus_declaration_${year}_${month}`,
-      title: 'Send Declaration to ZUS',
-      description: 'Declaration due to ZUS',
+      title: 'Termin wysyłki deklaracji do ZUS',
+      description: 'Wyślij deklarację do ZUS',
       date: zusDeclarationDate,
     });
 
     // Income tax payment due
     events.push({
       id: `income_tax_${year}_${month}`,
-      title: 'Pay Income Tax for Employees',
-      description: 'Payment due for employee income tax',
+      title: 'Podatek Pit-4R',
+      description: 'Płatność podatku do US',
       date: incomeTaxDate,
     });
   }
