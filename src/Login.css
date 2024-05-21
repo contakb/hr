@@ -23,6 +23,193 @@
   @apply bg-blue-900 text-white !important;
 }
 
+/* Ensure the current date tile is properly visible */
+.react-calendar__tile--now {
+  background: none; /* Clear default background for current date */
+  color: inherit;   /* Inherit text color */
+}
+
+/* Additional styles to ensure visibility */
+.react-calendar__tile {
+  color: inherit; /* Ensure text color is inherited */
+}
+
+.break-zwolnienie {
+  @apply bg-red-500 text-white;
+  position: relative;
+}
+
+.break-ciąża {
+  @apply bg-red-500 text-white;
+  position: relative;
+}
+
+.break-zasilek {
+  @apply bg-red-500 text-white;
+  position: relative;
+}
+
+.break-bezplatny {
+  @apply bg-yellow-500 text-white;
+  position: relative;
+}
+
+.break-nieobecnosc {
+  @apply bg-green-500 text-white;
+  position: relative;
+}
+
+.break-default {
+  @apply bg-blue-500 text-white;
+  position: relative;
+}
+
+/* Position the letters on the calendar tiles */
+.break-zwolnienie::after,
+.break-ciąża::after,
+.break-zasilek::after,
+.break-bezplatny::after,
+.break-nieobecnosc::after {
+  content: attr(data-letter);
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.75rem;
+  color: white;
+}
+.table-zwolnienie {
+  @apply bg-red-500 text-white;
+}
+
+.table-ciąża {
+  @apply bg-red-500 text-white;
+}
+
+.table-zasilek {
+  @apply bg-red-500 text-white;
+}
+
+.table-bezplatny {
+  @apply bg-yellow-500 text-white;
+}
+
+.table-nieobecnosc {
+  @apply bg-green-500 text-white;
+}
+
+.table-default {
+  @apply bg-blue-500 text-white;
+}
+
+/* Tailwind CSS styles */
+.break-zwolnienie[data-letter="ZW"] {
+  background-color: #F56565; /* Tailwind red-500 */
+  color: white;
+}
+
+.break-ciąża[data-letter="CI"] {
+  background-color: #ED64A6; /* Tailwind pink-500 */
+  color: white;
+}
+
+.break-zasilek[data-letter="ZS"] {
+  background-color: #9F7AEA; /* Tailwind purple-500 */
+  color: white;
+}
+
+.break-bezplatny[data-letter="BP"] {
+  background-color: #ECC94B; /* Tailwind yellow-500 */
+  color: black;
+}
+
+.break-nieobecnosc[data-letter="NB"] {
+  background-color: #A0AEC0; /* Tailwind gray-500 */
+  color: black;
+}
+
+.break-default[data-letter="DF"] {
+  background-color: #EDF2F7; /* Tailwind gray-200 */
+  color: black;
+}
+
+
+/* Calendar styling for break types */
+.break-zwolnienie div[data-letter="ZW"] {
+  background-color: red;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  height: 100%;
+}
+
+.break-ciąża div[data-letter="CI"] {
+  background-color: pink;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  height: 100%;
+}
+
+.break-zasilek div[data-letter="ZS"] {
+  background-color: purple;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  height: 100%;
+}
+
+.break-bezplatny div[data-letter="BP"] {
+  background-color: orange;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  height: 100%;
+}
+
+.break-nieobecnosc div[data-letter="NB"] {
+  background-color: green;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  height: 100%;
+}
+
+/* Table styling for break types */
+.table-zwolnienie {
+  background-color: red;
+  color: white;
+}
+
+.table-ciąża {
+  background-color: pink;
+  color: white;
+}
+
+.table-zasilek {
+  background-color: purple;
+  color: white;
+}
+
+.table-bezplatny {
+  background-color: orange;
+  color: white;
+}
+
+.table-nieobecnosc {
+  background-color: green;
+  color: white;
+}
+
 hr {
   border: 0;
   height: 1px;
