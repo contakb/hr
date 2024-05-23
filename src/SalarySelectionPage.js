@@ -2545,6 +2545,7 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
                   <option value="wychowawczy">wychowawczy</option>
                   <option value="rodzicielski">rodzicielski</option>
                   <option value="zasiłek">zasiłek ZUS</option>
+                  <option value="urlop">urlop wypoczynkowy</option>
               </select>
               
               
@@ -2685,6 +2686,7 @@ onChange={(e) => handleBonusChange(e.target.value, employee.employee_id)}
                                   <option value="wychowawczy">wychowawczy</option>
                                   <option value="rodzicielski">rodzicielski</option>
                                   <option value="zasiłek">zasiłek ZUS</option>
+                                  <option value="urlop">urlop wypoczynkowy</option>
                               </select>
                               
                               <button

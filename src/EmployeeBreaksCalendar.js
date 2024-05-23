@@ -147,6 +147,20 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
     return null;
   };
 
+  const isOverlapping = (newStartDate, newEndDate) => {
+    return breaks.some(breakEvent => {
+      const existingStartDate = new Date(breakEvent.break_start_date);
+      const existingEndDate = new Date(breakEvent.break_end_date);
+  
+      return (
+        (newStartDate >= existingStartDate && newStartDate <= existingEndDate) ||
+        (newEndDate >= existingStartDate && newEndDate <= existingEndDate) ||
+        (newStartDate <= existingStartDate && newEndDate >= existingEndDate)
+      );
+    });
+  };
+  
+
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setBreakForm({
@@ -221,6 +235,15 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
 
   const handleSaveBreaksData = async (e) => {
     e.preventDefault();
+
+    const { break_start_date, break_end_date } = breakForm;
+  const newStartDate = new Date(break_start_date);
+  const newEndDate = new Date(break_end_date);
+
+  if (isOverlapping(newStartDate, newEndDate)) {
+    toast.error('The selected dates overlap with an existing break. Please choose different dates.');
+    return;
+  }
 
     const breaksData = {
       employee_id: employeeId,
@@ -388,7 +411,8 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
               onChange={handleFormChange}
               className="text-xs p-1 rounded border-gray-300 w-full"
             >
-              <option value="brak">Brak</option>
+              <option value="brak">wybierz</option>
+              <option value="urlop">urlop wypoczynkowy</option>
               <option value="zwolnienie">Zwolnienie</option>
               <option value="ciąża">Zwol. 100% ciąża</option>
               <option value="bezpłatny">Bezpłatny</option>
