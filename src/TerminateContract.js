@@ -7,10 +7,12 @@ import { useRequireAuth } from './useRequireAuth';
 import { toast } from 'react-toastify';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import './print.css'; // Adjust the path to where you saved the CSS file
+import RenderEmploymentCertificateDocument from './RenderEmploymentCertificateDocument'; // Import the new component
 
 const TerminateContract = () => {
   const [employee, setEmployee] = useState({});
   const [contracts, setContracts] = useState([]);
+  const [breaks, setBreaks] = useState([]); // State to store health breaks
   const [selectedContractId, setSelectedContractId] = useState('');
   const [terminationDate, setTerminationDate] = useState(new Date().toISOString().slice(0, 10)); // Default to today's date
   const [terminationType, setTerminationType] = useState(''); // Adjust initial values as needed
@@ -28,6 +30,8 @@ const TerminateContract = () => {
   const [currentContractEndDate, setCurrentContractEndDate] = useState('');
   const [companyData, setCompanyData] = useState(null);
   const [userInput, setUserInput] = useState(''); // Proper initial state setup
+  const [showEmploymentCertificate, setShowEmploymentCertificate] = useState(false);
+  const [canGenerateCertificate, setCanGenerateCertificate] = useState(false);
 
   const [error, setError] = useState(null);
   const componentRef = useRef();
@@ -88,6 +92,31 @@ const TerminateContract = () => {
     fetchData();
 }, [employeeId, axiosInstance]);
 
+// Inside useEffect to fetch breaks
+useEffect(() => {
+  const fetchBreaks = async () => {
+    if (!user) return;
+
+    try {
+      const response = await axiosInstance.get('/api/get-health-breaks', {
+        params: { employee_id: employeeId },
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`,
+          'X-Schema-Name': user.schemaName,
+        }
+      });
+      setBreaks(response.data);
+    } catch (error) {
+      console.error('Error fetching breaks:', error);
+    }
+  };
+
+  if (employeeId) {
+    fetchBreaks();
+  }
+}, [employeeId, user]);
+
+
 
 
 function combineContracts(contracts) {
@@ -118,15 +147,17 @@ function combineContracts(contracts) {
 }
 
 useEffect(() => {
-  // When contracts data is available, determine the most recent contract and update fields accordingly
   if (contracts.length > 0) {
-      const mostRecentContract = contracts.reduce((latest, current) => 
-          new Date(current.contract_to_date) > new Date(latest.contract_to_date) ? current : latest, contracts[0]);
-      setSelectedContractId(mostRecentContract.id);
-      setCurrentContractEndDate(mostRecentContract.contract_to_date);
-      updateFormFields(mostRecentContract); // Ensure initial setup reflects the correct contract details
+    const mostRecentContract = contracts.reduce((latest, current) => 
+      new Date(current.contract_to_date) > new Date(latest.contract_to_date) ? current : latest, contracts[0]);
+    setSelectedContractId(mostRecentContract.id);
+    setCurrentContractEndDate(mostRecentContract.contract_to_date);
+    updateFormFields(mostRecentContract);
+    const isContractTerminated = !!mostRecentContract.termination_type || !!mostRecentContract.termination_date || !!mostRecentContract.deregistration_code;
+    setCanGenerateCertificate(isContractTerminated);
   }
 }, [contracts]);
+
 
 
 // Adjust updateFormFields to handle setting termination date based on contract type and status
@@ -184,6 +215,8 @@ const handleContractSelection = (event) => {
   }
 };
 
+
+
 // Function to toggle the document visibility
 const toggleDocumentVisibility = () => {
     setShowDocument(!showDocument);
@@ -232,6 +265,36 @@ const renderTerminationDocument = () => {
     }
   };
 
+  const renderEmploymentCertificateDocument = () => {
+    if (!canGenerateCertificate) {
+      return <p>Umowa nie została jeszcze zakończona. Proszę zakończyć umowę, aby wygenerować Świadectwo Pracy.</p>;
+    }
+
+    return (
+      <RenderEmploymentCertificateDocument
+        ref={printRef}
+        employee={employee}
+        companyData={companyData}
+        contracts={contracts}
+        breaks={breaks} // Pass breaks here
+        deregistrationCode={deregistrationCode}
+      />
+    );
+  };
+
+  useEffect(() => {
+    if (selectedContractId) {
+      const selectedContract = contracts.find(contract => contract.id.toString() === selectedContractId);
+      if (selectedContract) {
+        updateFormFields(selectedContract);
+        const isContractTerminated = !!selectedContract.termination_type || !!selectedContract.termination_date || !!selectedContract.deregistration_code;
+        setCanGenerateCertificate(isContractTerminated);
+      }
+    }
+  }, [selectedContractId, contracts]);
+  
+  
+  
 // Function to render the Mutual Agreement Document
 // Function to render the Mutual Agreement Document
 const RenderMutualAgreementDocument = React.forwardRef((props, ref) => {
@@ -511,9 +574,17 @@ useEffect(() => {
           setTerminationDate(selectedContract.contract_to_date);
       }
 
+      // Check if the contract is terminated
+      const isContractTerminated = !!selectedContract.termination_type; // Only check termination_type
+      setIsTerminated(isContractTerminated);
+      setCanGenerateCertificate(isContractTerminated);
+
+      console.log("Can Generate Certificate:", isContractTerminated);
+
       console.log("Updated for selected contract:", selectedContract);
   }
 }, [contracts, selectedContractId, isTerminated]);
+
 
 
 
@@ -851,9 +922,14 @@ return (
     </button>
     {showDocument && renderTerminationDocument()}
 
+    <button onClick={() => setShowEmploymentCertificate(!showEmploymentCertificate)} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
+              {showEmploymentCertificate ? 'Zamknij Świadectwo Pracy' : 'Utwórz Świadectwo Pracy'}
+            </button>
+            {showEmploymentCertificate && renderEmploymentCertificateDocument()}
+
      
     
-        {showDocument && (
+            {(showDocument || showEmploymentCertificate) && (
             <button onClick={handlePrint} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
             Drukuj albo zapisz PDF
           </button>
