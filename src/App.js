@@ -32,6 +32,7 @@ import AddContractToEmployee from './AddContractForm'; // Import your new compon
 import AddParamsToEmployee from './EmployeeParam'; // Import your new component
 import CalendarPage from './CalendarPage';
 import EmployeeBreaksCalendar from './EmployeeBreaksCalendar';
+import HolidayBaseCalculator from './HolidayBaseCalculator';
 
 
 
@@ -88,6 +89,7 @@ function App() {
       <Route path="/employee-param/:employeeId" element={<AddParamsToEmployee />} /> {/* New route */}
       <Route path="/calendar" element={<CalendarPage />} />
       <Route path="/breakcalendar" element={<EmployeeBreaksCalendar />} />
+      <Route path="/holidaybase/:employeeId" element={<HolidayBaseCalculator />} />
 
 
        

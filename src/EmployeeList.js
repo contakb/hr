@@ -90,6 +90,9 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     navigate(`/TerminateContract/${id}`);
   };
   
+  const handleHolidaybreakpage = (id) => {
+    navigate(`/holidaybase/${id}`);
+  };
   
   
 
@@ -461,6 +464,12 @@ const handleAneks = (originalContractId, latestAneksId = null) => {
     onClick={() => handleTerminateContractPage(id)}
   >
     Zakończ umowę
+  </button>
+  <button 
+    className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={() => handleHolidaybreakpage(id)}
+  >
+    Podstawa urlopu
   </button>
   <button 
               className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"

@@ -807,6 +807,13 @@ const toggleEditMode = () => {
       className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
       3. Add Params
     </button>
+    
+    <button 
+      onClick={() => navigate(`/holidaybase/${createdEmployee.employeeId}${isInSetupProcess ? '?setup=true' : ''}`)}
+      className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+      3. Podstawa urlop
+    </button>
+
   </div>
 ) : (
   <div className="space-y-4 mt-4">
@@ -818,6 +825,9 @@ const toggleEditMode = () => {
     </button>
     <button disabled className="bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline opacity-50 cursor-not-allowed">
       Add Params
+    </button>
+    <button disabled className="bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline opacity-50 cursor-not-allowed">
+      Podstaw urlop
     </button>
   </div>
 )}

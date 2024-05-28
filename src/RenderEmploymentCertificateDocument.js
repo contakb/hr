@@ -123,17 +123,26 @@ const RenderEmploymentCertificateDocument = React.forwardRef((props, ref) => {
           <li>14. wykonywał pracę w szczególnych warunkach lub w szczególnym charakterze: nie wykonywał</li>
           <li>15. wykorzystał dodatkowy urlop albo inne uprawnienia lub świadczenia przewidziane przepisami prawa pracy: nie wykorzystał</li>
         
-          <li className="mb-6 text-left"><strong>16. Informacja o okresach nieskładkowych:</strong></li>
+          <li className="mb-6 text-left">16. okresy nieskładkowe przypadajace w okresie zatrudnienia wskazanym w ust.1 *)</li>
         <ul className="list-disc list-inside mb-6">
           {breaks.length === 0 ? (
             <li>brak</li>
           ) : (
             breaks.map((breakItem, index) => (
-              <li key={index}>
+              <p key={index}><strong>
                 {new Date(breakItem.break_start_date).toLocaleDateString()} - {new Date(breakItem.break_end_date).toLocaleDateString()} ({breakTypeLegend[breakItem.break_type] || ''})
-              </li>
+                </strong></p>
             ))
           )}
+          {breaks.length > 0 && (
+          <div className="text-left mb-6">
+            <p className="mb-1">*) CH – choroba,OP – opieka nad dzieckiem lub inną osobą,ZW100 – zwolnienie 100%, ŚR – świadczenie rehabilitacyjne, BD – badania dawców tkanek</p>
+            
+              
+              
+           
+          </div>
+        )}
         </ul>
         </ul>
         
@@ -148,18 +157,7 @@ const RenderEmploymentCertificateDocument = React.forwardRef((props, ref) => {
           <li>Inne: ...</li>
         </ul>
         
-        {breaks.length > 0 && (
-          <div className="text-left mb-6">
-            <p className="mb-1"><strong>Legenda przerw:</strong></p>
-            <ul className="list-disc list-inside">
-              <li>CH – choroba</li>
-              <li>OP – opieka nad dzieckiem lub inną osobą</li>
-              <li>ZW100 – zwolnienie 100%</li>
-              <li>ŚR – świadczenie rehabilitacyjne</li>
-              <li>BD – badania dawców tkanek</li>
-            </ul>
-          </div>
-        )}
+        
 
         <div className="flex justify-between mt-6 mb-6">
           <div className="text-center">

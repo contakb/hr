@@ -1292,6 +1292,128 @@ app.put('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
   }
 });
 
+// Endpoint to calculate and add holiday base data
+app.post('/employees/:employeeId/holiday-base', verifyJWT, async (req, res) => {
+  const { employeeId } = req.params;
+  const {
+    education_level,
+    education_end_date,
+    work_histories,
+    total_staz_years,
+    total_staz_months,
+    total_staz_days,
+    holiday_base
+  } = req.body;
+
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('employee_holiday_base')
+      .insert([{
+        employee_id: parseInt(employeeId, 10),
+        education_level,
+        education_end_date,
+        work_histories,
+        total_staz_years,
+        total_staz_months,
+        total_staz_days,
+        holiday_base
+      }]);
+
+    if (error) {
+      console.error('Error saving holiday base data:', error);
+      res.status(500).send('Error occurred while saving holiday base data.');
+      return;
+    }
+
+    res.json({ message: 'Holiday base data added successfully', data });
+  } catch (error) {
+    console.error('Server Error:', error);
+    res.status(500).send('Error occurred while saving holiday base data.');
+  }
+});
+
+// Endpoint to retrieve holiday base data
+app.get('/employees/:employeeId/holiday-base', verifyJWT, async (req, res) => {
+  const { employeeId } = req.params;
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('employee_holiday_base')
+      .select('*')
+      .eq('employee_id', parseInt(employeeId, 10));
+
+    if (error) {
+      console.error('Error fetching holiday base data:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (data.length > 0) {
+      res.json({ data });
+    } else {
+      res.status(404).json({ error: 'Holiday base data not found for the given employee' });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Endpoint to update holiday base data
+app.put('/employees/:employeeId/holiday-base', verifyJWT, async (req, res) => {
+  const { employeeId } = req.params;
+  const {
+    education_level,
+    education_end_date,
+    work_histories,
+    total_staz_years,
+    total_staz_months,
+    total_staz_days,
+    holiday_base
+  } = req.body;
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('employee_holiday_base')
+      .update({
+        education_level,
+        education_end_date,
+        work_histories,
+        total_staz_years,
+        total_staz_months,
+        total_staz_days,
+        holiday_base
+      })
+      .eq('employee_id', parseInt(employeeId, 10));
+
+    if (error) {
+      console.error('Error updating holiday base data:', error);
+      res.status(500).send('Error occurred while updating holiday base data.');
+      return;
+    }
+
+    res.json({ message: 'Holiday base data updated successfully', data });
+  } catch (error) {
+    console.error('Server Error:', error);
+    res.status(500).send('Error occurred while updating holiday base data.');
+  }
+});
 
 app.post('/api/aneks', verifyJWT, async (req, res) => {
   const { originalContractId, aneksData } = req.body;
