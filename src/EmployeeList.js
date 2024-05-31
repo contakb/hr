@@ -42,6 +42,8 @@
     const [holidayBaseVisible, setHolidayBaseVisible] = useState(false); // State for toggling visibility
 const [holidayBase, setHolidayBase] = useState(null); // State for storing holiday base data
 const [editHolidayBaseMode, setEditHolidayBaseMode] = useState(false);
+const [activeTab, setActiveTab] = useState('details');
+
 
 
     // State to track the selected employee for displaying details

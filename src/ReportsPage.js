@@ -3,6 +3,7 @@ import axios from 'axios';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
 import { useRequireAuth } from './useRequireAuth';
+import { useNavigate } from 'react-router-dom';
 
 function ReportsPage() {
   const currentYear = new Date().getFullYear();
@@ -25,6 +26,7 @@ const [companyData, setCompanyData] = useState(null);
 const [error, setError] = useState(null);
 const user = useRequireAuth();
   const userEmail = user?.email; // Safely access the email property
+  const navigate = useNavigate();
 
 
 
@@ -111,9 +113,12 @@ function formatNumber(value) {
   // If it's a valid number and not zero, format it to two decimal places
   return numericValue.toFixed(2);
 }
-
+const handleHolidaybreakpage = (id) => {
+  navigate(`/holidaybase/${id}`);
+};
 
 const handleGenerateReport = async () => {
+  
   setIsReportGenerated(false); // Reset the flag before generating a new report
 
   try {
@@ -176,7 +181,125 @@ const handleGenerateReport = async () => {
       responseData = processSocialInsuranceData(response.data);
       setReportData(responseData); // Set the processed data
       setIsReportGenerated(true);
-    } else {
+    }
+    else if (reportType === 'social-insurance') {
+      // Logic for fetching social insurance data
+      const response = await axiosInstance.get(`http://localhost:3001/reports/social-insurance?month=${month}&year=${year}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`, // Use the access token
+          'X-Schema-Name': user.schemaName, // Send the schema name as a header
+        }
+      });
+      responseData = processSocialInsuranceData(response.data);
+      setReportData(responseData); // Set the processed data
+      setIsReportGenerated(true);
+    } else if (reportType === 'available-holiday-days' && selectedEmployee) {
+      const contractsResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${selectedEmployee}`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`,
+          'X-Schema-Name': user.schemaName,
+        }
+      });
+
+      const contracts = contractsResponse.data.contracts;
+      if (contracts.length === 0) {
+        throw new Error('No contracts found for the selected employee');
+      }
+
+      // Fetch holiday base data
+      let holidayBase = 0;
+      try {
+        const holidayBaseResponse = await axiosInstance.get(`http://localhost:3001/employees/${selectedEmployee}/holiday-base`, {
+          headers: {
+            Authorization: `Bearer ${user.access_token}`,
+            'x-schema-name': user.schemaName,
+          }
+        });
+
+        if (holidayBaseResponse.data.data && holidayBaseResponse.data.data.length > 0) {
+          holidayBase = holidayBaseResponse.data.data[0].holiday_base;
+        } else {
+          setReportData([{ noHolidayBase: true }]);
+          setIsReportGenerated(true);
+          return;
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          setReportData([{ noHolidayBase: true }]);
+          setIsReportGenerated(true);
+          return;
+        } else {
+          throw error;
+        }
+      }
+
+      const selectedYear = parseInt(year);
+      const currentDate = new Date();
+
+      let totalWorkedMonths = 0;
+      let workedMonthsTillNow = 0;
+      let workedMonthsTillEndOfYear = 0;
+      let firstContractStartDate = null;
+      let lastContractEndDate = null;
+
+      contracts.forEach(contract => {
+        const contractStartDate = new Date(contract.contract_from_date);
+        const contractEndDate = contract.contract_to_date ? new Date(contract.contract_to_date) : new Date(selectedYear, 11, 31); // Default to end of the year if no end date
+
+        if (contractStartDate.getFullYear() <= selectedYear && contractEndDate.getFullYear() >= selectedYear) {
+          const startMonth = (contractStartDate.getFullYear() === selectedYear) ? contractStartDate.getMonth() + 1 : 1;
+          const endMonth = (contractEndDate.getFullYear() === selectedYear) ? contractEndDate.getMonth() + 1 : 12;
+
+          const contractWorkedMonths = endMonth - startMonth + 1;
+          totalWorkedMonths += contractWorkedMonths;
+
+          if (currentDate >= contractStartDate && currentDate <= contractEndDate) {
+            workedMonthsTillNow += Math.min(currentDate.getMonth() + 1, endMonth) - startMonth + 1;
+          }
+
+          workedMonthsTillEndOfYear += endMonth - startMonth + 1;
+
+          if (!firstContractStartDate || contractStartDate < firstContractStartDate) {
+            firstContractStartDate = contractStartDate;
+          }
+
+          if (!lastContractEndDate || contractEndDate > lastContractEndDate) {
+            lastContractEndDate = contractEndDate;
+          }
+        }
+      });
+
+      const totalHolidayDays = Math.ceil((holidayBase / 12) * totalWorkedMonths);
+      const holidayDaysTillNow = Math.ceil((holidayBase / 12) * workedMonthsTillNow);
+      const holidayDaysTillEndOfYear = Math.ceil((holidayBase / 12) * workedMonthsTillEndOfYear);
+
+      // Fetch breaks taken by the employee
+      const breaksResponse = await axiosInstance.get('/api/get-health-breaks', {
+        params: { employee_id: selectedEmployee },
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`,
+          'X-Schema-Name': user.schemaName,
+        }
+      });
+
+      const breaks = breaksResponse.data;
+      const usedHolidayDays = breaks.filter(brk => brk.break_type === 'urlop').reduce((acc, brk) => acc + brk.break_days, 0);
+
+      const availableHolidayDays = holidayDaysTillNow - usedHolidayDays;
+
+      setReportData([{
+        holidayBase,
+        availableHolidayDays,
+        totalHolidayDays,
+        holidayDaysTillEndOfYear: totalHolidayDays - usedHolidayDays,
+        usedHolidayDays,
+        lastContractEndDate: lastContractEndDate ? lastContractEndDate.toLocaleDateString() : 'N/A',
+        firstContractStartDate: firstContractStartDate ? firstContractStartDate.toLocaleDateString() : 'N/A',
+        reportDate: currentDate.toLocaleDateString()
+      }]); // Store the calculated available holiday days
+      setIsReportGenerated(true);
+      } 
+      else {
       // Existing logic for other report types
       const response = await axiosInstance.get(`http://localhost:3001/reports?month=${month}&year=${year}`, {
         headers: {
@@ -193,7 +316,7 @@ const handleGenerateReport = async () => {
       }
       setReportData(responseData); // Set the response data
       setIsReportGenerated(true);
-    }
+    } 
   } catch (error) {
     console.error(`Error fetching ${reportType} data:`, error);
     setReportData([]);
@@ -366,9 +489,34 @@ useEffect(() => {
   useEffect(() => {
     fetchEmployees();
   }, []);
+
+  
   
   const renderFormFields = () => {
     if (reportType === 'earnings-certificate') {
+      return (
+        <>
+          <label>
+            Employee:
+            <select value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
+              <option value="">Select Employee</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>{employee.name} {employee.surname}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Period Range (Months):
+            <select value={selectedRange} onChange={(e) => setSelectedRange(e.target.value)}>
+              <option value="1">1 Month</option>
+              <option value="2">2 Months</option>
+              <option value="3">3 Months</option>
+              {/* Add more options if needed */}
+            </select>
+          </label>
+        </>
+      );
+    } else if (reportType === 'available-holiday-days') {
       return (
         <>
         <label>
@@ -381,18 +529,18 @@ useEffect(() => {
           </select>
         </label>
         <label>
-          Period Range (Months):
-          <select value={selectedRange} onChange={(e) => setSelectedRange(e.target.value)}>
-            <option value="1">1 Month</option>
-            <option value="2">2 Months</option>
-            <option value="3">3 Months</option>
-            {/* Add more options if needed */}
-          </select>
-        </label>
-      </>
+            Year:
+            <select value={year} onChange={(e) => setYear(e.target.value)}>
+              {Array.from({ length: 20 }, (_, i) => currentYear - 10 + i).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </label>
+        </>
       );
-    } 
+    }
   };
+  
 
   const renderCompanyData = () => {
     if (companyData) {
@@ -428,6 +576,7 @@ useEffect(() => {
     // Now return the JSX
     return (
       <div ref={reportRef}>
+
        {reportType === 'earnings-certificate' && (
         <>
         <div class="signature-area">
@@ -482,6 +631,38 @@ useEffect(() => {
       </div>
       </div>
           
+        </>
+      )}
+       {reportType === 'available-holiday-days' && (
+        <>
+          <h1>Available Holiday Days Report</h1>
+          {selectedEmployeeData && (
+            <div>
+              <p>Employee: {selectedEmployeeData.name} {selectedEmployeeData.surname}</p>
+              {reportData[0]?.noHolidayBase ? (
+                <p>
+                  No holiday base found. Please add the holiday base in the employee details.{' '}
+                  <button 
+                    className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+                    onClick={() => handleHolidaybreakpage(selectedEmployee)}
+                  >
+                    Add Holiday Base
+                  </button>
+                </p>
+              ) : (
+                <div>
+                  <p>Report Date: {reportData[0]?.reportDate}</p>
+                  <p>First Contract Start Date: {reportData[0]?.firstContractStartDate}</p>
+                  <p>Holiday Base: {reportData[0]?.holidayBase} days</p>
+                  <p>Urlop całkowity za przepracowany okres: {reportData[0]?.totalHolidayDays} days</p>
+                  <p>Available Holiday Days at Report Moment: {reportData[0]?.availableHolidayDays} days</p>
+                  <p>Holiday Days Available till End of Year: {reportData[0]?.holidayDaysTillEndOfYear} days</p>
+                  <p>Holiday Days Used by Employee: {reportData[0]?.usedHolidayDays} days</p>
+                  <p>Last Contract End Date: {reportData[0]?.lastContractEndDate}</p>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
       {reportType === 'total-gross-amount' && (
@@ -677,11 +858,12 @@ useEffect(() => {
             <option value="total-net-amount">Total Net Amount by Month and Year</option>
             <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
             <option value="social-insurance">Social Insurance Report</option>
+            <option value="available-holiday-days">Available Holiday Days</option> {/* New Option */}
           </select>
         </label>
       </div>
         {renderFormFields()}
-        {reportType !== 'earnings-certificate' && (
+        {reportType !== 'earnings-certificate' && reportType !== 'available-holiday-days' && (
         <div className="grid grid-cols-2 gap-4">
           <label className="block text-lg font-medium text-gray-700">
             Miesiąc:
