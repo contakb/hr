@@ -662,117 +662,126 @@ useEffect(() => {
         </>
       )}
        {reportType === 'available-holiday-days' && (
-        <>
-          <h1 className="text-2xl font-bold mb-4">Zestawienie urlopowe</h1>
-          {selectedEmployeeData && (
-            <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-5xl">
-              <p className="text-lg font-semibold mb-2">Pracowik: {selectedEmployeeData.name} {selectedEmployeeData.surname}</p>
-              {reportData[0]?.noHolidayBase ? (
-                <p className="text-red-500">
-                  Nie dodano podstawy urlopowej dla wybranego pracownika. Proszę uzupełnić detale w ustawieniach pracownika{' '}
-                  <button 
-                    className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
-                    onClick={() => handleHolidaybreakpage(selectedEmployee)}
-                  >
-                    Dodaj podstawę
-                  </button>
-                </p>
-              ) : (
-                <>
-                <table className="min-w-full bg-white border-collapse block md:table">
-                  <thead className="block md:table-header-group">
-                    <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative ">
-                      <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Opis</th>
-                      <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Dane</th>
-                    </tr>
-                  </thead>
-                  <tbody className="block md:table-row-group">
-                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data raportu</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.reportDate}</td>
-                    </tr>
-                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Podstawa urlopu</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayBase} dni</td>
-                    </tr>
-                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący za przepracowany okres</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillNow} dni</td>
-                    </tr>
-                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na dziś, tj. {reportData[0]?.reportDate}</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDays} dni</td>
-                    </tr>
-                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący na koniec umowy do dnia {reportData[0]?.lastContractEndDate}</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.totalHolidayDays} dni</td>
-                    </tr>
-                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                        <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">
-                          Urlop wykorzystany
-                          <button
-                            className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded text-xs"
-                            onClick={() => setShowBreakDetails(!showBreakDetails)}
-                          >
-                            {showBreakDetails ? 'zamknij' : 'szczegóły'}
-                          </button>
-                        </td>
-                        <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysCurrentYear} dni</td>
-                      </tr>
-                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na koniec umowy, tj.{reportData[0]?.lastContractEndDate}</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillEndOfYear} dni</td>
-                    </tr>
-                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Niewykorzystany urlop z roku poprzedniego</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDaysPreviousYear} days</td>
-                    </tr>
-                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Wykorzystany urlop w roku poprzednim</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysPreviousYear} days</td>
-                    </tr>
-                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data rozpoczęcia pracy:</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.firstContractStartDate}</td>
-                    </tr>
-                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Ostatni dzień umowy:</td>
-                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.lastContractEndDate}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                
-                  {showBreakDetails && (
-                    <div className="mt-4">
-                      <h2 className="text-xl font-bold mb-2">Break Details</h2>
-                      <table className="min-w-full bg-white border-collapse block md:table">
-                        <thead className="block md:table-header-group">
-                          <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative ">
-                            <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Break Type</th>
-                            <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Start Date</th>
-                            <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">End Date</th>
-                            <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Days</th>
-                          </tr>
-                        </thead>
-                        <tbody className="block md:table-row-group">
-                          {reportData[0]?.breakDetails?.map((breakDetail) => (
-                            <tr key={breakDetail.id} className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                              <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_type}</td>
-                              <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_start_date).toLocaleDateString()}</td>
-                              <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_end_date).toLocaleDateString()}</td>
-                              <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_days}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </>
-      )}
+  <>
+    <h1 className="text-2xl font-bold mb-4">Zestawienie urlopowe</h1>
+    {selectedEmployeeData && (
+      <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-5xl">
+        <p className="text-lg font-semibold mb-2">Pracownik: {selectedEmployeeData.name} {selectedEmployeeData.surname}</p>
+        {reportData[0]?.noHolidayBase ? (
+          <p className="text-red-500">
+            Nie dodano podstawy urlopowej dla wybranego pracownika. Proszę uzupełnić detale w ustawieniach pracownika{' '}
+            <button 
+              className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+              onClick={() => handleHolidaybreakpage(selectedEmployee)}
+            >
+              Dodaj podstawę
+            </button>
+          </p>
+        ) : (
+          <>
+            <table className="min-w-full bg-white border-collapse block md:table">
+              <thead className="block md:table-header-group">
+                <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative">
+                  <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Opis</th>
+                  <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Dane</th>
+                </tr>
+              </thead>
+              <tbody className="block md:table-row-group">
+                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data raportu</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.reportDate}</td>
+                </tr>
+                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Podstawa urlopu</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayBase} dni</td>
+                </tr>
+                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący za przepracowany okres</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillNow} dni</td>
+                </tr>
+                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na dziś, tj. {reportData[0]?.reportDate}</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDays} dni</td>
+                </tr>
+                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący na koniec umowy do dnia {reportData[0]?.lastContractEndDate}</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.totalHolidayDays} dni</td>
+                </tr>
+                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">
+                    Urlop wykorzystany
+                    <button
+                      className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded text-xs"
+                      onClick={() => setShowBreakDetails(!showBreakDetails)}
+                    >
+                      {showBreakDetails ? 'zamknij' : 'szczegóły'}
+                    </button>
+                  </td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysCurrentYear} dni</td>
+                </tr>
+                {showBreakDetails && (
+                  <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                    <td colSpan="2" className="p-2 md:border md:border-gray-300 text-left block md:table-cell">
+                      {reportData[0]?.breakDetails?.length > 0 ? (
+                        <div className="mt-4">
+                          <h2 className="text-xl font-bold mb-2">Break Details</h2>
+                          <table className="min-w-full bg-white border-collapse block md:table">
+                            <thead className="block md:table-header-group">
+                              <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative">
+                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Break Type</th>
+                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Start Date</th>
+                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">End Date</th>
+                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Days</th>
+                              </tr>
+                            </thead>
+                            <tbody className="block md:table-row-group">
+                              {reportData[0]?.breakDetails?.map((breakDetail) => (
+                                <tr key={breakDetail.id} className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_type}</td>
+                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_start_date).toLocaleDateString()}</td>
+                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_end_date).toLocaleDateString()}</td>
+                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_days}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="mt-4 text-gray-600">No breaks used this year.</p>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na koniec umowy, tj.{reportData[0]?.lastContractEndDate}</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillEndOfYear} dni</td>
+                </tr>
+                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Niewykorzystany urlop z roku poprzedniego</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDaysPreviousYear} days</td>
+                </tr>
+                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Wykorzystany urlop w roku poprzednim</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysPreviousYear} days</td>
+                </tr>
+                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data rozpoczęcia pracy:</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.firstContractStartDate}</td>
+                </tr>
+                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Ostatni dzień umowy:</td>
+                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.lastContractEndDate}</td>
+                </tr>
+              </tbody>
+            </table>
+            
+          </>
+        )}
+      </div>
+    )}
+  </>
+)}
+
       {reportType === 'total-gross-amount' && (
   <>
     <h3>Total Gross Amount for {monthName} {year}: {formatNumber(totalGrossAmount)}</h3>
