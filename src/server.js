@@ -450,6 +450,42 @@ app.put('/update-employee/:employeeId', verifyJWT, async (req, res) => {
   }
 });
 
+// Get a single employee by user email
+app.get('/employee', verifyJWT, async (req, res) => {
+  const userEmail = req.headers['x-user-email']; // Get the user email from the request headers
+
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching employee from schema: ${schemaName} with email: ${userEmail}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
+  try {
+      const { data, error } = await supabase
+          .from('employees')
+          .select('*') // Adjust to select the columns you need
+          .eq('user_email', userEmail)
+          .single(); // Fetch a single record
+
+      if (error) {
+          console.error('Error retrieving employee data', error);
+          res.status(500).send('Error occurred while retrieving data.');
+      } else {
+          if (data) {
+              res.send(data); // Send the employee data
+          } else {
+              res.status(404).send('Employee not found');
+          }
+      }
+  } catch (error) {
+      console.error('Error:', error);
+      res.status(500).send('Error occurred while retrieving data.');
+  }
+});
+
+
 
 // Define the function to get the current date in the format: YYYY-MM-DD
 // Define the function to get the current date in the format: YYYY-MM-DD HH:mm:ss
