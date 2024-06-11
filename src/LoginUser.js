@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import CreateCompanyForm from './CreateCompanyForm';
 import axios from 'axios'; // Assuming you're using axios for HTTP requests
+import { useUser } from './UserContext';
 
 function LoginUser() {
   const [email, setEmail] = useState('');
@@ -11,26 +12,55 @@ function LoginUser() {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const { updateUserContext } = useUser();
 
 
   const handleLogin = async (event) => {
     event.preventDefault();
-  
-    // Attempt to log in with the provided email and password using signInWithPassword
-    const { error, user } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+
+    const { error, data: userData } = await supabase.auth.signInWithPassword({
+        email,
+        password,
     });
-  
+
     if (error) {
-      console.error('Error logging in:', error.message);
-      setErrorMessage(error.message || 'Failed to login');
+        console.error('Error logging in:', error.message);
+        setErrorMessage(error.message || 'Failed to login');
     } else {
-      console.log('Logged in successfully:', email);
-      navigate('/account-details', { state: { email } });// Adjust as necessary for your routing
+        const userEmail = userData.user.email;
+
+        try {
+            const { data, error: userDetailsError } = await supabase
+                .from('user_details')
+                .select('schema_name, role')
+                .eq('user_email', userEmail)
+                .single();
+
+            if (!userDetailsError && data) {
+                const { schema_name, role } = data;
+                const newUser = { ...userData.user, schemaName: schema_name, role };
+                updateUserContext(newUser);
+
+                if (role === 'employee') {
+                    navigate('/employee-account', { state: { email } });
+                } else {
+                    navigate('/account-details', { state: { email } });
+                }
+            } else {
+                const schemaName = `schema_${email.replace(/[@\.]/g, '_')}`;
+                const newUser = { ...userData.user, schemaName, role: 'admin' };
+                updateUserContext(newUser);
+                navigate('/account-details', { state: { email } });
+            }
+        } catch (err) {
+            console.error('Error fetching user details:', err);
+            const schemaName = `schema_${email.replace(/[@\.]/g, '_')}`;
+            const newUser = { ...userData.user, schemaName, role: 'admin' };
+            updateUserContext(newUser);
+            navigate('/account-details', { state: { email } });
+        }
     }
-  };
-  
+};
   const handleResetPassword = async () => {
     if (!email) {
       setErrorMessage("Please enter your email address.");

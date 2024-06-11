@@ -43,6 +43,8 @@ const [isEmployeeCreated, setIsEmployeeCreated] = useState(false);
 const [isEmployeeUpdated, setIsEmployeeUpdated] = useState(false);
 const [formTouched, setFormTouched] = useState(false);  // Tracks if the form has been interacted with
 const user = useRequireAuth();
+const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
 
 const { setIsInSetupProcess } = useSetup();
@@ -325,6 +327,8 @@ const handleCreateEmployee = async () => {
   country,
       taxOfficeName,
       PESEL,
+      email,
+      password,
     }, {
       headers: {
         'Authorization': `Bearer ${user.access_token}`, // Use the access token
@@ -599,6 +603,26 @@ const toggleEditMode = () => {
     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
          />
          </div>
+         <div>
+        <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        />
+      </div>
+      <div>
+        <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">Password:</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        />
+      </div>
          <div className="md:col-span-2 text-xl  text-left mb-6">Miejsce zamieszkania:</div>
          <div>
          <label htmlFor="street" className="block text-sm font-medium text-gray-700">Ulica:</label>

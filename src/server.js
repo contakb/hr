@@ -177,27 +177,51 @@ app.get('/api/user', async (req, res) => {
 
 
 app.post('/create-employee', verifyJWT, async (req, res) => {
-  const employeeName = req.body.employeeName;
-  const employeeSurname = req.body.employeeSurname;
-  const street = req.body.street;
-  const number = req.body.number;
-  const postcode = req.body.postcode;
-  const city = req.body.city;
-  const country = req.body.country;
-  const taxOfficeName = req.body.taxOfficeName;
-  const PESEL = req.body.PESEL;
-
+  const { employeeName, employeeSurname, street, number, postcode, city, country, taxOfficeName, PESEL, email, password } = req.body;
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
   console.log(`Fetching employees from schema: ${schemaName}`);
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      db: { schema: schemaName } // set your custom schema here
-  });
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
+    // Create a new Supabase user
+    const { data: userData, error: userError } = await supabase.auth.signUp({
+      email: email,
+      password: password
+    });
+
+    if (userError) {
+      console.error('Error creating Supabase user:', userError);
+      res.status(500).send('Error occurred while creating user.');
+      return;
+    }
+
+    
+
+    // Add the user data to the user_details table in the public schema
+    const { error: userTableError } = await supabase
+      .from('user_details')
+      .insert([
+        {
+          user_id: userData.user.id, // Use user_id as the identifier
+          user_email: userData.user.email,
+          role: 'employee', // Set the role as employee
+          schema_name: schemaName // Store the admin's schema name
+        }
+      ]);
+
+    if (userTableError) {
+      console.error('Error inserting user data into user_details table:', userTableError);
+      res.status(500).send('Error occurred while inserting user data.');
+      return;
+    }
+
+    const supabaseWithSchema = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+    });
+
     // First, check if an employee with the same PESEL already exists
-    const existsCheck = await supabase
+    const existsCheck = await supabaseWithSchema
       .from('employees')
       .select()
       .eq('pesel', PESEL)
@@ -208,7 +232,8 @@ app.post('/create-employee', verifyJWT, async (req, res) => {
       res.status(409).send('Pracownik z tym numerem PESEL już istnieje.'); // HTTP 409 Conflict
       return;
     }
-    const { data, error } = await supabase
+
+    const { data, error } = await supabaseWithSchema
       .from('employees')
       .insert([
         {
@@ -220,15 +245,15 @@ app.post('/create-employee', verifyJWT, async (req, res) => {
           city: city,
           country: country,
           tax_office: taxOfficeName,
-          pesel: PESEL
+          pesel: PESEL,
+          user_id: userData.user.id, // Associate the employee with the Supabase user
+          user_email: userData.user.email,
+          schema_name: schemaName // Store the admin's schema name // Associate the employee with the Supabase user using email
         }
       ])
       .select();
 
-      const { data: secondData, error: secondError } = await supabase.from('employees').insert(/*...*/);
-
-      console.log('Supabase Response:', data, error);
-        
+    console.log('Supabase Response:', data, error);
 
     if (error) {
       console.error('Error inserting employee data', error);
@@ -244,12 +269,12 @@ app.post('/create-employee', verifyJWT, async (req, res) => {
         employeeName,
         employeeSurname,
         street,
-  number,
-  postcode,
-  city,
-  country,
-  taxOfficeName,
-  PESEL,
+        number,
+        postcode,
+        city,
+        country,
+        taxOfficeName,
+        PESEL,
       });
     } else {
       console.error('Unexpected response structure from Supabase');
@@ -260,6 +285,38 @@ app.post('/create-employee', verifyJWT, async (req, res) => {
     res.status(500).send('An unexpected error occurred.');
   }
 });
+
+app.get('/check-employee', verifyJWT, async (req, res) => {
+  const userEmail = req.headers['x-user-email'];
+
+  try {
+      const schemaNames = await getSchemas();
+
+      for (const schemaName of schemaNames) {
+          const supabaseWithSchema = createClient(supabaseUrl, supabaseServiceKey, {
+              db: { schema: schemaName }
+          });
+
+          const { data, error } = await supabaseWithSchema
+              .from('employees')
+              .select('schema_name')
+              .eq('user_email', userEmail)
+              .single();
+
+          if (data) {
+              res.send(data);
+              return;
+          }
+      }
+
+      res.status(404).send('Employee not found');
+  } catch (error) {
+      console.error('Error checking employee:', error);
+      res.status(500).send('Error checking employee');
+  }
+});
+
+
 
 
 app.get('/tax-offices', async (req, res) => {
@@ -292,7 +349,7 @@ app.get('/employees', verifyJWT, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('employees')
-      .select('id, name, surname, street, number, postcode, city, country, tax_office, pesel');
+      .select('id, name, surname, street, number, postcode, city, country, tax_office, pesel, user_email');
 
     if (error) {
       console.error('Error retrieving employees data', error);
