@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
+import EmployeeBreaksCalendar from './EmployeeBreaksCalendar'; // Import the calendar component
 
 function EmployeeAccount() {
   const [employeeDetails, setEmployeeDetails] = useState(null);
@@ -17,6 +18,8 @@ function EmployeeAccount() {
   const [taxOffice, setTaxOffice] = useState('');
   const [taxOfficeName, setTaxOfficeName] = useState('');
   const navigate = useNavigate();
+  const [contracts, setContracts] = useState([]);
+  const [contractsVisible, setContractsVisible] = useState(false);
 
   const fetchEmployeeDetails = useCallback(async () => {
     setIsLoading(true);
@@ -125,31 +128,124 @@ function EmployeeAccount() {
     }
   };
 
+  const handleGenerateContractPage = () => {
+    navigate(`/EmployeeContract/${employeeDetails.id}`);
+  };
+
+  const toggleContracts = async () => {
+    if (!contractsVisible) {
+      try {
+        const response = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeDetails.id}`, {
+          headers: {
+            'Authorization': `Bearer ${user.access_token}`, // Use the access token
+            'X-Schema-Name': user.schemaName, // Send the schema name as a header
+          }
+        });
+        console.log("Fetched contracts:", response.data.contracts);
+        const combinedContracts = combineContracts(response.data.contracts);
+        setContracts(combinedContracts);
+      } catch (error) {
+        console.error('Error fetching contracts:', error);
+        setContracts([]);
+      }
+    }
+
+    setContractsVisible(!contractsVisible);
+  };
+
+  function combineContracts(contracts) {
+    // Sort contracts by contract_from_date in ascending order
+    contracts.sort((a, b) => new Date(a.contract_from_date) - new Date(b.contract_from_date));
+    
+    let contractMap = new Map();
+  
+    contracts.forEach(contract => {
+      const originalId = contract.kontynuacja || contract.id;
+  
+      if (!contractMap.has(originalId)) {
+        contractMap.set(originalId, { original: null, aneks: [] });
+      }
+  
+      const contractData = contractMap.get(originalId);
+  
+      if (!contract.kontynuacja) {
+        // This is the original contract
+        contractData.original = contract;
+      } else {
+        // This is an aneks
+        contractData.aneks.push(contract);
+      }
+    });
+  
+    return Array.from(contractMap.values());
+  }
+  const AneksView = ({ contract, originalContract }) => {
+    const changes = [];
+
+    // You may want to ensure that you're comparing numbers, as different types (string vs number) could cause issues.
+    const originalGrossAmount = Number(originalContract.gross_amount);
+    const aneksGrossAmount = Number(contract.gross_amount);
+    const terminationType = Number(contract.termination_type);
+
+    console.log("Aneks contract data:", contract);
+    console.log("Original contract data:", originalContract);
+
+    if (!originalContract) {
+      console.error('Original contract not found for aneks:', contract);
+      return <p>Original contract data missing!</p>;
+    }
+
+    if (aneksGrossAmount !== originalGrossAmount) {
+      changes.push(`Gross Amount changed from ${originalGrossAmount} to ${aneksGrossAmount}`);
+    }
+
+    // Log the data to see if they are being passed correctly and to confirm the change is detected.
+    console.log("Original contract gross amount:", originalGrossAmount);
+    console.log("Aneks contract gross amount:", aneksGrossAmount);
+    console.log("Detected changes:", changes);
+
+    return (
+      <div>
+        <p>Aneks details (debug):</p>
+        <p>Original Gross Amount: {originalContract.gross_amount}</p>
+        <p>New Gross Amount: {contract.gross_amount}</p>
+        <p>New Gross Amount: {contract.termination_type}</p>
+        {/* Render detected changes or a message if none */}
+        {changes.length > 0 ? (
+          <ul>{changes.map((change, index) => <li key={index}>{change}</li>)}</ul>
+        ) : (
+          <p>No changes were made in this aneks.</p>
+        )}
+      </div>
+    );
+  };
+
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div>Ładowanie...</div>;
   }
 
   return (
     <div className="bg-gray-100 p-4">
       <div className="flex flex-col lg:flex-row gap-8 justify-center lg:items-start">
         <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md">
-          <h1 className="font-bold text-xl mb-4">Employee Details:</h1>
+          <h1 className="font-bold text-xl mb-4">Twoje dane:</h1>
           {employeeDetails && (
             <div>
-              <p className="mb-3">Name: {employeeDetails.name}</p>
-              <p className="mb-3">Surname: {employeeDetails.surname}</p>
+              <p className="mb-3">Imię: {employeeDetails.name}</p>
+              <p className="mb-3">Nazwisko: {employeeDetails.surname}</p>
               <button
                 type="button"
                 onClick={toggleDetails}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
-                {showDetails ? 'Hide Details' : 'Show Details'}
+                {showDetails ? 'Pokaż detale' : 'Ukryj detale'}
               </button>
               {showDetails && (
                 <form onSubmit={handleSave} className="space-y-4 mt-4">
                   <div className="flex flex-wrap -mx-2">
                   <div className="w-full md:w-1/2 px-2 mb-4">
-                      <label htmlFor="surname" className="block text-gray-700 text-sm font-bold mb-2">Surname:</label>
+                      <label htmlFor="surname" className="block text-gray-700 text-sm font-bold mb-2">Nazwisko:</label>
                       <input
                         id="surname"
                         name="surname"
@@ -161,7 +257,7 @@ function EmployeeAccount() {
                       />
                     </div>
                     <div className="w-full md:w-1/2 px-2 mb-4">
-                      <label htmlFor="street" className="block text-gray-700 text-sm font-bold mb-2">Street:</label>
+                      <label htmlFor="street" className="block text-gray-700 text-sm font-bold mb-2">Ulica:</label>
                       <input
                         id="street"
                         name="street"
@@ -173,7 +269,7 @@ function EmployeeAccount() {
                       />
                     </div>
                     <div className="w-full md:w-1/2 px-2 mb-4">
-                      <label htmlFor="number" className="block text-gray-700 text-sm font-bold mb-2">Number:</label>
+                      <label htmlFor="number" className="block text-gray-700 text-sm font-bold mb-2">Numer:</label>
                       <input
                         id="number"
                         name="number"
@@ -185,7 +281,7 @@ function EmployeeAccount() {
                       />
                     </div>
                     <div className="w-full md:w-1/2 px-2 mb-4">
-                      <label htmlFor="postcode" className="block text-gray-700 text-sm font-bold mb-2">Postcode:</label>
+                      <label htmlFor="postcode" className="block text-gray-700 text-sm font-bold mb-2">Kod pocztowy:</label>
                       <input
                         id="postcode"
                         name="postcode"
@@ -197,7 +293,7 @@ function EmployeeAccount() {
                       />
                     </div>
                     <div className="w-full md:w-1/2 px-2 mb-4">
-                      <label htmlFor="city" className="block text-gray-700 text-sm font-bold mb-2">City:</label>
+                      <label htmlFor="city" className="block text-gray-700 text-sm font-bold mb-2">Miasto:</label>
                       <input
                         id="city"
                         name="city"
@@ -209,7 +305,7 @@ function EmployeeAccount() {
                       />
                     </div>
                     <div className="w-full md:w-1/2 px-2 mb-4">
-                      <label htmlFor="country" className="block text-gray-700 text-sm font-bold mb-2">Country:</label>
+                      <label htmlFor="country" className="block text-gray-700 text-sm font-bold mb-2">Państwo:</label>
                       <input
                         id="country"
                         name="country"
@@ -221,7 +317,7 @@ function EmployeeAccount() {
                       />
                     </div>
                     <div className="w-full md:w-1/2 px-2 mb-4">
-                      <label htmlFor="taxOffice" className="block text-gray-700 text-sm font-bold mb-2">Tax Office:</label>
+                      <label htmlFor="taxOffice" className="block text-gray-700 text-sm font-bold mb-2">Urząd Skarbowy:</label>
                       <select
                         id="taxOffice"
                         name="tax_office"
@@ -244,14 +340,14 @@ function EmployeeAccount() {
                           disabled={isLoading} // Disable the button when isLoading is true
                           className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                          {isLoading ? 'Processing...' : 'Save'}
+                          {isLoading ? 'Procesowanie...' : 'Zapisz'}
                         </button>
                         <button
                           type="button"
                           onClick={handleCancelEdit}
                           className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                         >
-                          Cancel
+                          Anuluj
                         </button>
                       </>
                     ) : (
@@ -260,7 +356,7 @@ function EmployeeAccount() {
                         onClick={handleEditClick}
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                       >
-                        Edit
+                        Edytuj
                       </button>
                     )}
                   </div>
@@ -271,15 +367,81 @@ function EmployeeAccount() {
                 onClick={handleLogout}
                 className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
-                Logout
+                Wyloguj
               </button>
+              <button 
+              type="button"
+              onClick={handleGenerateContractPage}
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              View Contract
+            </button>
+            <button
+              onClick={toggleContracts}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              {contractsVisible ? 'Hide Contracts' : 'Show Contracts'}
+            </button>
             </div>
           )}
+            {contractsVisible && (
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-lg font-semibold">Umowy o pracę:</h3>
+                  {contracts.length === 0 ? (
+                    <p>Nie znaleziono umów.</p>
+                  ) : (
+                    contracts.map(({ original, aneks }) => (
+                      <div key={original.id} className="mb-6">
+                        {/* Render Original Contract Details */}
+                        <div className="mb-2">
+                          <p className="font-medium">Original Contract ID: {original.id}</p>
+                        </div>
+                        <div>
+                          <p>Gross Amount: {original.gross_amount}</p>
+                          <p>Contract From: {new Date(original.contract_from_date).toLocaleDateString()}</p>
+                          <p>Contract To: {aneks.length > 0 ? new Date(aneks[aneks.length - 1].contract_to_date).toLocaleDateString() : new Date(original.contract_to_date).toLocaleDateString()}</p>
+                          <p>Typ Umowy: {original.typ_umowy}</p>
+                          <p>Stanowisko: {original.stanowisko}</p>
+                          <p>Etat: {original.etat}</p>
+                          <p>Rozpoczęcie pracy: {new Date(original.workstart_date).toLocaleDateString()}</p>
+                          <p>typ rozwiązania umowy: {aneks.length > 0 ? aneks[aneks.length - 1].termination_type : original.termination_type}</p>
+                          {/* New row for Contract Termination Status */}
+                          <p>
+                            Contract Status:
+                            {new Date(aneks.length > 0 ? aneks[aneks.length - 1].contract_to_date : original.contract_to_date) < new Date()
+                              ? <span style={{ color: 'red' }}> Terminated</span>
+                              : <span style={{ color: 'green' }}> Active</span>}
+                          </p>
+                        </div>
+    
+                        {/* Render Aneks Contracts */}
+                        {aneks && aneks.length > 0 && (
+                          <div>
+                            <h4>Aneks:</h4>
+                            {aneks.map(aneksContract => (
+                              <div key={aneksContract.id}>
+                                <p>Aneks Contract ID: {aneksContract.id}</p>
+                                <AneksView contract={aneksContract} originalContract={original} />
+                                <div>
+                                  <p>Gross Amount: {aneksContract.gross_amount}</p>
+                                  <p>Gross Amount: {aneksContract.termination_type}</p>
+                                  <p>Contract From: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
+                                  <hr /> {/* Horizontal line divider */}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
         </div>
         <div className="flex flex-col lg:flex-col w-full lg:max-w-md lg:space-y-8">
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="font-bold text-xl mb-4">Calendar:</h2>
-            <CalendarPage />
+            <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
+            <EmployeeBreaksCalendar employeeId={employeeDetails.id} /> {/* Pass the employeeId here */}
           </div>
         </div>
       </div>
