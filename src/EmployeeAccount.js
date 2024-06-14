@@ -21,6 +21,11 @@ function EmployeeAccount() {
   const [contracts, setContracts] = useState([]);
   const [contractsVisible, setContractsVisible] = useState(false);
 
+  console.log(user); // Check if user data is available
+  // If useRequireAuth redirects non-authenticated users, authUser will always be defined here
+  console.log('User from context:', user);
+
+
   const fetchEmployeeDetails = useCallback(async () => {
     setIsLoading(true);
     try {

@@ -34,6 +34,8 @@ import CalendarPage from './CalendarPage';
 import EmployeeBreaksCalendar from './EmployeeBreaksCalendar';
 import HolidayBaseCalculator from './HolidayBaseCalculator';
 import EmployeeAccount from './EmployeeAccount';
+import PrivateRoute from './PrivateRoute';
+import Unauthorized from './Unauthorized';
 
 
 
@@ -68,7 +70,10 @@ function App() {
 		  <Route path="/company" element={<CreateCompanyForm />} />
 		  <Route path="/salaryCalculator" element={<SalaryCalculator />} />
 		  <Route path="/createEmployee" element={<EmployeeForm />} />
-		  <Route path="/employeeList" element={<EmployeeList />} /> {/* Add this route for the EmployeeList */}
+		  <Route
+                path="/employeeList"
+                element={<PrivateRoute element={EmployeeList} allowedRoles={['admin']} />}
+              />
 		  <Route path="/add-contract/:employeeId" element={<AddContractForm />} />
 		  <Route path="/calculate-salary" element={<SalaryCalculationForm />} /> {/* Add this route for the SalaryCalculationPage */}
 		  <Route path="/salary-selection" element={<SalarySelectionPage />} />
@@ -91,7 +96,11 @@ function App() {
       <Route path="/calendar" element={<CalendarPage />} />
       <Route path="/breakcalendar" element={<EmployeeBreaksCalendar />} />
       <Route path="/holidaybase/:employeeId" element={<HolidayBaseCalculator />} />
-      <Route path="/employee-account" element={<EmployeeAccount />} /> {/* New Route */}
+      <Route
+                path="/employee-account"
+                element={<PrivateRoute element={EmployeeAccount} allowedRoles={['employee']} />}
+              />
+      <Route path="/unauthorized" element={<Unauthorized />} />
 
 
        
