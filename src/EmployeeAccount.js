@@ -239,7 +239,7 @@ function EmployeeAccount() {
                 onClick={toggleDetails}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
-                {showDetails ? 'Pokaż detale' : 'Ukryj detale'}
+                {showDetails ? 'Ukryj detale':'Dane szczegółowe'}
               </button>
               {showDetails && (
                 <form onSubmit={handleSave} className="space-y-4 mt-4">
@@ -362,26 +362,21 @@ function EmployeeAccount() {
                   </div>
                 </form>
               )}
-              <button
+              
+              
+            <button
+              onClick={toggleContracts}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              {contractsVisible ?  'Zamknij umowy':'Moje umowy' }
+            </button>
+            <button
                 type="button"
                 onClick={handleLogout}
                 className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
                 Wyloguj
               </button>
-              <button 
-              type="button"
-              onClick={handleGenerateContractPage}
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            >
-              View Contract
-            </button>
-            <button
-              onClick={toggleContracts}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            >
-              {contractsVisible ? 'Hide Contracts' : 'Show Contracts'}
-            </button>
             </div>
           )}
             {contractsVisible && (
@@ -394,12 +389,12 @@ function EmployeeAccount() {
                       <div key={original.id} className="mb-6">
                         {/* Render Original Contract Details */}
                         <div className="mb-2">
-                          <p className="font-medium">Original Contract ID: {original.id}</p>
+                          <p className="font-medium">Numer id umowy podstawowej: {original.id}</p>
                         </div>
                         <div>
-                          <p>Gross Amount: {original.gross_amount}</p>
-                          <p>Contract From: {new Date(original.contract_from_date).toLocaleDateString()}</p>
-                          <p>Contract To: {aneks.length > 0 ? new Date(aneks[aneks.length - 1].contract_to_date).toLocaleDateString() : new Date(original.contract_to_date).toLocaleDateString()}</p>
+                          <p>Kwota brutto: {original.gross_amount}</p>
+                          <p>Umowa od: {new Date(original.contract_from_date).toLocaleDateString()}</p>
+                          <p>do: {aneks.length > 0 ? new Date(aneks[aneks.length - 1].contract_to_date).toLocaleDateString() : new Date(original.contract_to_date).toLocaleDateString()}</p>
                           <p>Typ Umowy: {original.typ_umowy}</p>
                           <p>Stanowisko: {original.stanowisko}</p>
                           <p>Etat: {original.etat}</p>
@@ -407,11 +402,18 @@ function EmployeeAccount() {
                           <p>typ rozwiązania umowy: {aneks.length > 0 ? aneks[aneks.length - 1].termination_type : original.termination_type}</p>
                           {/* New row for Contract Termination Status */}
                           <p>
-                            Contract Status:
+                            Status umowy:
                             {new Date(aneks.length > 0 ? aneks[aneks.length - 1].contract_to_date : original.contract_to_date) < new Date()
-                              ? <span style={{ color: 'red' }}> Terminated</span>
-                              : <span style={{ color: 'green' }}> Active</span>}
+                              ? <span style={{ color: 'red' }}> Zakończona</span>
+                              : <span style={{ color: 'green' }}> Aktywna</span>}
                           </p>
+                          <button 
+              type="button"
+              onClick={handleGenerateContractPage}
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Zobacz umowę
+            </button>
                         </div>
     
                         {/* Render Aneks Contracts */}
@@ -420,12 +422,12 @@ function EmployeeAccount() {
                             <h4>Aneks:</h4>
                             {aneks.map(aneksContract => (
                               <div key={aneksContract.id}>
-                                <p>Aneks Contract ID: {aneksContract.id}</p>
+                                <p>Numer id aneksu: {aneksContract.id}</p>
                                 <AneksView contract={aneksContract} originalContract={original} />
                                 <div>
-                                  <p>Gross Amount: {aneksContract.gross_amount}</p>
+                                  <p>Kwota brutto: {aneksContract.gross_amount}</p>
                                   <p>Gross Amount: {aneksContract.termination_type}</p>
-                                  <p>Contract From: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
+                                  <p>Aneks ważny od: {new Date(aneksContract.contract_from_date).toLocaleDateString()}</p>
                                   <hr /> {/* Horizontal line divider */}
                                 </div>
                               </div>
