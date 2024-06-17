@@ -1,7 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useUser } from './UserContext';
 
 function NavigationPage() {
+  const { user } = useUser();
+
   return (
     <div className="p-5">
       <div className="flex flex-wrap justify-center gap-4">
@@ -20,11 +23,19 @@ function NavigationPage() {
             Reports
           </button>
         </Link>
-        <Link to="/account-details">
-          <button className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
-            Account
-          </button>
-        </Link>
+        {user && user.role === 'employee' ? (
+          <Link to="/employee-account">
+            <button className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
+              Account
+            </button>
+          </Link>
+        ) : (
+          <Link to="/account-details">
+            <button className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
+              Account
+            </button>
+          </Link>
+        )}
         <Link to="/ToDo">
           <button className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
             ToDo

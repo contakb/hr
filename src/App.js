@@ -81,7 +81,10 @@ function App() {
 		  <Route path="/Reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       
-      <Route path="/EmployeeContract/:employeeId" element={<EmployeeContract />} />
+      <Route
+                path="/EmployeeContract/:employeeId"
+                element={<PrivateRoute element={EmployeeContract} allowedRoles={['admin', 'employee']} />}
+              />
       <Route path="/ToDo" element={<ToDo />} />
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
       <Route path="/employee-param/:employeeId" element={<EmployeeParam />} />

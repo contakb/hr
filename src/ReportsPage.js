@@ -25,7 +25,6 @@ const [contracts, setContracts] = useState([]);
 const [companyData, setCompanyData] = useState(null);
 const [error, setError] = useState(null);
 const user = useRequireAuth();
-  const userEmail = user?.email; // Safely access the email property
   const navigate = useNavigate();
   const [showBreakDetails, setShowBreakDetails] = useState(false);
 
@@ -956,6 +955,8 @@ useEffect(() => {
   </div>
   )
 };
+
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-8">
