@@ -70,22 +70,19 @@ function App() {
 		  <Route path="/company" element={<CreateCompanyForm />} />
 		  <Route path="/salaryCalculator" element={<SalaryCalculator />} />
 		  <Route path="/createEmployee" element={<EmployeeForm />} />
-		  <Route
-                path="/employeeList"
-                element={<PrivateRoute element={EmployeeList} allowedRoles={['admin']} />}
-              />
+		  <Route path="/employeeList" element={<PrivateRoute element={EmployeeList} allowedRoles={['admin']} />} />
 		  <Route path="/add-contract/:employeeId" element={<AddContractForm />} />
 		  <Route path="/calculate-salary" element={<SalaryCalculationForm />} /> {/* Add this route for the SalaryCalculationPage */}
-		  <Route path="/salary-selection" element={<SalarySelectionPage />} />
-		  <Route path="/salary-list" element={<SalaryListPage />} />
-		  <Route path="/Reports" element={<ReportsPage />} />
+		  <Route path="/salary-selection" element={<PrivateRoute element={SalarySelectionPage} allowedRoles={['admin']} />} />
+		  <Route path="/salary-list" element={<PrivateRoute element={SalaryListPage}  allowedRoles={['admin']}  />} />
+		  <Route path="/Reports" element={<PrivateRoute element={ReportsPage}  allowedRoles={['admin']} />} />
       <Route path="/settings" element={<SettingsPage />} />
       
       <Route
                 path="/EmployeeContract/:employeeId"
                 element={<PrivateRoute element={EmployeeContract} allowedRoles={['admin', 'employee']} />}
               />
-      <Route path="/ToDo" element={<ToDo />} />
+      <Route path="/ToDo" element={<PrivateRoute element={ToDo}  allowedRoles={['admin']}/>} />
       <Route path="/medical-examination/:employeeId" element={<MedicalExaminationView />} />
       <Route path="/employee-param/:employeeId" element={<EmployeeParam />} />
       <Route path="/TerminateContract/:employeeId" element={<TerminateContract />} />
