@@ -83,12 +83,18 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
       (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
     );
 
-    return breaksOnDate.map((breakEvent) => (
-      <div key={breakEvent.id}>
-        <strong>{breakEvent.break_type}</strong>
-        <p>{breakEvent.description || 'Break details'}</p>
-      </div>
-    ));
+    return breaksOnDate.map((breakEvent) => {
+      const breakClass = breakEvent.break_type === 'urlop'
+        ? breakEvent.status === 'approved' ? 'approved-break' : breakEvent.status === 'denied' ? 'denied-break' : 'pending-break'
+        : '';
+
+      return (
+        <div key={breakEvent.id} className={`${breakClass}`}>
+          <strong>{breakEvent.break_type}</strong>
+          <p>{breakEvent.description || 'Break details'}</p>
+        </div>
+      );
+    });
   };
 
   const tileClassName = ({ date, view }) => {
@@ -98,26 +104,38 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
         isSameDay(new Date(breakEvent.break_end_date), date) ||
         (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
       );
-  
+
       if (breakEvent) {
+        let className = '';
         switch (breakEvent.break_type) {
           case 'zwolnienie':
-            return 'break-zwolnienie';
+            className = 'break-zwolnienie';
+            break;
           case 'ciąża':
-            return 'break-ciąża';
+            className = 'break-ciąża';
+            break;
           case 'zasiłek':
-            return 'break-zasilek';
+            className = 'break-zasilek';
+            break;
           case 'bezpłatny':
-            return 'break-bezplatny';
+            className = 'break-bezplatny';
+            break;
           case 'nieobecność':
-            return 'break-nieobecnosc';
+            className = 'break-nieobecnosc';
+            break;
+          case 'urlop':
+            className = breakEvent.status === 'approved' ? 'break-urlop-approved' : breakEvent.status === 'denied' ? 'break-urlop-denied' : 'break-urlop-pending';
+            break;
           default:
-            return 'break-default';
+            className = 'break-default';
+            break;
         }
+        return className;
       }
     }
     return null;
   };
+  
 
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
@@ -139,6 +157,8 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
             return <div data-letter="BP"></div>;
           case 'nieobecność':
             return <div data-letter="NB"></div>;
+          case 'urlop':
+            return <div data-letter="UR"></div>;
           default:
             return <div data-letter="DF"></div>;
         }
@@ -245,11 +265,12 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
     return;
   }
 
-    const breaksData = {
-      employee_id: employeeId,
-      ...breakForm,
-    };
-
+  const breaksData = {
+    employee_id: employeeId,
+    ...breakForm,
+    approved: breakForm.break_type === 'urlop' ? false : breakForm.approved, // Reset approval for 'urlop'
+    status: breakForm.break_type === 'urlop' ? 'pending' : breakForm.status, // Set status to 'pending' for 'urlop'
+  }
     try {
       if (isEditing) {
         // Update the existing break
@@ -330,8 +351,50 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
         return 'table-bezplatny';
       case 'nieobecność':
         return 'table-nieobecnosc';
+      case 'urlop':
+        return 'table-urlop';
       default:
         return 'table-default';
+    }
+  };
+
+  // Add this function inside EmployeeBreaksCalendar component
+  const handleSendForApproval = async (breakId) => {
+    const employee_message = prompt('Please provide a message for the admin:');
+    if (!employee_message) return;
+  
+    try {
+      await axiosInstance.put('/api/send-for-approval', { breakId, status: 'pending', employee_message }, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`,
+          'X-Schema-Name': user.schemaName,
+        }
+      });
+      toast.success('Request sent for approval.');
+      setBreaks((prevBreaks) =>
+        prevBreaks.map((b) =>
+          b.id === breakId ? { ...b, approved: false, status: 'pending', employee_message } : b
+        )
+      );
+    } catch (error) {
+      console.error('Error sending request for approval:', error);
+      toast.error('Error sending request for approval.');
+    }
+  };
+  
+
+  const getStatusClassName = (breakType, status) => {
+    if (breakType !== 'urlop') {
+      return '';
+    }
+    switch (status) {
+      case 'approved':
+        return 'approved-status';
+      case 'denied':
+        return 'denied-status';
+      case 'pending':
+      default:
+        return 'pending-status';
     }
   };
 
@@ -358,27 +421,38 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
                 <th className="py-1 px-2 border-b">Data do</th>
                 <th className="py-1 px-2 border-b">Typ przerwy</th>
                 <th className="py-1 px-2 border-b">Liczba dni</th>
+                <th className="py-1 px-2 border-b">Status</th>
                 <th className="py-1 px-2 border-b">Akcje</th>
               </tr>
             </thead>
             <tbody>
-              {currentMonthBreaks.map((breakEvent) => (
-                <tr key={breakEvent.id}>
-                  <td className="py-1 px-2 border-b">
-                    {new Date(breakEvent.break_start_date).toLocaleDateString()}
-                  </td>
-                  <td className="py-1 px-2 border-b">
-                    {new Date(breakEvent.break_end_date).toLocaleDateString()}
-                  </td>
-                  <td className={`py-1 px-2 border-b ${getClassForBreakType(breakEvent.break_type)}`}>{breakEvent.break_type}</td>
-                  <td className="py-1 px-2 border-b">{breakEvent.break_days}</td>
-                  <td className="py-1 px-2 border-b">
-                    <button onClick={() => handleEditBreak(breakEvent)} className="text-blue-500">Edit</button>
-                    <button onClick={() => handleDeleteBreak(breakEvent.id)} className="text-red-500 ml-2">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+  {currentMonthBreaks.map((breakEvent) => (
+    <tr key={breakEvent.id}>
+      <td className="py-1 px-2 border-b">
+        {new Date(breakEvent.break_start_date).toLocaleDateString()}
+      </td>
+      <td className="py-1 px-2 border-b">
+        {new Date(breakEvent.break_end_date).toLocaleDateString()}
+      </td>
+      <td className={`py-1 px-2 border-b ${getClassForBreakType(breakEvent.break_type)}`}>{breakEvent.break_type}</td>
+      <td className="py-1 px-2 border-b">{breakEvent.break_days}</td>
+      <td className={`py-1 px-2 border-b ${getStatusClassName(breakEvent.break_type, breakEvent.status)}`}>
+        {breakEvent.break_type === 'urlop' ? (breakEvent.status ? (breakEvent.status.charAt(0).toUpperCase() + breakEvent.status.slice(1)) : 'Pending') : 'N/A'}
+        <div>{breakEvent.employee_message}</div>
+      </td>
+      <td className="py-1 px-2 border-b">
+        <>
+          <button onClick={() => handleEditBreak(breakEvent)} className="text-blue-500">Edit</button>
+          <button onClick={() => handleDeleteBreak(breakEvent.id)} className="text-red-500 ml-2">Delete</button>
+          {breakEvent.break_type === 'urlop' && (
+            <button onClick={() => handleSendForApproval(breakEvent.id)} className="text-green-500 ml-2">Send for Approval</button>
+          )}
+        </>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
           </table>
         </div>
       )}

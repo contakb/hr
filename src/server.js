@@ -543,7 +543,9 @@ app.post('/api/save-health-breaks', verifyJWT, async (req, res) => {
                       break_type: breakEntry.break_type,
                       break_start_date: breakEntry.break_start_date,
                       break_end_date: breakEntry.break_end_date,
-                      break_days: breakEntry.break_days
+                      break_days: breakEntry.break_days,
+                      approved: false, // Set approved to false by default
+                      status: 'pending'
                   }
               ])
       }
@@ -582,6 +584,58 @@ app.get('/api/get-health-breaks', verifyJWT, async (req, res) => {
     res.status(500).send("Error fetching health breaks.");
   }
 });
+
+// API Endpoint to get all health breaks for admin
+// API Endpoint to get all health breaks with employee details
+app.get('/api/get-all-health-breaks', verifyJWT, async (req, res) => {
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching all health breaks with employee details from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+
+  try {
+    // Fetch all health breaks
+    const { data: breaks, error: breaksError } = await supabase
+      .from('health_breaks')
+      .select('*');
+
+    if (breaksError) {
+      throw breaksError;
+    }
+
+    // Fetch employee details for each break
+    const employeeIds = [...new Set(breaks.map(b => b.employee_id))]; // Get unique employee IDs
+    const { data: employees, error: employeesError } = await supabase
+      .from('employees')
+      .select('id, surname')
+      .in('id', employeeIds);
+
+    if (employeesError) {
+      throw employeesError;
+    }
+
+    // Map employee details to breaks
+    const employeeMap = employees.reduce((acc, employee) => {
+      acc[employee.id] = employee;
+      return acc;
+    }, {});
+
+    const enrichedBreaks = breaks.map(breakEvent => ({
+      ...breakEvent,
+      surname: employeeMap[breakEvent.employee_id]?.surname || 'Unknown',
+    }));
+
+    res.status(200).json(enrichedBreaks);
+  } catch (error) {
+    console.error("Error fetching all health breaks with employee details:", error);
+    res.status(500).send("Error fetching all health breaks with employee details.");
+  }
+});
+
+
 
 app.delete('/api/delete-health-breaks', verifyJWT, async (req, res) => {
   console.log("Received request to delete breaks:", req.body);
@@ -624,14 +678,24 @@ app.put('/api/update-health-breaks', verifyJWT, async (req, res) => {
 
   try {
     for (const breakEntry of breaksData) {
+      const updateData = {
+        break_type: breakEntry.break_type,
+        break_start_date: breakEntry.break_start_date,
+        break_end_date: breakEntry.break_end_date,
+        break_days: breakEntry.break_days,
+        ...(breakEntry.break_type === 'urlop' && {
+          status: breakEntry.status,
+          approved: false, // Reset approved for 'urlop'
+        }),
+        ...(!breakEntry.break_type === 'urlop' && {
+          status: breakEntry.status,
+          approved: breakEntry.approved,
+        })
+      };
+
       const { data, error } = await supabase
         .from('health_breaks')
-        .update({
-          break_type: breakEntry.break_type,
-          break_start_date: breakEntry.break_start_date,
-          break_end_date: breakEntry.break_end_date,
-          break_days: breakEntry.break_days
-        })
+        .update(updateData)
         .match({ id: breakEntry.id })
         .select(); // Retrieve the updated records
 
@@ -652,6 +716,145 @@ app.put('/api/update-health-breaks', verifyJWT, async (req, res) => {
   } catch (error) {
     console.error("Error updating breaks:", error);
     res.status(500).send("Error occurred while updating breaks.");
+  }
+});
+
+
+app.get('/api/get-pending-breaks', verifyJWT, async (req, res) => {
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Fetching pending breaks from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: schemaName } // set your custom schema here
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('health_breaks')
+      .select('*')
+      .eq('approved', false);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error fetching pending breaks:", error);
+    res.status(500).send("Error fetching pending breaks.");
+  }
+});
+
+app.post('/api/approve-break', verifyJWT, async (req, res) => {
+  const { breakId } = req.body;
+  const schemaName = req.headers['x-schema-name'];
+
+  console.log(`Approving break in schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('health_breaks')
+      .update({ approved: true, status: 'approved' })
+      .eq('id', breakId);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error approving break:', error);
+    res.status(500).send('Error approving break.');
+  }
+});
+
+
+
+app.put('/api/deny-break', verifyJWT, async (req, res) => {
+  const { breakId, status } = req.body;  // Accept status message in request body
+  const schemaName = req.headers['x-schema-name'];
+
+  console.log(`Denying break in schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('health_breaks')
+      .update({ approved: false, status })
+      .eq('id', breakId);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error denying break:', error);
+    res.status(500).send('Error denying break.');
+  }
+});
+
+
+app.put('/api/send-for-approval', verifyJWT, async (req, res) => {
+  const { breakId, status, employee_message } = req.body;
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Sending for approval in schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('health_breaks')
+      .update({ status, employee_message, approved: false })
+      .eq('id', breakId);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error sending for approval:', error);
+    res.status(500).send('Error sending for approval.');
+  }
+});
+
+
+app.put('/api/change-decision', verifyJWT, async (req, res) => {
+  const { breakId, status, approved, employee_message } = req.body;
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Changing decision for break in schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('health_breaks')
+      .update({ approved, status,employee_message })
+      .eq('id', breakId);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error changing decision:', error);
+    res.status(500).send('Error changing decision.');
   }
 });
 

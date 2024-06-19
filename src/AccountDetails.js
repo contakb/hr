@@ -9,6 +9,7 @@ import axiosInstance from './axiosInstance'; // Adjust the import path as necess
 import { useUser } from './UserContext'; // Ensure correct path
 import { useRequireAuth } from './useRequireAuth';
 import CalendarPage from './CalendarPage'; // Import the CalendarPage component
+import AdminBreaksCalendar from './AdminBreaksCalendar';
 // In your React component, e.g., AccountDetails.js
 
 
@@ -389,6 +390,10 @@ return (
           <div className="bg-white shadow rounded-lg p-6 mt-8 lg:mt-0">
             <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
             <CalendarPage />
+          </div>
+          <div className="bg-white shadow rounded-lg p-6 mt-8 lg:mt-0">
+            <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
+            <AdminBreaksCalendar />
           </div>
         </div>
       </div>

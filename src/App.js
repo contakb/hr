@@ -34,6 +34,7 @@ import CalendarPage from './CalendarPage';
 import EmployeeBreaksCalendar from './EmployeeBreaksCalendar';
 import HolidayBaseCalculator from './HolidayBaseCalculator';
 import EmployeeAccount from './EmployeeAccount';
+import AdminBreaksCalendar from './AdminBreaksCalendar';
 import PrivateRoute from './PrivateRoute';
 import Unauthorized from './Unauthorized';
 
@@ -94,6 +95,7 @@ function App() {
       <Route path="/add-contract/:employeeId"  element={<AddContractToEmployee />} /> {/* New route */}
       <Route path="/employee-param/:employeeId" element={<AddParamsToEmployee />} /> {/* New route */}
       <Route path="/calendar" element={<CalendarPage />} />
+      <Route path="/empbreakcalendar" element={<AdminBreaksCalendar />} />
       <Route path="/breakcalendar" element={<EmployeeBreaksCalendar />} />
       <Route path="/holidaybase/:employeeId" element={<HolidayBaseCalculator />} />
       <Route

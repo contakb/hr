@@ -5,6 +5,8 @@
 @tailwind components;
 @tailwind utilities;
 
+
+
 /* Custom styles */
 .react-calendar__tile.highlight-tile {
   @apply bg-red-500 text-white rounded-full !important;
@@ -64,12 +66,42 @@
   position: relative;
 }
 
+.break-urlop-approved {
+  @apply bg-green-500 text-white;
+  position: relative;
+}
+
+.break-urlop-pending {
+  @apply bg-orange-500 text-white;
+  position: relative; /* Changed to orange for distinction */
+}
+
+.break-urlop-denied {
+  @apply bg-red-500 text-white;
+  position: relative;
+}
+
+.approved-status {
+  @apply bg-green-500 text-white;
+}
+
+.pending-status {
+  @apply bg-orange-500 text-white; /* Changed to orange for distinction */
+}
+
+.denied-status {
+  @apply bg-red-500 text-white;
+}
+
 /* Position the letters on the calendar tiles */
 .break-zwolnienie::after,
 .break-ciąża::after,
 .break-zasilek::after,
 .break-bezplatny::after,
-.break-nieobecnosc::after {
+.break-nieobecnosc::after,
+.break-urlop-approved::after,
+.break-urlop-pending::after,
+.break-urlop-denied::after {
   content: attr(data-letter);
   position: absolute;
   top: 2px;
@@ -77,6 +109,7 @@
   font-size: 0.75rem;
   color: white;
 }
+
 .table-zwolnienie {
   @apply bg-red-500 text-white;
 }
@@ -98,6 +131,10 @@
 }
 
 .table-default {
+  @apply bg-blue-500 text-white;
+}
+
+.table-urlop {
   @apply bg-blue-500 text-white;
 }
 
@@ -132,51 +169,30 @@
   color: black;
 }
 
+.break-urlop-approved[data-letter="UR"] {
+  background-color: #48BB78; /* Tailwind green-500 */
+  color: white;
+}
+
+.break-urlop-pending[data-letter="UR"] {
+  background-color: #ECC94B; /* Tailwind orange-500 */
+  color: black;
+}
+
+.break-urlop-denied[data-letter="UR"] {
+  background-color: #F56565; /* Tailwind red-500 */
+  color: white;
+}
 
 /* Calendar styling for break types */
-.break-zwolnienie div[data-letter="ZW"] {
-  background-color: red;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  height: 100%;
-}
-
-.break-ciąża div[data-letter="CI"] {
-  background-color: pink;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  height: 100%;
-}
-
-.break-zasilek div[data-letter="ZS"] {
-  background-color: purple;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  height: 100%;
-}
-
-.break-bezplatny div[data-letter="BP"] {
-  background-color: orange;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  height: 100%;
-}
-
-.break-nieobecnosc div[data-letter="NB"] {
-  background-color: green;
-  color: white;
+.break-zwolnienie div[data-letter="ZW"],
+.break-ciąża div[data-letter="CI"],
+.break-zasilek div[data-letter="ZS"],
+.break-bezplatny div[data-letter="BP"],
+.break-nieobecnosc div[data-letter="NB"],
+.break-urlop-approved div[data-letter="UR"],
+.break-urlop-pending div[data-letter="UR"],
+.break-urlop-denied div[data-letter="UR"] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,29 +202,44 @@
 
 /* Table styling for break types */
 .table-zwolnienie {
-  background-color: red;
+  background-color: #F56565; /* Tailwind red-500 */
   color: white;
 }
 
 .table-ciąża {
-  background-color: pink;
+  background-color: #ED64A6; /* Tailwind pink-500 */
   color: white;
 }
 
 .table-zasilek {
-  background-color: purple;
+  background-color: #9F7AEA; /* Tailwind purple-500 */
   color: white;
 }
 
 .table-bezplatny {
-  background-color: orange;
+  background-color: #ECC94B; /* Tailwind yellow-500 */
   color: white;
 }
 
 .table-nieobecnosc {
-  background-color: green;
+  background-color: #48BB78; /* Tailwind green-500 */
   color: white;
 }
+
+.table-urlop {
+  background-color: #4299E1; /* Tailwind blue-500 */
+  color: white;
+}
+
+/* Expand the calendar */
+.react-calendar {
+  width: 100%; /* Take full width */
+  max-width: none; /* Remove max-width */
+}
+
+
+
+
 
 hr {
   border: 0;
