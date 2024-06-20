@@ -167,11 +167,11 @@ const AdminBreaksCalendar = () => {
   };
 
   const handleDenyBreak = async (breakId) => {
-    const status = prompt('Please provide a reason for denial:');  // Prompt for denial reason
-    if (!status) return;
+    const employee_message = prompt('Please provide a reason for denial:');  // Prompt for denial reason
+    if (!employee_message) return;
 
     try {
-      await axiosInstance.put('/api/deny-break', { breakId, status }, {
+      await axiosInstance.put('/api/deny-break', { breakId, employee_message }, {
         headers: {
           'Authorization': `Bearer ${user.access_token}`,
           'X-Schema-Name': user.schemaName,
@@ -180,7 +180,7 @@ const AdminBreaksCalendar = () => {
       toast.success('Break denied successfully.');
       setBreaks((prevBreaks) =>
         prevBreaks.map((b) =>
-          b.id === breakId ? { ...b, approved: false, status } : b
+          b.id === breakId ? { ...b, approved: false, employee_message } : b
         )
       );
     } catch (error) {
@@ -276,6 +276,7 @@ const AdminBreaksCalendar = () => {
                 <th className="py-1 px-2 border-b">Typ przerwy</th>
                 <th className="py-1 px-2 border-b">Liczba dni</th>
                 <th className="py-1 px-2 border-b">Status</th>
+                <th className="py-1 px-2 border-b">Komunikat</th>
                 <th className="py-1 px-2 border-b">Akcje</th>
               </tr>
             </thead>
@@ -294,8 +295,9 @@ const AdminBreaksCalendar = () => {
       <td className="py-1 px-2 border-b">{breakEvent.break_days}</td>
       <td className={`py-1 px-2 border-b ${getStatusClassName(breakEvent.break_type, breakEvent.status)}`}>
         {breakEvent.break_type === 'urlop' ? breakEvent.status : 'N/A'}
-        <div>{breakEvent.employee_message}</div>
+       
       </td>
+      <td className="py-1 px-2 border-b">{breakEvent.employee_message}</td>
       <td className="py-1 px-2 border-b">
         {breakEvent.break_type === 'urlop' && (
           <>

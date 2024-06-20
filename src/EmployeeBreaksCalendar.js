@@ -26,24 +26,24 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
 
   const holidays = []; // Define your holidays here
 
+  const fetchBreaks = async () => {
+    if (!user) return;
+
+    try {
+      const response = await axiosInstance.get('/api/get-health-breaks', {
+        params: { employee_id: employeeId },
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`,
+          'X-Schema-Name': user.schemaName,
+        }
+      });
+      setBreaks(response.data);
+    } catch (error) {
+      console.error('Error fetching breaks:', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchBreaks = async () => {
-      if (!user) return;
-
-      try {
-        const response = await axiosInstance.get('/api/get-health-breaks', {
-          params: { employee_id: employeeId },
-          headers: {
-            'Authorization': `Bearer ${user.access_token}`,
-            'X-Schema-Name': user.schemaName,
-          }
-        });
-        setBreaks(response.data);
-      } catch (error) {
-        console.error('Error fetching breaks:', error);
-      }
-    };
-
     if (employeeId) {
       fetchBreaks();
     }
@@ -309,6 +309,8 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
       setIsEditing(false);
       setEditBreakId(null);
       setShowForm(false); // Hide the form after saving
+      // Fetch the updated breaks data
+      fetchBreaks();
     } catch (error) {
       console.error('Error saving break:', error);
       toast.error('Error saving break.');
@@ -412,7 +414,7 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
         {renderEvents(date)}
       </div>
       {currentMonthBreaks.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-4 overflow-x-auto">
           <h3 className="text-l font-semibold">Przerwy w {format(date, 'MMMM yyyy', { locale: pl })}:</h3>
           <table className="min-w-full bg-white table-auto text-xs">
             <thead>
@@ -422,6 +424,7 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
                 <th className="py-1 px-2 border-b">Typ przerwy</th>
                 <th className="py-1 px-2 border-b">Liczba dni</th>
                 <th className="py-1 px-2 border-b">Status</th>
+                <th className="py-1 px-2 border-b">Info</th>
                 <th className="py-1 px-2 border-b">Akcje</th>
               </tr>
             </thead>
@@ -438,8 +441,9 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
       <td className="py-1 px-2 border-b">{breakEvent.break_days}</td>
       <td className={`py-1 px-2 border-b ${getStatusClassName(breakEvent.break_type, breakEvent.status)}`}>
         {breakEvent.break_type === 'urlop' ? (breakEvent.status ? (breakEvent.status.charAt(0).toUpperCase() + breakEvent.status.slice(1)) : 'Pending') : 'N/A'}
-        <div>{breakEvent.employee_message}</div>
+
       </td>
+      <td className="py-1 px-2 border-b"> {breakEvent.employee_message} </td>
       <td className="py-1 px-2 border-b">
         <>
           <button onClick={() => handleEditBreak(breakEvent)} className="text-blue-500">Edit</button>

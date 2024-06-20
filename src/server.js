@@ -776,7 +776,7 @@ app.post('/api/approve-break', verifyJWT, async (req, res) => {
 
 
 app.put('/api/deny-break', verifyJWT, async (req, res) => {
-  const { breakId, status } = req.body;  // Accept status message in request body
+  const { breakId, employee_message } = req.body;  // Accept status message in request body
   const schemaName = req.headers['x-schema-name'];
 
   console.log(`Denying break in schema: ${schemaName}`);
@@ -788,7 +788,7 @@ app.put('/api/deny-break', verifyJWT, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('health_breaks')
-      .update({ approved: false, status })
+      .update({ approved: false, employee_message })
       .eq('id', breakId);
 
     if (error) {
