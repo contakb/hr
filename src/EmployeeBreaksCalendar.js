@@ -7,10 +7,16 @@ import { pl } from 'date-fns/locale';
 import { useRequireAuth } from './useRequireAuth';
 import moment from 'moment-timezone';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const EmployeeBreaksCalendar = ({ employeeId }) => {
   const [breaks, setBreaks] = useState([]);
   const [date, setDate] = useState(new Date());
+  const [month, setMonth] = useState(new Date().getMonth() + 1); // JavaScript months are 0-indexed
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [workingHours, setWorkingHours] = useState(null);
+const [holidays, setHolidays] = useState([]);
+  
   const [selectedBreaks, setSelectedBreaks] = useState([]);
   const [currentMonthBreaks, setCurrentMonthBreaks] = useState([]);
   const [breakForm, setBreakForm] = useState({
@@ -24,7 +30,6 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
   const [showForm, setShowForm] = useState(false); // State to control form visibility
   const user = useRequireAuth(); // Get the authenticated user
 
-  const holidays = []; // Define your holidays here
 
   const fetchBreaks = async () => {
     if (!user) return;
@@ -48,6 +53,36 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
       fetchBreaks();
     }
   }, [employeeId, user]);
+
+  const fetchAllData = async () => {
+    if (!year || !month) {
+      console.error('Year and month must be defined.');
+      return;
+    }
+    console.log(`Fetching data for year: ${year}, month: ${month}`); // Debugging line
+    
+    try {
+      const workingHoursResponse = await axios.get(`http://localhost:3001/api/getWorkingHours?year=${year}&month=${month}`);
+      setWorkingHours(workingHoursResponse.data.work_hours);
+    
+      const holidaysResponse = await axios.get(`http://localhost:3001/api/getHolidays?year=${year}&month=${month}`);
+      // Make sure the holidaysResponse.data is an array
+      const holidaysData = Array.isArray(holidaysResponse.data) ? holidaysResponse.data : [];
+      const filteredHolidays = holidaysData.filter(holiday => {
+        const holidayDate = new Date(holiday.date);
+        return holidayDate.getFullYear() === parseInt(year, 10) && holidayDate.getMonth() === parseInt(month, 10) - 1;
+      });
+    
+      setHolidays(filteredHolidays);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Handle errors appropriately
+    }
+    };
+    
+    useEffect(() => {
+    fetchAllData();
+    }, [year, month]);
 
   useEffect(() => {
     const visibleMonthBreaks = breaks.filter((breakEvent) => {
@@ -167,8 +202,11 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
     return null;
   };
 
-  const isOverlapping = (newStartDate, newEndDate) => {
+  const isOverlapping = (newStartDate, newEndDate, editBreakId = null) => {
     return breaks.some(breakEvent => {
+      // Ignore the break being edited by checking its ID
+      if (editBreakId && breakEvent.id === editBreakId) return false;
+  
       const existingStartDate = new Date(breakEvent.break_start_date);
       const existingEndDate = new Date(breakEvent.break_end_date);
   
@@ -183,75 +221,109 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setBreakForm({
+    const updatedForm = {
       ...breakForm,
       [name]: value,
-    });
-
-    if (name === 'break_type') {
-      calculateDays({ ...breakForm, [name]: value });
+    };
+  
+    setBreakForm(updatedForm);
+  
+    if (name === 'break_type' && updatedForm.break_start_date && updatedForm.break_end_date) {
+      calculateDays(updatedForm);
     }
   };
-
+  
   const handleHealthBreakStartDateChange = (e) => {
     const date = e.target.value;
-    setBreakForm({
+    const updatedForm = {
       ...breakForm,
       break_start_date: date,
-    });
-    calculateDays({ ...breakForm, break_start_date: date });
+    };
+  
+    if (updatedForm.break_end_date) {
+      calculateDays(updatedForm);
+    } else {
+      setBreakForm(updatedForm);
+    }
   };
-
+  
   const handleHealthBreakEndDateChange = (e) => {
     const date = e.target.value;
-    setBreakForm({
+    const updatedForm = {
       ...breakForm,
       break_end_date: date,
-    });
-    calculateDays({ ...breakForm, break_end_date: date });
+    };
+  
+    if (updatedForm.break_start_date) {
+      calculateDays(updatedForm);
+    } else {
+      setBreakForm(updatedForm);
+    }
   };
-
+  
+  const isStartDateValid = (startDate, endDate) => {
+    if (!startDate) return true; // No validation if start date is not set
+    return !endDate || new Date(startDate) <= new Date(endDate);
+  };
+  
+  const isEndDateValid = (endDate, startDate) => {
+    if (!endDate) return true; // No validation if end date is not set
+    return !startDate || new Date(endDate) >= new Date(startDate);
+  };
+  
   const isWeekend = (date) => {
     const day = date.getDay();
     return day === 6 || day === 0;
   };
-
+  
   const isHolidayOnDate = (holidays, date) => {
     return holidays.some((holiday) => isSameDay(new Date(holiday), date));
   };
-
+  
   const calculateDays = (breakForm) => {
     const { break_start_date, break_end_date, break_type } = breakForm;
     const startDate = new Date(break_start_date);
     const endDate = new Date(break_end_date);
-
-    if (['bezpłatny', 'nieobecność'].includes(break_type)) {
+  
+    if (!isStartDateValid(startDate, endDate)) {
+      toast.error('Start date cannot be after end date.');
+      return;
+    }
+  
+    if (!isEndDateValid(endDate, startDate)) {
+      toast.error('End date cannot be before start date.');
+      return;
+    }
+  
+    if (['bezpłatny', 'nieobecność', 'urlop'].includes(break_type)) {
       breakForm.break_days = calculateBreakDuration(startDate, endDate, holidays);
     } else {
       const timeDifference = endDate.getTime() - startDate.getTime();
       breakForm.break_days = Math.round(timeDifference / (1000 * 60 * 60 * 24)) + 1;
     }
-
+  
     setBreakForm(breakForm);
   };
-
+  
   const calculateBreakDuration = (startDate, endDate, holidays) => {
     let workingDayCount = 0;
     let currentDay = new Date(startDate);
-
+  
     while (currentDay <= endDate) {
       const isWeekday = !isWeekend(currentDay);
       const isNotHoliday = !isHolidayOnDate(holidays, currentDay);
-
+  
       if (isWeekday && isNotHoliday) {
         workingDayCount++;
       }
-
+  
       currentDay.setDate(currentDay.getDate() + 1);
     }
-
+  
     return workingDayCount;
   };
+  
+  
 
   const handleSaveBreaksData = async (e) => {
     e.preventDefault();
@@ -260,7 +332,8 @@ const EmployeeBreaksCalendar = ({ employeeId }) => {
   const newStartDate = new Date(break_start_date);
   const newEndDate = new Date(break_end_date);
 
-  if (isOverlapping(newStartDate, newEndDate)) {
+  // Pass the editBreakId to the isOverlapping function
+  if (isOverlapping(newStartDate, newEndDate, isEditing ? editBreakId : null)) {
     toast.error('The selected dates overlap with an existing break. Please choose different dates.');
     return;
   }
