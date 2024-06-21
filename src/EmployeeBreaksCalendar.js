@@ -54,35 +54,34 @@ const [holidays, setHolidays] = useState([]);
     }
   }, [employeeId, user]);
 
-  const fetchAllData = async () => {
-    if (!year || !month) {
-      console.error('Year and month must be defined.');
-      return;
-    }
-    console.log(`Fetching data for year: ${year}, month: ${month}`); // Debugging line
-    
+  const fetchAllData = async (currentYear, currentMonth) => {
     try {
-      const workingHoursResponse = await axios.get(`http://localhost:3001/api/getWorkingHours?year=${year}&month=${month}`);
+      const workingHoursResponse = await axios.get(`http://localhost:3001/api/getWorkingHours?year=${currentYear}&month=${currentMonth}`);
       setWorkingHours(workingHoursResponse.data.work_hours);
     
-      const holidaysResponse = await axios.get(`http://localhost:3001/api/getHolidays?year=${year}&month=${month}`);
-      // Make sure the holidaysResponse.data is an array
+      const holidaysResponse = await axios.get(`http://localhost:3001/api/getHolidays?year=${currentYear}&month=${currentMonth}`);
       const holidaysData = Array.isArray(holidaysResponse.data) ? holidaysResponse.data : [];
       const filteredHolidays = holidaysData.filter(holiday => {
         const holidayDate = new Date(holiday.date);
-        return holidayDate.getFullYear() === parseInt(year, 10) && holidayDate.getMonth() === parseInt(month, 10) - 1;
+        return holidayDate.getFullYear() === parseInt(currentYear, 10) && holidayDate.getMonth() === parseInt(currentMonth, 10) - 1;
       });
     
       setHolidays(filteredHolidays);
     } catch (error) {
       console.error('Error fetching data:', error);
-      // Handle errors appropriately
     }
-    };
+  };
     
-    useEffect(() => {
-    fetchAllData();
-    }, [year, month]);
+  useEffect(() => {
+    fetchAllData(year, month);
+  }, [year, month]);
+
+  const onActiveStartDateChange = ({ activeStartDate }) => {
+    setDate(activeStartDate);
+    setYear(activeStartDate.getFullYear());
+    setMonth(activeStartDate.getMonth() + 1); // JavaScript months are 0-indexed
+  };
+  
 
   useEffect(() => {
     const visibleMonthBreaks = breaks.filter((breakEvent) => {
@@ -117,20 +116,33 @@ const [holidays, setHolidays] = useState([]);
       isSameDay(new Date(breakEvent.break_end_date), date) ||
       (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
     );
-
-    return breaksOnDate.map((breakEvent) => {
-      const breakClass = breakEvent.break_type === 'urlop'
-        ? breakEvent.status === 'approved' ? 'approved-break' : breakEvent.status === 'denied' ? 'denied-break' : 'pending-break'
-        : '';
-
-      return (
-        <div key={breakEvent.id} className={`${breakClass}`}>
-          <strong>{breakEvent.break_type}</strong>
-          <p>{breakEvent.description || 'Break details'}</p>
-        </div>
-      );
-    });
+  
+    const holidayOnDate = holidays.find((holiday) => isSameDay(new Date(holiday.date), date));
+  
+    return (
+      <>
+        {breaksOnDate.map((breakEvent) => {
+          const breakClass = breakEvent.break_type === 'urlop'
+            ? breakEvent.status === 'approved' ? 'approved-break' : breakEvent.status === 'denied' ? 'denied-break' : 'pending-break'
+            : '';
+  
+          return (
+            <div key={breakEvent.id} className={`${breakClass}`}>
+              <strong>{breakEvent.break_type}</strong>
+              <p>{breakEvent.description || 'Break details'}</p>
+            </div>
+          );
+        })}
+        {holidayOnDate && (
+          <div className="holiday-event">
+            <strong>Holiday</strong>
+            <p>{holidayOnDate.holiday_name || 'Holiday'}</p>
+          </div>
+        )}
+      </>
+    );
   };
+  
 
   const tileClassName = ({ date, view }) => {
     if (view === 'month') {
@@ -139,68 +151,81 @@ const [holidays, setHolidays] = useState([]);
         isSameDay(new Date(breakEvent.break_end_date), date) ||
         (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
       );
-
-      if (breakEvent) {
-        let className = '';
+  
+      const holidayOnDate = holidays.find((holiday) => isSameDay(new Date(holiday.date), date));
+      const isToday = isSameDay(date, new Date());
+  
+      if (isToday) {
+        return 'today-tile';
+      } else if (breakEvent) {
         switch (breakEvent.break_type) {
           case 'zwolnienie':
-            className = 'break-zwolnienie';
-            break;
+            return 'break-zwolnienie';
           case 'ciąża':
-            className = 'break-ciąża';
-            break;
+            return 'break-ciąża';
           case 'zasiłek':
-            className = 'break-zasilek';
-            break;
+            return 'break-zasilek';
           case 'bezpłatny':
-            className = 'break-bezplatny';
-            break;
+            return 'break-bezplatny';
           case 'nieobecność':
-            className = 'break-nieobecnosc';
-            break;
+            return 'break-nieobecnosc';
           case 'urlop':
-            className = breakEvent.status === 'approved' ? 'break-urlop-approved' : breakEvent.status === 'denied' ? 'break-urlop-denied' : 'break-urlop-pending';
-            break;
+            return breakEvent.status === 'approved' ? 'break-urlop-approved' : breakEvent.status === 'denied' ? 'break-urlop-denied' : 'break-urlop-pending';
           default:
-            className = 'break-default';
-            break;
+            return 'break-default';
         }
-        return className;
+      } else if (holidayOnDate) {
+        return 'holiday-tile';
       }
     }
     return null;
   };
   
+  
 
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
-      const breakEvent = breaks.find(breakEvent =>
+      const breaksOnDate = breaks.filter(breakEvent =>
         isSameDay(new Date(breakEvent.break_start_date), date) ||
         isSameDay(new Date(breakEvent.break_end_date), date) ||
         (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
       );
-
-      if (breakEvent) {
-        switch (breakEvent.break_type) {
-          case 'zwolnienie':
-            return <div data-letter="ZW"></div>;
-          case 'ciąża':
-            return <div data-letter="CI"></div>;
-          case 'zasiłek':
-            return <div data-letter="ZS"></div>;
-          case 'bezpłatny':
-            return <div data-letter="BP"></div>;
-          case 'nieobecność':
-            return <div data-letter="NB"></div>;
-          case 'urlop':
-            return <div data-letter="UR"></div>;
-          default:
-            return <div data-letter="DF"></div>;
-        }
-      }
+  
+      const holidayOnDate = holidays.find((holiday) => isSameDay(new Date(holiday.date), date));
+      const isToday = isSameDay(date, new Date());
+  
+      return (
+        <div className="tile-content">
+          {breaksOnDate.map((breakEvent, index) => {
+            switch (breakEvent.break_type) {
+              case 'zwolnienie':
+                return <div key={index} data-letter="ZW"></div>;
+              case 'ciąża':
+                return <div key={index} data-letter="CI"></div>;
+              case 'zasiłek':
+                return <div key={index} data-letter="ZS"></div>;
+              case 'bezpłatny':
+                return <div key={index} data-letter="BP"></div>;
+              case 'nieobecność':
+                return <div key={index} data-letter="NB"></div>;
+              case 'urlop':
+                return <div key={index} data-letter="UR"></div>;
+              default:
+                return <div key={index} data-letter="DF"></div>;
+            }
+          })}
+          {holidayOnDate && (
+            <div key="holiday" data-letter="H">Św.</div>
+          )}
+           {isToday && (
+          <div key="today" data-letter="D">Dziś</div>
+        )}
+        </div>
+      );
     }
     return null;
   };
+  
 
   const isOverlapping = (newStartDate, newEndDate, editBreakId = null) => {
     return breaks.some(breakEvent => {
@@ -480,7 +505,11 @@ const [holidays, setHolidays] = useState([]);
         value={date}
         tileClassName={tileClassName}
         tileContent={tileContent}
-        onActiveStartDateChange={({ activeStartDate }) => setDate(activeStartDate)}
+        onActiveStartDateChange={({ activeStartDate }) => {
+          setDate(activeStartDate);
+          setMonth(activeStartDate.getMonth() + 1);
+          setYear(activeStartDate.getFullYear());
+        }}
       />
 
       <div>

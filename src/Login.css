@@ -101,7 +101,9 @@
 .break-nieobecnosc::after,
 .break-urlop-approved::after,
 .break-urlop-pending::after,
-.break-urlop-denied::after {
+.break-urlop-denied::after,
+.holiday-tile::after,
+.today-tile::after {
   content: attr(data-letter);
   position: absolute;
   top: 2px;
@@ -184,6 +186,18 @@
   color: white;
 }
 
+.holiday-tile {
+  background-color: #FFD700; /* Gold color for holidays */
+  color: black;
+  border-radius: 50%;
+}
+
+.today-tile {
+  background-color: #FFA500; /* Orange color for today */
+  color: white;
+  border-radius: 50%;
+}
+
 /* Calendar styling for break types */
 .break-zwolnienie div[data-letter="ZW"],
 .break-ciąża div[data-letter="CI"],
@@ -192,7 +206,9 @@
 .break-nieobecnosc div[data-letter="NB"],
 .break-urlop-approved div[data-letter="UR"],
 .break-urlop-pending div[data-letter="UR"],
-.break-urlop-denied div[data-letter="UR"] {
+.break-urlop-denied div[data-letter="UR"],
+.holiday-tile div[data-letter="H"],
+.today-tile div[data-letter="D"] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,6 +252,8 @@
   width: 100%; /* Take full width */
   max-width: none; /* Remove max-width */
 }
+
+
 
 
 
