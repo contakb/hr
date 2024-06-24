@@ -25,6 +25,12 @@ function EmployeeAccount() {
   // If useRequireAuth redirects non-authenticated users, authUser will always be defined here
   console.log('User from context:', user);
 
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
+
+const toggleCalendarSize = () => {
+  setIsCalendarExpanded(!isCalendarExpanded);
+};
+
 
   const fetchEmployeeDetails = useCallback(async () => {
     setIsLoading(true);
@@ -445,12 +451,20 @@ function EmployeeAccount() {
                 </div>
               )}
         </div>
-        <div className="flex flex-col lg:flex-col w-full lg:max-w-md lg:space-y-8">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
-            <EmployeeBreaksCalendar employeeId={employeeDetails.id} /> {/* Pass the employeeId here */}
-          </div>
-        </div>
+        <div className={`bg-white shadow rounded-lg p-6 ${isCalendarExpanded ? 'w-full' : 'lg:max-w-md'}`}>
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="font-bold text-xl">Kalendarz:</h2>
+    <button
+      type="button"
+      onClick={toggleCalendarSize}
+      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
+    >
+      {isCalendarExpanded ? 'Zmień na mniejszy' : 'Powiększ kalendarz'}
+    </button>
+  </div>
+  <EmployeeBreaksCalendar employeeId={employeeDetails.id} /> {/* Pass the employeeId here */}
+</div>
+
       </div>
     </div>
   );

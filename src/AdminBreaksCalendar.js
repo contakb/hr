@@ -250,14 +250,13 @@ const AdminBreaksCalendar = () => {
   };
 
   return (
-    <div className="p-4">
+    <div >
       <Calendar
         onChange={onDateChange}
         value={date}
         tileClassName={tileClassName}
         tileContent={tileContent}
         onActiveStartDateChange={({ activeStartDate }) => setDate(activeStartDate)}
-        className="mx-auto w-full max-w-4xl"
       />
 
       <div>

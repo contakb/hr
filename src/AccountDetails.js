@@ -36,6 +36,7 @@ function AccountDetails() {
     const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { user, updateUserContext } = useUser();
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   
 
 
@@ -46,6 +47,13 @@ function AccountDetails() {
   // If useRequireAuth redirects non-authenticated users, authUser will always be defined here
   console.log('User from context:', user);
   console.log('User from require auth:', authUser);
+
+  
+
+const toggleCalendarSize = () => {
+  setIsCalendarExpanded(!isCalendarExpanded);
+};
+
   
   const fetchUserDetails = useCallback(async () => {
     setIsLoading(true);
@@ -386,18 +394,32 @@ return (
       >
         {companyData ? 'Uaktualnij dane firmy' : 'Dodaj dane firmy'}
       </button>
+      
       </div>
-          <div className="bg-white shadow rounded-lg p-6 mt-8 lg:mt-0">
+      <div className="bg-white shadow rounded-lg p-6">
             <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
             <CalendarPage />
           </div>
-          <div className="bg-white shadow rounded-lg p-6 mt-8 lg:mt-0">
-            <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
-            <AdminBreaksCalendar />
           </div>
+          <div className={`bg-white shadow rounded-lg p-6 ${isCalendarExpanded ? 'w-full' : 'lg:max-w-md'}`}>
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="font-bold text-xl">Kalendarz:</h2>
+    <button
+      type="button"
+      onClick={toggleCalendarSize}
+      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
+    >
+      {isCalendarExpanded ? 'Zmień na mniejszy' : 'Powiększ kalendarz'}
+    </button>
+  </div>
+  <AdminBreaksCalendar />
+</div>
+          
+
+
         </div>
       </div>
-    </div>
+   
   );
 }
 
