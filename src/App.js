@@ -37,6 +37,13 @@ import EmployeeAccount from './EmployeeAccount';
 import AdminBreaksCalendar from './AdminBreaksCalendar';
 import PrivateRoute from './PrivateRoute';
 import Unauthorized from './Unauthorized';
+import LandingPage from './LandingPage';
+import SignupPage from './SignupPage';
+import Success from './Success';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe('pk_live_51PWCkCC24aqQf542gaveEHeqLSBQ724b0jzLDCs9nGsurKvRp2sHvWepk7waJmeX5e0xSiZtCzxzV39brkyBC7TW00PM67gLmm');
 
 
 
@@ -103,6 +110,16 @@ function App() {
                 element={<PrivateRoute element={EmployeeAccount} allowedRoles={['employee']} />}
               />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/LandingPage" element={<LandingPage />} />
+      <Route 
+          path="/Signup" 
+          element={
+            <Elements stripe={stripePromise}>
+              <SignupPage />
+            </Elements>
+          } 
+        />
+         <Route path="/success" element={<Success />} />
 
 
        

@@ -11,7 +11,7 @@ export const UserProvider = ({ children }) => {
     const fetchUserDetails = useCallback(async (email) => {
         const { data, error } = await supabase
             .from('user_details')
-            .select('schema_name, role')
+            .select('schema_name, role, plan_type, trial_status, trial_end_date')
             .eq('user_email', email)
             .single();
 
@@ -33,8 +33,11 @@ export const UserProvider = ({ children }) => {
             const userDetails = await fetchUserDetails(userEmail);
 
             if (userDetails) {
-                const { schema_name, role } = userDetails;
-                const newUser = { ...sessionData.session.user, schemaName: schema_name, role };
+                const { schema_name, role, plan_type, trial_status, trial_end_date } = userDetails;
+                const newUser = { ...sessionData.session.user, schemaName: schema_name, role, 
+                    planType: plan_type,
+                    trialStatus: trial_status,
+                    trialEndDate: trial_end_date };
                 setUser(newUser);
             } else {
                 const schemaName = computeSchemaName(userEmail);
@@ -57,8 +60,11 @@ export const UserProvider = ({ children }) => {
 
                 fetchUserDetails(userEmail).then((userDetails) => {
                     if (userDetails) {
-                        const { schema_name, role } = userDetails;
-                        const newUser = { ...session.user, schemaName: schema_name, role };
+                        const { schema_name, role, plan_type, trial_status, trial_end_date } = userDetails;
+                        const newUser = { ...session.user, schemaName: schema_name, role, 
+                            planType: plan_type,
+                            trialStatus: trial_status,
+                            trialEndDate: trial_end_date };
                         setUser(newUser);
                     } else {
                         const schemaName = computeSchemaName(userEmail);

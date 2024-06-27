@@ -261,6 +261,11 @@ return (
     <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md">
       <h1 className="font-bold text-xl mb-4">Szczegóły konta:</h1>
       <p className="mb-3">email: {user.email}</p>
+      <p className="mb-3">Plan: {user.planType}</p>
+          <p className="mb-3">Trial Status: {user.trialStatus ? 'Active' : 'Inactive'}</p>
+          {user.trialStatus && (
+            <p className="mb-3">Trial End Date: {new Date(user.trialEndDate).toLocaleDateString()}</p>
+          )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full md:w-1/2 px-2 mb-4">

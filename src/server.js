@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
+const stripe = require('stripe')('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');
 require('dotenv').config();
 
 
@@ -62,7 +63,121 @@ app.use(cors({
   credentials: true,
 }));
 
+app.post('/create-payment-intent', async (req, res) => {
+  const { amount, currency } = req.body;
 
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+    });
+
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error: error.message,
+    });
+  }
+});
+
+app.post('/create-checkout-session', async (req, res) => {
+  const { plan, billingCycle, email, password } = req.body;
+
+  const prices = {
+    hobby: {
+      yearly: 'price_1PWDDSC24aqQf542rDApCIhV',
+      monthly: 'price_1PWDDSC24aqQf542rDApCIhV',
+    },
+    freelancer: {
+      yearly: 'price_1PWDECC24aqQf542A9xuIalE',
+      monthly: 'price_1PWDECC24aqQf542A9xuIalE',
+    },
+    startup: {
+      yearly: 'price_1PWDEOC24aqQf542wFZQmMla',
+      monthly: 'price_1PWDEOC24aqQf542wFZQmMla',
+    },
+  };
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price: prices[plan][billingCycle],
+        quantity: 1,
+      }],
+      mode: 'subscription',
+      success_url: 'http://localhost:3000/success',
+      cancel_url: 'http://localhost:3000/landingpage',
+      metadata: {
+        email,
+        password,
+      },
+    });
+
+    res.json({ sessionId: session.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stripe webhook endpoint to handle successful payments
+app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, 'your-stripe-webhook-secret');
+  } catch (err) {
+    console.log(`Webhook signature verification failed.`, err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+
+    // Create user and schema in Supabase
+    const { email, password } = session.metadata;
+    const { user, error } = await supabase.auth.signUp({ email, password });
+
+    if (error) {
+      console.error('Error creating user:', error.message);
+      return res.status(500).send('Error creating user');
+    }
+
+    const { error: cloneError } = await supabase.rpc('clone_schema_for_user', { email: user.email });
+
+    if (cloneError) {
+      console.error('Error cloning schema:', cloneError.message);
+      return res.status(500).send('Error cloning schema');
+    }
+
+    // Add the user data to the user_details table in the public schema
+    const { error: userTableError } = await supabase
+      .from('user_details')
+      .insert([
+        {
+          user_id: user.id,
+          user_email: user.email,
+          role: 'admin',
+          schema_name: `schema_${user.email.replace(/[@\.]/g, '_')}`,
+          plan_type: 'paid',
+          trial_status: false,
+          trial_end_date: null
+        }
+      ]);
+
+    if (userTableError) {
+      console.error('Error inserting into user_details:', userTableError.message);
+      return res.status(500).send('Error inserting into user details');
+    }
+
+    console.log(`Schema for ${user.email} created successfully`);
+  }
+
+  res.json({ received: true });
+});
 
 
 app.get('/some-protected-route', (req, res) => {
@@ -206,7 +321,10 @@ app.post('/create-employee', verifyJWT, async (req, res) => {
           user_id: userData.user.id, // Use user_id as the identifier
           user_email: userData.user.email,
           role: 'employee', // Set the role as employee
-          schema_name: schemaName // Store the admin's schema name
+          schema_name: schemaName,// Store the admin's schema name
+          plan_type: null, // Employees don't have a plan type
+          trial_status: false, // Employees are not on trial
+          trial_end_date: null // No trial end date for employees
         }
       ]);
 
