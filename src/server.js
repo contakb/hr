@@ -11,9 +11,10 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 // src/server.js
-const stripe = require('stripe')(process.env.STRIPE_API_KEY);
+
 
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_API_KEY);
 
 
 
