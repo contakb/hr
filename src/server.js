@@ -10,7 +10,9 @@ const bcrypt = require('bcrypt');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
-const stripe = require('stripe')('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');
+// src/server.js
+const stripe = require('stripe')(process.env.STRIPE_API_KEY);
+
 require('dotenv').config();
 
 
