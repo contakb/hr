@@ -249,6 +249,9 @@ const handleManageCompanyData = () => {
   navigate('/CreateCompany', { state: { companyData } });
 
 };
+const handleChangePlan = () => {
+  navigate('/landingpage');
+};
 
 if (isLoading) {
   return <div>Loading...</div>;
@@ -266,6 +269,13 @@ return (
           {user.trialStatus && (
             <p className="mb-3">Trial End Date: {new Date(user.trialEndDate).toLocaleDateString()}</p>
           )}
+           <button
+            type="button"
+            onClick={handleChangePlan}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mb-4"
+          >
+            Change Plan
+          </button>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full md:w-1/2 px-2 mb-4">

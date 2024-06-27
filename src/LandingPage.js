@@ -1,8 +1,44 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useUser } from './UserContext';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe('pk_live_51PWCkCC24aqQf542gaveEHeqLSBQ724b0jzLDCs9nGsurKvRp2sHvWepk7waJmeX5e0xSiZtCzxzV39brkyBC7TW00PM67gLmm');
 
 const LandingPage = () => {
   const [billingCycle, setBillingCycle] = useState('yearly');
+  const navigate = useNavigate();
+  const { user } = useUser();
+
+  const handlePlanSelection = async (plan, billingCycle) => {
+    if (!user) {
+      navigate(`/signup?plan=${plan}&billingCycle=${billingCycle}`);
+      return;
+    }
+
+    // For existing users, create a checkout session
+    try {
+      const response = await fetch('http://localhost:3001/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ plan, billingCycle, email: user.email }),
+      });
+
+      const { sessionId } = await response.json();
+
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+
+      if (error) {
+        console.error('Error redirecting to Stripe:', error.message);
+      }
+    } catch (error) {
+      console.error('An unexpected error occurred:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col justify-between">
@@ -40,12 +76,12 @@ const LandingPage = () => {
             <p className="text-3xl font-bold mb-4">
               {billingCycle === 'yearly' ? '$100/year' : '$10/month'}
             </p>
-            <Link
-              to={`/signup?plan=hobby&billingCycle=${billingCycle}`}
+            <button
+              onClick={() => handlePlanSelection('hobby', billingCycle)}
               className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-300"
             >
               Subscribe
-            </Link>
+            </button>
           </div>
           <div className="bg-gray-800 p-6 rounded-lg w-64 text-center shadow-lg transform hover:scale-105 transition-transform duration-300">
             <h3 className="text-2xl font-bold mb-4">Freelancer</h3>
@@ -53,12 +89,12 @@ const LandingPage = () => {
             <p className="text-3xl font-bold mb-4">
               {billingCycle === 'yearly' ? '$200/year' : '$20/month'}
             </p>
-            <Link
-              to={`/signup?plan=freelancer&billingCycle=${billingCycle}`}
+            <button
+              onClick={() => handlePlanSelection('freelancer', billingCycle)}
               className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-300"
             >
               Subscribe
-            </Link>
+            </button>
           </div>
           <div className="bg-gray-800 p-6 rounded-lg w-64 text-center shadow-lg transform hover:scale-105 transition-transform duration-300">
             <h3 className="text-2xl font-bold mb-4">Startup</h3>
@@ -66,12 +102,12 @@ const LandingPage = () => {
             <p className="text-3xl font-bold mb-4">
               {billingCycle === 'yearly' ? '$300/year' : '$30/month'}
             </p>
-            <Link
-              to={`/signup?plan=startup&billingCycle=${billingCycle}`}
+            <button
+              onClick={() => handlePlanSelection('startup', billingCycle)}
               className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-300"
             >
               Subscribe
-            </Link>
+            </button>
           </div>
         </div>
         <div className="mt-8">

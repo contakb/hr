@@ -113,6 +113,7 @@ app.post('/create-checkout-session', async (req, res) => {
       metadata: {
         email,
         password,
+        plan,
       },
     });
 
@@ -136,44 +137,75 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
+    const { email, password, plan } = session.metadata;
 
-    // Create user and schema in Supabase
-    const { email, password } = session.metadata;
-    const { user, error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      console.error('Error creating user:', error.message);
-      return res.status(500).send('Error creating user');
-    }
-
-    const { error: cloneError } = await supabase.rpc('clone_schema_for_user', { email: user.email });
-
-    if (cloneError) {
-      console.error('Error cloning schema:', cloneError.message);
-      return res.status(500).send('Error cloning schema');
-    }
-
-    // Add the user data to the user_details table in the public schema
-    const { error: userTableError } = await supabase
+    // Check if user exists
+    const { data: existingUser, error: existingUserError } = await supabase
       .from('user_details')
-      .insert([
-        {
-          user_id: user.id,
-          user_email: user.email,
-          role: 'admin',
-          schema_name: `schema_${user.email.replace(/[@\.]/g, '_')}`,
-          plan_type: 'paid',
-          trial_status: false,
-          trial_end_date: null
-        }
-      ]);
+      .select('*')
+      .eq('user_email', email)
+      .single();
 
-    if (userTableError) {
-      console.error('Error inserting into user_details:', userTableError.message);
-      return res.status(500).send('Error inserting into user details');
+    if (existingUserError && existingUserError.code !== 'PGRST116') { // If an error other than 'no rows found'
+      console.error('Error checking existing user:', existingUserError.message);
+      return res.status(500).send('Error checking existing user');
     }
 
-    console.log(`Schema for ${user.email} created successfully`);
+    if (existingUser) {
+      // User exists, update their plan
+      const { data, error } = await supabase
+        .from('user_details')
+        .update({
+          plan_type: plan,
+          trial_status: false,
+          trial_end_date: null,
+        })
+        .eq('user_email', email);
+
+      if (error) {
+        console.error('Error updating user plan:', error.message);
+        return res.status(500).send('Error updating user plan');
+      }
+
+      console.log(`Plan for ${email} updated to ${plan} successfully`);
+    } else {
+      // User does not exist, create new user and schema
+      const { user, error } = await supabase.auth.signUp({ email, password });
+
+      if (error) {
+        console.error('Error creating user:', error.message);
+        return res.status(500).send('Error creating user');
+      }
+
+      const { error: cloneError } = await supabase.rpc('clone_schema_for_user', { email: user.email });
+
+      if (cloneError) {
+        console.error('Error cloning schema:', cloneError.message);
+        return res.status(500).send('Error cloning schema');
+      }
+
+      // Add the user data to the user_details table in the public schema
+      const { error: userTableError } = await supabase
+        .from('user_details')
+        .insert([
+          {
+            user_id: user.id,
+            user_email: user.email,
+            role: 'admin',
+            schema_name: `schema_${user.email.replace(/[@\.]/g, '_')}`,
+            plan_type: 'paid',
+            trial_status: false,
+            trial_end_date: null
+          }
+        ]);
+
+      if (userTableError) {
+        console.error('Error inserting into user_details:', userTableError.message);
+        return res.status(500).send('Error inserting into user details');
+      }
+
+      console.log(`Schema for ${user.email} created successfully`);
+    }
   }
 
   res.json({ received: true });
