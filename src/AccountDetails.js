@@ -7,7 +7,6 @@ import { toast } from 'react-toastify';
 import axios from 'axios'; // Assuming you're using axios for HTTP requests
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
-import { useRequireAuth } from './useRequireAuth';
 import CalendarPage from './CalendarPage'; // Import the CalendarPage component
 import AdminBreaksCalendar from './AdminBreaksCalendar';
 // In your React component, e.g., AccountDetails.js
@@ -35,18 +34,17 @@ function AccountDetails() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { user, updateUserContext } = useUser();
+  const { user, loading } = useUser();
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   
 
 
   console.log(user); // Check if user data is available
   const userEmail = user?.email; // Safely access the email property
-  const authUser = useRequireAuth(); // Ensure the user is authenticated
+
 
   // If useRequireAuth redirects non-authenticated users, authUser will always be defined here
   console.log('User from context:', user);
-  console.log('User from require auth:', authUser);
 
   
 
@@ -111,6 +109,8 @@ useEffect(() => {
     fetchUserDetails();
   }
 }, [user]);
+
+
 
 useEffect(() => {
   const fetchCompanyData = async () => {

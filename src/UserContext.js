@@ -41,7 +41,7 @@ export const UserProvider = ({ children }) => {
                 setUser(newUser);
             } else {
                 const schemaName = computeSchemaName(userEmail);
-                const newUser = { ...sessionData.session.user, schemaName, role: 'admin' };
+                const newUser = { ...sessionData.session.user, schemaName, role: 'admin', };
                 setUser(newUser);
             }
         } else {

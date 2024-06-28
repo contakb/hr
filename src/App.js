@@ -42,6 +42,7 @@ import SignupPage from './SignupPage';
 import Success from './Success';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
+import TrialEnded from './TrialEnded';
 
 const stripePromise = loadStripe('pk_live_51PWCkCC24aqQf542gaveEHeqLSBQ724b0jzLDCs9nGsurKvRp2sHvWepk7waJmeX5e0xSiZtCzxzV39brkyBC7TW00PM67gLmm');
 
@@ -120,6 +121,7 @@ function App() {
           } 
         />
          <Route path="/success" element={<Success />} />
+         <Route path="/trial-ended" element={<TrialEnded />} />
 
 
        
