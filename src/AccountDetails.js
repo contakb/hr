@@ -48,9 +48,7 @@ function AccountDetails() {
 
   
 
-const toggleCalendarSize = () => {
-  setIsCalendarExpanded(!isCalendarExpanded);
-};
+
 
   
   const fetchUserDetails = useCallback(async () => {
@@ -108,8 +106,11 @@ useEffect(() => {
   if (user && user.email) {
     fetchUserDetails();
   }
-}, [user]);
+}, [user, fetchUserDetails]);
 
+const toggleCalendarSize = () => {
+  setIsCalendarExpanded(!isCalendarExpanded);
+};
 
 
 useEffect(() => {
@@ -253,10 +254,30 @@ const handleChangePlan = () => {
   navigate('/landingpage');
 };
 
-if (isLoading) {
+if (loading || isLoading) {
   return <div>Loading...</div>;
 }
 
+// Check if user details from the context are incomplete
+if (!user.planType) {
+  return (
+      <div className="bg-gray-100 p-4">
+          <div className="flex flex-col lg:flex-row gap-8 justify-center lg:items-start">
+              <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md">
+                  <h1 className="font-bold text-xl mb-4">Szczegóły konta:</h1>
+                  <p>Twoje konto oczekuje na akywację.</p>
+                  <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  >
+                      Logout
+                  </button>
+              </div>
+          </div>
+      </div>
+  );
+}
 
 return (
 <div className="bg-gray-100 p-4">

@@ -25,10 +25,10 @@ const generateSecretKey = () => {
 
 const secretKey = generateSecretKey();
 
-const supabaseUrl = 'https://hxaxnwozubxemmygmmkw.supabase.co'; // Replace with your Supabase project URL
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXhud296dWJ4ZW1teWdtbWt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyNDk0NzAsImV4cCI6MjAxMTgyNTQ3MH0.re-MQMIldEU9bhypt54b_14IPDqjOzTQhrcMEoLeTBg'; // Replace with your Supabase API key
+const supabaseUrl = process.env.SUPABASE_URL;
 
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXhud296dWJ4ZW1teWdtbWt3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjI0OTQ3MCwiZXhwIjoyMDExODI1NDcwfQ.oerHe3zwyuX6Ll3GfosHK8eojO2TD_vjGKl33quozEc';
+
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
 
 
@@ -36,8 +36,7 @@ const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET_KEY = 'aTePU4aap+7hVLrFL17879WtSGGp5ELReIge3TXP9bZbj/uWhVjZL3Ez2GUItyI01NlWQvxhnnjTo9jA5TxQgQ==';
-
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 const app = express();
 
