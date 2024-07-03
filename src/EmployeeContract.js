@@ -216,10 +216,15 @@ async function handleDownloadPDFClick() {
 
 const scrollToEmployeeInfo = () => {
   setShowEmployeeInfo(true); // Show the employee info section
-  employeeInfoRef.current?.scrollIntoView({ behavior: 'smooth' });
+  if (employeeInfoRef.current) {
+    employeeInfoRef.current.scrollIntoView({ behavior: 'smooth' });
+  }
 };
+
 const scrollToUmowa = () => {
-  umowaRef.current?.scrollIntoView({ behavior: 'smooth' });
+  if (umowaRef.current) {
+    umowaRef.current.scrollIntoView({ behavior: 'smooth' });
+  }
 };
 
 

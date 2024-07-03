@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe('pk_live_51PWCkCC24aqQf542gaveEHeqLSBQ724b0jzLDCs9nGsurKvRp2sHvWepk7waJmeX5e0xSiZtCzxzV39brkyBC7TW00PM67gLmm');
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 const LandingPage = () => {
   const [billingCycle, setBillingCycle] = useState('yearly');
@@ -43,36 +43,36 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col justify-between">
       <header className="flex justify-between items-center p-6">
-        <div className="text-2xl font-bold">Pricing</div>
+        <div className="text-2xl font-bold">Cennik</div>
         <div>
-          <Link to="/login" className="text-lg hover:text-gray-400">
-            Sign In
+          <Link to="/loginuser" className="text-lg hover:text-gray-400">
+            Logowanie
           </Link>
         </div>
       </header>
       <main className="flex flex-col items-center py-12">
-        <h1 className="text-4xl font-bold mb-4">Pricing Plans</h1>
+        <h1 className="text-4xl font-bold mb-4">Dostępne plany</h1>
         <p className="text-center mb-8">
-          Start building for free, then add a site plan to go live. Account plans unlock additional features.
+          Zacznij od darmowej wersji próbnej, następnie wybierz rozszerzony wariant. Pełne pakiety zawierają.
         </p>
         <div className="flex mb-8">
           <button
             className={`px-4 py-2 rounded-l-md ${billingCycle === 'monthly' ? 'bg-gray-600' : 'bg-gray-700'}`}
             onClick={() => setBillingCycle('monthly')}
           >
-            Monthly billing
+             rozliczenie miesięczne
           </button>
           <button
             className={`px-4 py-2 rounded-r-md ${billingCycle === 'yearly' ? 'bg-gray-600' : 'bg-gray-700'}`}
             onClick={() => setBillingCycle('yearly')}
           >
-            Yearly billing
+            roczne
           </button>
         </div>
         <div className="flex justify-center space-x-8">
           <div className="bg-gray-800 p-6 rounded-lg w-64 text-center shadow-lg transform hover:scale-105 transition-transform duration-300">
             <h3 className="text-2xl font-bold mb-4">Hobby</h3>
-            <p className="mb-6">All the basics for starting a new business!</p>
+            <p className="mb-6">Najpotrzebniejsze funkcjonalności kadrowe</p>
             <p className="text-3xl font-bold mb-4">
               {billingCycle === 'yearly' ? '$100/year' : '$10/month'}
             </p>
@@ -80,12 +80,12 @@ const LandingPage = () => {
               onClick={() => handlePlanSelection('hobby', billingCycle)}
               className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-300"
             >
-              Subscribe
+              Wybierz
             </button>
           </div>
           <div className="bg-gray-800 p-6 rounded-lg w-64 text-center shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <h3 className="text-2xl font-bold mb-4">Freelancer</h3>
-            <p className="mb-6">All the basics for starting a new business!</p>
+            <h3 className="text-2xl font-bold mb-4">Firma</h3>
+            <p className="mb-6">Wszystko co potrzebujesz do prowadzenia spraw pracowniczych</p>
             <p className="text-3xl font-bold mb-4">
               {billingCycle === 'yearly' ? '$200/year' : '$20/month'}
             </p>
@@ -93,12 +93,12 @@ const LandingPage = () => {
               onClick={() => handlePlanSelection('freelancer', billingCycle)}
               className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-300"
             >
-              Subscribe
+              Wybierz
             </button>
           </div>
           <div className="bg-gray-800 p-6 rounded-lg w-64 text-center shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <h3 className="text-2xl font-bold mb-4">Startup</h3>
-            <p className="mb-6">All the basics for starting a new business!</p>
+            <h3 className="text-2xl font-bold mb-4">Pro</h3>
+            <p className="mb-6">Wszystkie dostępne funkcjonalności</p>
             <p className="text-3xl font-bold mb-4">
               {billingCycle === 'yearly' ? '$300/year' : '$30/month'}
             </p>
@@ -106,7 +106,7 @@ const LandingPage = () => {
               onClick={() => handlePlanSelection('startup', billingCycle)}
               className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-300"
             >
-              Subscribe
+              Wybierz
             </button>
           </div>
         </div>
@@ -115,7 +115,7 @@ const LandingPage = () => {
             to="/signup?plan=free"
             className="px-4 py-2 bg-green-600 rounded-md hover:bg-green-700 transition-colors duration-300"
           >
-            Start with Free Account
+            Zacznij pracę z darmową wersj próbną
           </Link>
         </div>
       </main>
