@@ -124,7 +124,7 @@ const LandingPage = () => {
           <div className="flex justify-center space-x-6 mb-8">
             <img src="https://via.placeholder.com/50" alt="Company Logo" className="h-12" />
             <div>
-              <h4 className="text-lg font-semibold">Brought to you by</h4>
+              <h4 className="text-lg font-semibold">Zaufali nam</h4>
               <div className="flex space-x-4">
                 <img src="https://via.placeholder.com/50" alt="Next.js" className="h-8" />
                 <img src="https://via.placeholder.com/50" alt="Vercel" className="h-8" />
@@ -140,24 +140,24 @@ const LandingPage = () => {
               <h5 className="font-semibold">ACME</h5>
               <ul>
                 <li className="my-2"><Link to="#" className="hover:underline">Home</Link></li>
-                <li className="my-2"><Link to="#" className="hover:underline">About</Link></li>
-                <li className="my-2"><Link to="#" className="hover:underline">Careers</Link></li>
+                <li className="my-2"><Link to="#" className="hover:underline">O nas</Link></li>
+                <li className="my-2"><Link to="#" className="hover:underline">Kariera</Link></li>
                 <li className="my-2"><Link to="#" className="hover:underline">Blog</Link></li>
               </ul>
             </div>
             <div>
               <h5 className="font-semibold">LEGAL</h5>
               <ul>
-                <li className="my-2"><Link to="#" className="hover:underline">Privacy Policy</Link></li>
-                <li className="my-2"><Link to="#" className="hover:underline">Terms of Use</Link></li>
+                <li className="my-2"><Link to="#" className="hover:underline">Polityka prywatności</Link></li>
+                <li className="my-2"><Link to="#" className="hover:underline">Warunki użytkowania</Link></li>
               </ul>
             </div>
           </div>
           <div className="flex justify-between items-center mt-8">
-            <p>© 2024 ACME, Inc. All rights reserved.</p>
+            <p>© 2024 wszelkie prawa zastrzeżone.</p>
             <div className="flex space-x-4">
               <Link to="#"><img src="https://via.placeholder.com/20" alt="GitHub" className="h-6" /></Link>
-              <p>Crafted by <a href="https://vercel.com" className="underline">Vercel</a></p>
+              <p>Stworzone przez <a href="https://vercel.com" className="underline">Vercel</a></p>
             </div>
           </div>
         </div>

@@ -24,6 +24,7 @@ function CreateCompany() {
         taxOffice: '',
         bankAccount: '',
         ubezpieczenieWypadkowe: '',
+        representativeName: '', // Add this line
       };
   const [CompanyName, setCompanyName] = useState('');
   const [street, setStreet] = useState('');
@@ -35,6 +36,7 @@ function CreateCompany() {
   const [PESEL, setPESEL] = useState('');
   const [country, setCountry] = useState('');
   const [Bankaccount, setBankaccount] = useState('');
+  const [representativeName, setRepresentativeName] = useState(''); // Add this line
   const [createdCompany, setCreatedCompany] = useState(null); // Track the created company
   const navigate = useNavigate();  // Import the useNavigate hook
   const [taxOfficeID, setTaxOfficeID] = useState('');
@@ -203,6 +205,7 @@ const goToNextStep = () => {
   setPESEL('');
   setTaxid('');
   setBankaccount('');
+  setRepresentativeName(''); // Add this line
   // Reset any other form-related states, if necessary
   };
 
@@ -235,7 +238,7 @@ const goToNextStep = () => {
     console.log('CreatedCompany Data:', companyData); // Debugging
 
     // Perform validation checks
-  if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid) {
+  if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid || !representativeName) {
     setValidationError("All fields must be entered!");
     return;
   }
@@ -292,7 +295,8 @@ const goToNextStep = () => {
       Taxid,
       Bankaccount,
       formaPrawna: formData.formaPrawna,
-      wypadkowe: wypadkoweRate
+      wypadkowe: wypadkoweRate,
+      representativeName, // Add this line
   };
 
   // Make the API call
@@ -328,6 +332,7 @@ const goToNextStep = () => {
 setCountry('');
   setTaxOffice('');
   setPESEL('');
+  setRepresentativeName(''); // Add this line
 
   // Switch back to view mode after a delay
   setTimeout(() => {
@@ -348,7 +353,8 @@ const createdCompanyData = {
   PESEL,
   Taxid,
   Bankaccount,
-  formaPrawna
+  formaPrawna,
+  representativeName, // Add this line
 };
 
 // Set the created employee data in the state
@@ -401,6 +407,10 @@ setCreatedCompany(createdCompanyData);
     setBankaccount(event.target.value);
   };
 
+  const handleRepresentativeNameChange = (event) => {
+    setRepresentativeName(event.target.value);
+  };
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -438,6 +448,7 @@ const toggleEditMode = (editMode) => {
       setPostcode(companyData.post_code || '');
       setCity(companyData.city || '');
       setCountry(companyData.country || '');
+      setRepresentativeName(companyData.representativeName || '');
       // Find the option that matches the taxOffice ID from companyData
       const selectedTaxOfficeOption = taxOfficeOptions.find(option => option.label === companyData.tax_office);
         if (selectedTaxOfficeOption) {
@@ -469,7 +480,7 @@ const handleUpdateCompany = async (event, companyId) => {
 
   
     // Validation code
-    if (!CompanyName || !street || !number || !postcode || !city || !country || !Taxid || !taxOfficeName) {
+    if (!CompanyName || !street || !number || !postcode || !city || !country || !Taxid || !taxOfficeName || !representativeName) {
       setValidationError("All fields must be entered!");
       return;
     }
@@ -501,6 +512,7 @@ const handleUpdateCompany = async (event, companyId) => {
       Bankaccount,
       formaPrawna: formData.formaPrawna,
       wypadkowe: wypadkoweRate,
+      representativeName, // Add this line
       
     };
 
@@ -546,6 +558,10 @@ const handleUpdateCompany = async (event, companyId) => {
         <div className="col-span-1 md:col-span-3">
           <label className="block text-gray-700 text-sm font-bold mb-2">Company Name:</label>
           <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.company_name}</p>
+        </div>
+        <div className="col-span-1 md:col-span-3">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Osoba reprezentująca firmę:</label>
+          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.representative_name}</p>
         </div>
         {/* Repeat this structure for other company details */}
         <div className="col-span-1 md:col-span-2">
@@ -624,9 +640,13 @@ const handleUpdateCompany = async (event, companyId) => {
         <div className="flex flex-col space-y-2">
          {/* Your form fields go here */}
          <div className="flex flex-col">
-        <label className="font-semibold" htmlFor="companyName">Company Name:</label>
+        <label className="font-semibold" htmlFor="companyName">Nazwa firmy:</label>
         <input className="border border-gray-300 rounded p-2" id="companyName" type="text" value={CompanyName} onChange={handleCompanyNameChange} />
         </div>
+        <div className="flex flex-col">
+            <label htmlFor="representativeName" className="font-semibold">Osoba reprezentująca firmę:</label>
+            <input id="representativeName" type="text" value={representativeName} onChange={handleRepresentativeNameChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+          </div>
         <label className="font-semibold" htmlFor="Taxid">Tax id:</label>
          <input className="border border-gray-300 rounded p-2" id="Taxid" type="text" value={Taxid} onChange={handleTaxidChange} />
          <div className="flex flex-col mb-4">

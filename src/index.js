@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './Login.css';
+import './index.css';
 import App from './App';
+import 'react-toastify/dist/ReactToastify.css'; // Import toastify CSS
 
 import reportWebVitals from './reportWebVitals';
 

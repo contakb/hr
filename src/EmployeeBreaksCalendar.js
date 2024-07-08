@@ -8,6 +8,7 @@ import { useRequireAuth } from './useRequireAuth';
 import moment from 'moment-timezone';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import './Login.css';
 
 const EmployeeBreaksCalendar = ({ employeeId }) => {
   const [breaks, setBreaks] = useState([]);

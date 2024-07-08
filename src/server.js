@@ -2724,18 +2724,8 @@ app.get('/account/:username', isAuthenticated, async (req, res) => {
 });
 
 app.post('/create-company', verifyJWT, async (req, res) => {
-  const CompanyName = req.body.CompanyName;
-  const street = req.body.street;
-  const number = req.body.number;
-  const postcode = req.body.postcode;
-  const city = req.body.city;
-  const country = req.body.country;
-  const taxOfficeName = req.body.taxOfficeName;
-  const PESEL = req.body.PESEL;
-  const Taxid = req.body.Taxid;
-  const Bankaccount = req.body.Bankaccount;
-  const formaPrawna = req.body.formaPrawna;
-  const wypadkowe = req.body.wypadkowe
+  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe, representativeName } = req.body;
+
 
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
@@ -2767,6 +2757,7 @@ app.post('/create-company', verifyJWT, async (req, res) => {
           bank_account: Bankaccount,
           forma: formaPrawna,
           wypadkowe: wypadkowe,
+          representative_name: representativeName, // Add the new field here
         }
       ])
       .select();
@@ -2837,7 +2828,7 @@ app.get('/api/created_company', verifyJWT, async (req, res) => {
 
 app.put('/update-company/:companyId',verifyJWT, async (req, res) => {
   const companyId = req.params.companyId; // Get the companyId from the URL parameter
-  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe } = req.body;
+  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe,representativeName } = req.body;
 
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
@@ -2869,6 +2860,7 @@ app.put('/update-company/:companyId',verifyJWT, async (req, res) => {
               bank_account: Bankaccount,
               forma: formaPrawna,
               wypadkowe: wypadkowe,
+              representative_name: representativeName, // Add the new field here
           })
           .eq('company_id', companyId) // Match 'company_id' with the parameter
           .select(); // Chain a select() after update()
