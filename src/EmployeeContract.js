@@ -124,8 +124,10 @@ const EmployeeContract = () => {
     fetchCompanyData();
     return () => { hasErrorBeenShown.current = false; }; // Reset on unmount
   }, []);  // Dependency array is empty to ensure this runs only once on mount
+
+
   const handleInputChange = (event) => {
-    setUserInput(event.target.value); // Update the state when the input changes
+    setUserInput(companyData.representative_name); // Update the state when the input changes
   };
 
     // Add this function to handle the back button click
@@ -289,7 +291,7 @@ const workingHours = selectedContract ? calculateWorkingHours(selectedContract.e
 
 
 if (isLoading) {
-  return <div>Loading...</div>;
+  return <div>ładowanie...</div>;
 }
 
 if (!companyData) {
@@ -333,7 +335,7 @@ return (
               onChange={handleContractSelection} value={selectedContractId}>
         {contracts.map((contract) => (
           <option key={contract.id} value={contract.id}>
-            Contract from {new Date(contract.contract_from_date).toLocaleDateString()} to {new Date(contract.contract_to_date).toLocaleDateString()}
+            Umowa od{new Date(contract.contract_from_date).toLocaleDateString()} do {new Date(contract.contract_to_date).toLocaleDateString()}
           </option>
         ))}
       </select>
@@ -403,17 +405,20 @@ return (
           <p><strong>Pracodawca:</strong> {companyData.company_name}</p>
           <p><strong>ul:</strong> {companyData.street} {companyData.number}, {companyData.post_code}, {companyData.city}, {companyData.country}</p>
           <p><strong>NIP:</strong> {companyData.taxid}</p>
-          <div class="flex flex-col space-y-2 max-w-xs">
-  <label for="userInputField" class="font-bold">reprezentowaną przez:</label>
+          <p class="flex flex-col space-y-2 max-w-xs"><strong>NIP:</strong> {companyData.representative_name}</p>
+          <div className="flex flex-col space-y-2 max-w-xs">
+  <label htmlFor="representative_name" className="font-bold">Reprezentowaną przez:</label>
   <input
     type="text"
-    id="userInputField"
-    class="form-input block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
-    value={userInput}
+    id="representative_name"
+    name="representative_name" // Add the name attribute
+    className="form-input block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
+    value={companyData.representative_name}
     onChange={handleInputChange}
-    placeholder="Wprowadz osobę reprezentującą firmę przy podpisaniu umowy"
+    placeholder="Wprowadź osobę reprezentującą firmę przy podpisaniu umowy"
   />
 </div>
+
           <div class="h-4"></div> 
           <p><strong>a Panią/Panem</strong></p>
           <p><strong>Pracownik:</strong> {employee.name} {employee.surname} zam. ul. {employee.street} {employee.number} {employee.postcode} {employee.city}</p>
@@ -465,7 +470,7 @@ return (
           <div>
             <p>Podpis osoby reprezentującej firmę</p>
             <div class="signature-line w-full border-t border-gray-400"></div>
-            <p>{userInput}</p>
+            <p>{companyData.representative_name}</p>
           </div>
         </div>
       </div>

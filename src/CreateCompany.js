@@ -25,6 +25,9 @@ function CreateCompany() {
         bankAccount: '',
         ubezpieczenieWypadkowe: '',
         representativeName: '', // Add this line
+        okresRozliczeniowy: '1 miesiąc',
+        poraNocna: '22 - 8',
+        wynagrodzenieInfo: ''
       };
   const [CompanyName, setCompanyName] = useState('');
   const [street, setStreet] = useState('');
@@ -37,6 +40,9 @@ function CreateCompany() {
   const [country, setCountry] = useState('');
   const [Bankaccount, setBankaccount] = useState('');
   const [representativeName, setRepresentativeName] = useState(''); // Add this line
+  const [okresRozliczeniowy, setOkresRozliczeniowy] = useState('1 miesiąc'); // Add this line
+const [poraNocna, setPoraNocna] = useState('22 - 8'); // Add this line
+const [wynagrodzenieInfo, setWynagrodzenieInfo] = useState(''); // Add this line
   const [createdCompany, setCreatedCompany] = useState(null); // Track the created company
   const navigate = useNavigate();  // Import the useNavigate hook
   const [taxOfficeID, setTaxOfficeID] = useState('');
@@ -206,6 +212,9 @@ const goToNextStep = () => {
   setTaxid('');
   setBankaccount('');
   setRepresentativeName(''); // Add this line
+  setPoraNocna('22 - 8'); // Add this line
+  setWynagrodzenieInfo(''); // Add this line
+  setCreatedCompany(null); // Track the created company
   // Reset any other form-related states, if necessary
   };
 
@@ -238,7 +247,7 @@ const goToNextStep = () => {
     console.log('CreatedCompany Data:', companyData); // Debugging
 
     // Perform validation checks
-  if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid || !representativeName) {
+  if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid || !representativeName || !poraNocna || !wynagrodzenieInfo  || !okresRozliczeniowy) {
     setValidationError("All fields must be entered!");
     return;
   }
@@ -297,6 +306,9 @@ const goToNextStep = () => {
       formaPrawna: formData.formaPrawna,
       wypadkowe: wypadkoweRate,
       representativeName, // Add this line
+      okresRozliczeniowy,
+      poraNocna,
+      wynagrodzenieInfo
   };
 
   // Make the API call
@@ -333,6 +345,9 @@ setCountry('');
   setTaxOffice('');
   setPESEL('');
   setRepresentativeName(''); // Add this line
+  setOkresRozliczeniowy('1 miesiąc');
+  setPoraNocna('22 - 8');
+  setWynagrodzenieInfo('');
 
   // Switch back to view mode after a delay
   setTimeout(() => {
@@ -355,6 +370,9 @@ const createdCompanyData = {
   Bankaccount,
   formaPrawna,
   representativeName, // Add this line
+  okresRozliczeniowy,
+  poraNocna,
+  wynagrodzenieInfo
 };
 
 // Set the created employee data in the state
@@ -448,7 +466,10 @@ const toggleEditMode = (editMode) => {
       setPostcode(companyData.post_code || '');
       setCity(companyData.city || '');
       setCountry(companyData.country || '');
-      setRepresentativeName(companyData.representativeName || '');
+      setRepresentativeName(companyData.representative_name || '');
+      setOkresRozliczeniowy(companyData.okres_rozliczeniowy || '1 miesiąc');
+      setPoraNocna(companyData.pora_nocna || '22 - 8');
+      setWynagrodzenieInfo(companyData.wynagrodzenie_info || '');
       // Find the option that matches the taxOffice ID from companyData
       const selectedTaxOfficeOption = taxOfficeOptions.find(option => option.label === companyData.tax_office);
         if (selectedTaxOfficeOption) {
@@ -513,6 +534,9 @@ const handleUpdateCompany = async (event, companyId) => {
       formaPrawna: formData.formaPrawna,
       wypadkowe: wypadkoweRate,
       representativeName, // Add this line
+      okresRozliczeniowy,
+      poraNocna,
+      wynagrodzenieInfo
       
     };
 
@@ -592,6 +616,18 @@ const handleUpdateCompany = async (event, companyId) => {
         <label className="block text-gray-700 text-sm font-bold mb-2">Tax Office:</label>
         <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.tax_office}</p>
         </div>
+        <div className="col-span-1 md:col-span-3">
+  <label className="block text-gray-700 text-sm font-bold mb-2">Okres rozliczeniowy:</label>
+  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.okres_rozliczeniowy}</p>
+</div>
+<div className="col-span-1 md:col-span-3">
+  <label className="block text-gray-700 text-sm font-bold mb-2">Wynagrodzenie:</label>
+  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.wynagrodzenie_info}</p>
+</div>
+<div className="col-span-1 md:col-span-3">
+  <label className="block text-gray-700 text-sm font-bold mb-2">Pora nocna:</label>
+  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.pora_nocna}</p>
+</div>
         {companyData.forma === 'osoba_fizyczna' && (
         <div className="col-span-1 md:col-span-2">
         <label className="block text-gray-700 text-sm font-bold mb-2">PESEL</label>
@@ -728,6 +764,52 @@ const handleUpdateCompany = async (event, companyId) => {
       classNamePrefix="react-select" // You might need to adjust this based on your Select component's props
     />
   </div>
+
+  <div className="flex flex-col">
+      <label htmlFor="okresRozliczeniowy" className="font-semibold">Okres rozliczeniowy:</label>
+      <select
+        id="okresRozliczeniowy"
+        name="okresRozliczeniowy"
+        className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
+        value={okresRozliczeniowy}
+        onChange={(e) => setOkresRozliczeniowy(e.target.value)}
+      >
+        <option value="1 miesiąc">1 miesiąc</option>
+        <option value="2 miesiące">2 miesiące</option>
+        <option value="3 miesiące">3 miesiące</option>
+      </select>
+    </div>
+
+    <div className="flex flex-col">
+      <label htmlFor="poraNocna" className="font-semibold">Pora nocna:</label>
+      <select
+        id="poraNocna"
+        name="poraNocna"
+        className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
+        value={poraNocna}
+        onChange={(e) => setPoraNocna(e.target.value)}
+      >
+        <option value="22 - 8">22 - 8</option>
+        <option value="23 - 7">23 - 7</option>
+        <option value="24 - 6">24 - 6</option>
+      </select>
+    </div>
+
+   
+    <div className="flex flex-col">
+      <label htmlFor="wynagrodzenieInfo" className="font-semibold">Wynagrodzenie opcja:</label>
+      <select
+        id="wynagrodzenieInfo"
+        name="wynagrodzenieInfo"
+        className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
+        value={wynagrodzenieInfo}
+        onChange={(e) => setWynagrodzenieInfo(e.target.value)}
+      >
+        <option value="z dołu ostatniego dnia miesiąca kalendarzowego">z dołu ostatniego dnia miesiąca kalendarzowego</option>
+        <option value="do 5 dnia następnego miesiąca kalendarzowego">do 5 dnia następnego miesiąca kalendarzowego</option>
+        <option value="do 10 dnia następnego miesiąca kalendarzowego">do 10 dnia następnego miesiąca kalendarzowego</option>
+      </select>
+    </div>
   
   <div className="flex flex-col space-y-4">
   <div className="flex flex-col">
