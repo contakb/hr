@@ -13,6 +13,16 @@ import { supabase } from './supabaseClient';
 import { useUser } from './UserContext'; // Ensure correct pat
 
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBuilding, faAddressCard, faUserShield, faCog, faMoneyCheckAlt, faCalendarAlt, faClock, faMoneyBillWave } from '@fortawesome/free-solid-svg-icons';
+
+// Import MUI components
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import Typography from '@mui/material/Typography';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
 
 function CreateCompany() {
     const initialFormData = {
@@ -27,7 +37,8 @@ function CreateCompany() {
         representativeName: '', // Add this line
         okresRozliczeniowy: '1 miesiąc',
         poraNocna: '22 - 8',
-        wynagrodzenieInfo: ''
+        wynagrodzenieInfo: '',
+        regon: ''
       };
   const [CompanyName, setCompanyName] = useState('');
   const [street, setStreet] = useState('');
@@ -43,6 +54,8 @@ function CreateCompany() {
   const [okresRozliczeniowy, setOkresRozliczeniowy] = useState('1 miesiąc'); // Add this line
 const [poraNocna, setPoraNocna] = useState('22 - 8'); // Add this line
 const [wynagrodzenieInfo, setWynagrodzenieInfo] = useState(''); // Add this line
+const [regon, setRegon] = useState(''); // Add this line
+const [wynagrodzenieOption, setWynagrodzenieOption] = useState('');
   const [createdCompany, setCreatedCompany] = useState(null); // Track the created company
   const navigate = useNavigate();  // Import the useNavigate hook
   const [taxOfficeID, setTaxOfficeID] = useState('');
@@ -214,6 +227,7 @@ const goToNextStep = () => {
   setRepresentativeName(''); // Add this line
   setPoraNocna('22 - 8'); // Add this line
   setWynagrodzenieInfo(''); // Add this line
+  setRegon(''); // Add this line
   setCreatedCompany(null); // Track the created company
   // Reset any other form-related states, if necessary
   };
@@ -247,7 +261,7 @@ const goToNextStep = () => {
     console.log('CreatedCompany Data:', companyData); // Debugging
 
     // Perform validation checks
-  if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid || !representativeName || !poraNocna || !wynagrodzenieInfo  || !okresRozliczeniowy) {
+  if (!CompanyName || !street || !number || !postcode || !city || !country || !taxOffice || !Taxid || !representativeName || !poraNocna || !wynagrodzenieInfo  || !okresRozliczeniowy || !regon) {
     setValidationError("All fields must be entered!");
     return;
   }
@@ -308,7 +322,8 @@ const goToNextStep = () => {
       representativeName, // Add this line
       okresRozliczeniowy,
       poraNocna,
-      wynagrodzenieInfo
+      wynagrodzenieInfo,
+      regon
   };
 
   // Make the API call
@@ -348,6 +363,7 @@ setCountry('');
   setOkresRozliczeniowy('1 miesiąc');
   setPoraNocna('22 - 8');
   setWynagrodzenieInfo('');
+  setRegon('');
 
   // Switch back to view mode after a delay
   setTimeout(() => {
@@ -372,7 +388,8 @@ const createdCompanyData = {
   representativeName, // Add this line
   okresRozliczeniowy,
   poraNocna,
-  wynagrodzenieInfo
+  wynagrodzenieInfo,
+  regon
 };
 
 // Set the created employee data in the state
@@ -456,6 +473,7 @@ const handleTaxOfficeChange = (selectedOption) => {
       setTaxOfficeName('');
   }
 };
+
   
 const toggleEditMode = (editMode) => {
   if (editMode && companyData) {
@@ -470,6 +488,7 @@ const toggleEditMode = (editMode) => {
       setOkresRozliczeniowy(companyData.okres_rozliczeniowy || '1 miesiąc');
       setPoraNocna(companyData.pora_nocna || '22 - 8');
       setWynagrodzenieInfo(companyData.wynagrodzenie_info || '');
+      setRegon(companyData.regon || '');
       // Find the option that matches the taxOffice ID from companyData
       const selectedTaxOfficeOption = taxOfficeOptions.find(option => option.label === companyData.tax_office);
         if (selectedTaxOfficeOption) {
@@ -501,7 +520,7 @@ const handleUpdateCompany = async (event, companyId) => {
 
   
     // Validation code
-    if (!CompanyName || !street || !number || !postcode || !city || !country || !Taxid || !taxOfficeName || !representativeName) {
+    if (!CompanyName || !street || !number || !postcode || !city || !country || !Taxid || !taxOfficeName || !representativeName || !regon) {
       setValidationError("All fields must be entered!");
       return;
     }
@@ -536,7 +555,8 @@ const handleUpdateCompany = async (event, companyId) => {
       representativeName, // Add this line
       okresRozliczeniowy,
       poraNocna,
-      wynagrodzenieInfo
+      wynagrodzenieInfo,
+      regon
       
     };
 
@@ -563,311 +583,280 @@ const handleUpdateCompany = async (event, companyId) => {
   
   
 
-  return (
-    <div className="setupProcess bg-gray-50 min-h-screen flex flex-col items-center justify-start pt-10">
-  <StepIndicator steps={steps} currentStep={currentStep} />
+return (
+  <div className="setupProcess bg-gray-50 min-h-screen flex flex-col items-center justify-start pt-10">
+      <StepIndicator steps={steps} currentStep={currentStep} />
+      <div className="companyTodoContainer max-w-4xl w-full flex flex-col lg:flex-row gap-8">
+          <div className="companyDetails bg-white shadow-md rounded px-6 py-8 flex-1">
+              <h1 className="text-2xl font-semibold mb-4">Dane Twojej firmy:</h1>
+              {validationError && <div className="text-red-500">{validationError}</div>}
+              {updateMessage && <div className="text-green-500">{updateMessage}</div>}
+              {isLoading ? (
+                  <p>Loading...</p>
+              ) : error ? (
+                  <div><p className="text-red-500">{error}</p>{renderForm()}</div>
+              ) : companyData && !isEditMode ? (
+                  <>
+                      {/* Company Name and Address */}
+                      <div className="mb-4">
+                          <div className="flex items-center">
+                              <FontAwesomeIcon icon={faBuilding} className="mr-2" />
+                              <label className="block text-gray-700 text-sm font-bold">Nazwa firmy:</label>
+                          </div>
+                          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.company_name}</p>
+                          <div className="flex items-center">
+                              <FontAwesomeIcon icon={faUserShield} className="mr-2" />
+                              <label className="block text-gray-700 text-sm font-bold">Osoba reprezentująca:</label>
+                          </div>
+                          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.representative_name}</p>
+                          <div className="flex items-center mt-2">
+                              <FontAwesomeIcon icon={faAddressCard} className="mr-2" />
+                              <label className="block text-gray-700 text-sm font-bold">Adres:</label>
+                          </div>
+                          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.street} {companyData.number}, {companyData.post_code} {companyData.city}, {companyData.country}</p>
+                      </div>
 
-  <div className="companyTodoContainer max-w-4xl w-full flex flex-col lg:flex-row gap-8">
-  <div className="companyDetails bg-white shadow-md rounded px-6 py-8 flex-1">
-    <h1 className="text-2xl font-semibold mb-4">Dane Twojej firmy:</h1>
-    {validationError && <div className="text-red-500">{validationError}</div>}
-    {updateMessage && <div className="text-green-500">{updateMessage}</div>}
-    {isLoading ? (
-      <p>Loading...</p>
-    ) : error ? (
-      <div><p className="text-red-500">{error}</p>{renderForm()}</div>
-    ) : companyData && !isEditMode ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Dynamically generated company details */}
-        <div className="col-span-1 md:col-span-3">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Company Name:</label>
-          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.company_name}</p>
-        </div>
-        <div className="col-span-1 md:col-span-3">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Osoba reprezentująca firmę:</label>
-          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.representative_name}</p>
-        </div>
-        {/* Repeat this structure for other company details */}
-        <div className="col-span-1 md:col-span-2">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Street:</label>
-          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.street}</p>
-        </div>
-        <div className="col-span-1">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Number:</label>
-          <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.number}</p>
-        </div>
-        <div className="col-span-1">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Kod pocztowy:</label>
-        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.post_code}</p>
-        </div>
-        <div className="col-span-1">
-        <label className="block text-gray-700 text-sm font-bold mb-2">City:</label>
-        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.city}</p>
-        </div>
-        <div className="col-span-1">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Country:</label>
-        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.country}</p>
-        </div>
-        <div className="col-span-1 md:col-span-2">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Tax ID::</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.taxid}</p>
-        </div>
-        <div className="col-span-1 md:col-span-3">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Tax Office:</label>
-        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.tax_office}</p>
-        </div>
-        <div className="col-span-1 md:col-span-3">
-  <label className="block text-gray-700 text-sm font-bold mb-2">Okres rozliczeniowy:</label>
-  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.okres_rozliczeniowy}</p>
-</div>
-<div className="col-span-1 md:col-span-3">
-  <label className="block text-gray-700 text-sm font-bold mb-2">Wynagrodzenie:</label>
-  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.wynagrodzenie_info}</p>
-</div>
-<div className="col-span-1 md:col-span-3">
-  <label className="block text-gray-700 text-sm font-bold mb-2">Pora nocna:</label>
-  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.pora_nocna}</p>
-</div>
-        {companyData.forma === 'osoba_fizyczna' && (
-        <div className="col-span-1 md:col-span-2">
-        <label className="block text-gray-700 text-sm font-bold mb-2">PESEL</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.pesel}</p>
-        </div>
-        )}
-        <div className="col-span-1 md:col-span-2">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Forma działalności:</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.forma}</p>
-        </div>
-        <div className="col-span-1 md:col-span-2">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Ubezpieczenie wypadkowe:</label>
-        <p className="bg-gray-100 rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.wypadkowe}</p>
-        </div>
-        <div className="col-span-1 md:col-span-3">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Rachunek bankowy:</label>
-        <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{companyData.bank_account}</p>
-        </div>
-        <div className="col-span-1 md:col-span-2">
-      <button className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edytuj dane firmy</button>
+                      {/* Accordion for Bank Account */}
+                      <Accordion>
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Typography><FontAwesomeIcon icon={faMoneyCheckAlt} className="mr-2" /> Bank Account</Typography>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Rachunek bankowy:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.bank_account}</p>
+                              </div>
+                          </AccordionDetails>
+                      </Accordion>
+
+                      {/* Accordion for Salary */}
+                      <Accordion>
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Typography><FontAwesomeIcon icon={faMoneyBillWave} className="mr-2" /> Wynagrodzenie</Typography>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Wynagrodzenie:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.wynagrodzenie_info}</p>
+                              </div>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Okres rozliczeniowy:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.okres_rozliczeniowy}</p>
+                              </div>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Pora nocna:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.pora_nocna}</p>
+                              </div>
+                          </AccordionDetails>
+                      </Accordion>
+
+                      {/* Accordion for IDs and Tax Office */}
+                      <Accordion>
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Typography><FontAwesomeIcon icon={faCog} className="mr-2" /> NIP I US</Typography>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Tax ID:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.taxid}</p>
+                              </div>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Regon:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.regon}</p>
+                              </div>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Tax Office:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.tax_office}</p>
+                              </div>
+                          </AccordionDetails>
+                      </Accordion>
+
+                      {/* Accordion for Insurance */}
+                      <Accordion>
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Typography><FontAwesomeIcon icon={faClock} className="mr-2" /> Ubezpieczenia</Typography>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Ubezpieczenie wypadkowe:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.wypadkowe}</p>
+                              </div>
+                          </AccordionDetails>
+                      </Accordion>
+
+                      <div className="col-span-1 md:col-span-2 mt-4">
+                          <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => toggleEditMode(true)}>Edytuj dane firmy</button>
+                      </div>
+                  </>
+              ) : (
+                  renderForm()
+              )}
+              {showNextStepButton && (
+                  <div className="mt-4">
+                      <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={goToNextStep}>Go to Next Step</button>
+                  </div>
+              )}
+          </div>
+
+          {companyData && (
+              <div className="todoList bg-white shadow-md rounded px-6 py-8 flex-1">
+                  <ToDo />
+              </div>
+          )}
       </div>
-    </div>
-  ) : (
-    renderForm()
-  )}
-  {showNextStepButton && (
-    <div className="mt-4">
-      <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={goToNextStep}>Go to Next Step</button>
-    </div>
-  )}
-</div>
-
-
-    {/* Conditionally render ToDo component if companyData exists */}
-    {companyData && (
-       <div className="todoList bg-white shadow-md rounded px-6 py-8 flex-1">
-        <ToDo />
-      </div>
-    )}
   </div>
-</div>
 );
-  function renderForm() {
-    return (
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex flex-col space-y-2">
-         {/* Your form fields go here */}
-         <div className="flex flex-col">
-        <label className="font-semibold" htmlFor="companyName">Nazwa firmy:</label>
-        <input className="border border-gray-300 rounded p-2" id="companyName" type="text" value={CompanyName} onChange={handleCompanyNameChange} />
+
+const handleInputChange = (e) => {
+  const { name, value } = e.target;
+  setFormData({
+      ...formData,
+      [name]: value,
+  });
+};
+
+function renderForm() {
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex flex-col space-y-2">
+        <div className="flex flex-col">
+          <label className="font-semibold" htmlFor="companyName">Nazwa firmy:</label>
+          <input className="border border-gray-300 rounded p-2" id="companyName" type="text" value={CompanyName} onChange={handleCompanyNameChange} />
         </div>
         <div className="flex flex-col">
-            <label htmlFor="representativeName" className="font-semibold">Osoba reprezentująca firmę:</label>
-            <input id="representativeName" type="text" value={representativeName} onChange={handleRepresentativeNameChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-          </div>
-        <label className="font-semibold" htmlFor="Taxid">Tax id:</label>
-         <input className="border border-gray-300 rounded p-2" id="Taxid" type="text" value={Taxid} onChange={handleTaxidChange} />
-         <div className="flex flex-col mb-4">
-  <label className="mb-2 font-semibold" htmlFor="formaPrawna">Forma Prawna:</label>
-  <select
-    id="formaPrawna"
-    name="formaPrawna"
-    value={formData.formaPrawna}
-    onChange={handleChange}  // Assuming handleChange handles form updates
-    className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-  >
-    <option value="osoba_prawna">Osoba Prawna</option>
-    <option value="osoba_fizyczna">Osoba Fizyczna</option>
-  </select>
-</div>
-
-  
-{formData.formaPrawna === 'osoba_fizyczna' && (
-  <div className="flex flex-col mb-4">
-    <label className="mb-2 font-semibold" htmlFor="PESEL">PESEL Number:</label>
-    <input
-      id="PESEL"
-      type="text"
-      name="PESEL"
-      value={formData.PESEL}
-      onChange={handleChange}  // Again, ensure handleChange is set up to handle this input
-      className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-    />
-  </div>
-)}
-
-  
-         {/* Street */}
-  <div className="flex flex-col">
-    <label htmlFor="street" className="font-semibold">Street:</label>
-    <input id="street" type="text" value={street} onChange={handleStreetChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-  </div>
-
-  {/* Number */}
-  <div className="flex flex-col">
-    <label htmlFor="number" className="font-semibold">Number:</label>
-    <input id="number" type="text" value={number} onChange={handleNumberChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-  </div>
-
-  {/* Postcode */}
-  <div className="flex flex-col">
-    <label htmlFor="postcode" className="font-semibold">Postcode:</label>
-    <input id="postcode" type="text" value={postcode} onChange={handlePostcodeChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-  </div>
-
-  {/* City */}
-  <div className="flex flex-col">
-    <label htmlFor="city" className="font-semibold">City:</label>
-    <input id="city" type="text" value={city} onChange={handleCityChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-  </div>
-
-  {/* Country */}
-  <div className="flex flex-col">
-    <label htmlFor="country" className="font-semibold">Country:</label>
-    <input id="country" type="text" value={country} onChange={handleCountryChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-  </div>
-
-  {/* Bank Account */}
-  <div className="flex flex-col">
-    <label htmlFor="bankAccount" className="font-semibold">Bank account:</label>
-    <input id="bankAccount" type="text" value={Bankaccount} onChange={handleBankaccountChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-  </div>
-  
-        {/* Tax Office - Assuming 'Select' is a component from a library like 'react-select' */}
-  <div className="flex flex-col">
-    <label htmlFor="taxOffice" className="font-semibold">Tax Office:</label>
-    <Select
-      id="taxOffice"
-      options={taxOfficeOptions}
-      onChange={handleTaxOfficeChange}
-      isSearchable={true}
-      placeholder="Wybierz US"
-      value={taxOfficeOptions.find(option => option.value === taxOffice)}
-      classNamePrefix="react-select" // You might need to adjust this based on your Select component's props
-    />
-  </div>
-
-  <div className="flex flex-col">
-      <label htmlFor="okresRozliczeniowy" className="font-semibold">Okres rozliczeniowy:</label>
-      <select
-        id="okresRozliczeniowy"
-        name="okresRozliczeniowy"
-        className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
-        value={okresRozliczeniowy}
-        onChange={(e) => setOkresRozliczeniowy(e.target.value)}
-      >
-        <option value="1 miesiąc">1 miesiąc</option>
-        <option value="2 miesiące">2 miesiące</option>
-        <option value="3 miesiące">3 miesiące</option>
-      </select>
-    </div>
-
-    <div className="flex flex-col">
-      <label htmlFor="poraNocna" className="font-semibold">Pora nocna:</label>
-      <select
-        id="poraNocna"
-        name="poraNocna"
-        className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
-        value={poraNocna}
-        onChange={(e) => setPoraNocna(e.target.value)}
-      >
-        <option value="22 - 8">22 - 8</option>
-        <option value="23 - 7">23 - 7</option>
-        <option value="24 - 6">24 - 6</option>
-      </select>
-    </div>
-
-   
-    <div className="flex flex-col">
-      <label htmlFor="wynagrodzenieInfo" className="font-semibold">Wynagrodzenie opcja:</label>
-      <select
-        id="wynagrodzenieInfo"
-        name="wynagrodzenieInfo"
-        className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
-        value={wynagrodzenieInfo}
-        onChange={(e) => setWynagrodzenieInfo(e.target.value)}
-      >
-        <option value="z dołu ostatniego dnia miesiąca kalendarzowego">z dołu ostatniego dnia miesiąca kalendarzowego</option>
-        <option value="do 5 dnia następnego miesiąca kalendarzowego">do 5 dnia następnego miesiąca kalendarzowego</option>
-        <option value="do 10 dnia następnego miesiąca kalendarzowego">do 10 dnia następnego miesiąca kalendarzowego</option>
-      </select>
-    </div>
-  
-  <div className="flex flex-col space-y-4">
-  <div className="flex flex-col">
-    <label htmlFor="numberOfEmployees" className="font-semibold block mb-2">Ilość pracowników:</label>
-    <input 
-      type="number" 
-      id="numberOfEmployees" 
-      placeholder="Podaj ilość osób zgłoszonych do ub. wypadkowego"
-      value={numberOfEmployees} 
-      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-      onChange={(e) => {
-        setNumberOfEmployees(e.target.value);
-        if (e.target.value <= 10) {
-          setWypadkoweRate('1.67%'); // Automatically set the rate for 10 or fewer employees
-        } else {
-          setWypadkoweRate(''); // Reset the rate for more than 10 employees
-        }
-      }} 
-    />
-  </div>
-
-  <div className="flex flex-col mb-4 space-y-2">
-    <label htmlFor="ubezpieczenieWypadkowe" className="font-semibold block">Ujęta stopa procentowa na ub. wypadkowe:</label>
-    {numberOfEmployees > 10 ? (
-      <input 
-        type="text" 
-        id="ubezpieczenieWypadkowe" 
-        placeholder="Uzułnij wartość w % jeśli masz powyżej 10 pracowników" 
-        value={wypadkoweRate}
-        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        onChange={(e) => setWypadkoweRate(e.target.value)}
-      />
-    ) : (
-      <p className="bg-gray-100 rounded w-full py-2 px-3">{wypadkoweRate} (dla firm zatrudniających mniej niż 10 osób)</p>
-    )}
-
-    <div className="text-sm mt-2">
-      <p>Uwaga: Firma posiadająca więcej niż 10 pracowników i uzyskała z ZUS stopę procentową składki na ubezpieczenie wypadkowe.</p>
-    </div>
-  </div>
-</div>
-
-  <div className="flex space-x-2 mt-4">
-    <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-      {isEditMode ? 'Update Company' : 'Create Company'}
-    </button>
-    <button onClick={() => toggleEditMode(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-      Cancel
-    </button>
-    <button onClick={handleClearData} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-      Clear Data
-    </button>
-  </div>
-
+          <label htmlFor="representativeName" className="font-semibold">Osoba reprezentująca firmę:</label>
+          <input id="representativeName" type="text" value={representativeName} onChange={handleRepresentativeNameChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
         </div>
-      </form>
-    );
+        <div className="flex flex-col">
+          <label className="font-semibold" htmlFor="Taxid">Tax id:</label>
+          <input className="border border-gray-300 rounded p-2" id="Taxid" type="text" value={Taxid} onChange={handleTaxidChange} />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="wynagrodzenieInfo" className="font-semibold">regon:</label>
+          <textarea id="regon" name="regon" className="form-textarea block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={regon} onChange={(e) => setRegon(e.target.value)} placeholder="Wprowadź regon" />
+          
+        </div>
+        <div className="flex flex-col mb-4">
+          <label className="mb-2 font-semibold" htmlFor="formaPrawna">Forma Prawna:</label>
+          <select id="formaPrawna" name="formaPrawna" value={formData.formaPrawna} onChange={handleChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <option value="osoba_prawna">Osoba Prawna</option>
+            <option value="osoba_fizyczna">Osoba Fizyczna</option>
+          </select>
+        </div>
+
+        {formData.formaPrawna === 'osoba_fizyczna' && (
+          <div className="flex flex-col mb-4">
+            <label className="mb-2 font-semibold" htmlFor="PESEL">PESEL Number:</label>
+            <input id="PESEL" type="text" name="PESEL" value={formData.PESEL} onChange={handleChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+          </div>
+        )}
+
+        <div className="flex flex-col">
+          <label htmlFor="street" className="font-semibold">Street:</label>
+          <input id="street" type="text" value={street} onChange={handleStreetChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="number" className="font-semibold">Number:</label>
+          <input id="number" type="text" value={number} onChange={handleNumberChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="postcode" className="font-semibold">Postcode:</label>
+          <input id="postcode" type="text" value={postcode} onChange={handlePostcodeChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="city" className="font-semibold">City:</label>
+          <input id="city" type="text" value={city} onChange={handleCityChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="country" className="font-semibold">Country:</label>
+          <input id="country" type="text" value={country} onChange={handleCountryChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="bankAccount" className="font-semibold">Bank account:</label>
+          <input id="bankAccount" type="text" value={Bankaccount} onChange={handleBankaccountChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+        </div>
+
+        <div className="flex flex-col">
+          <label htmlFor="taxOffice" className="font-semibold">Tax Office:</label>
+          <Select id="taxOffice" options={taxOfficeOptions} onChange={handleTaxOfficeChange} isSearchable={true} placeholder="Wybierz US" value={taxOfficeOptions.find(option => option.value === taxOffice)} classNamePrefix="react-select" />
+        </div>
+
+        <div className="flex flex-col">
+          <label htmlFor="okresRozliczeniowy" className="font-semibold">Okres rozliczeniowy:</label>
+          <select id="okresRozliczeniowy" name="okresRozliczeniowy" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={okresRozliczeniowy} onChange={(e) => setOkresRozliczeniowy(e.target.value)}>
+            <option value="1 miesiąc">1 miesiąc</option>
+            <option value="2 miesiące">2 miesiące</option>
+            <option value="3 miesiące">3 miesiące</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <label htmlFor="poraNocna" className="font-semibold">Pora nocna:</label>
+          <select id="poraNocna" name="poraNocna" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={poraNocna} onChange={(e) => setPoraNocna(e.target.value)}>
+            <option value="22 - 8">22 - 8</option>
+            <option value="23 - 7">23 - 7</option>
+            <option value="24 - 6">24 - 6</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <label htmlFor="wynagrodzenieOption" className="font-semibold">Wynagrodzenie opcja:</label>
+          <select id="wynagrodzenieOption" name="wynagrodzenieOption" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={wynagrodzenieOption} onChange={(e) => setWynagrodzenieOption(e.target.value)}>
+            <option value="z dołu ostatniego dnia miesiąca kalendarzowego">z dołu ostatniego dnia miesiąca kalendarzowego</option>
+            <option value="do 5 dnia następnego miesiąca kalendarzowego">do 5 dnia następnego miesiąca kalendarzowego</option>
+            <option value="do 10 dnia następnego miesiąca kalendarzowego">do 10 dnia następnego miesiąca kalendarzowego</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <label htmlFor="wynagrodzenieInfo" className="font-semibold">Wynagrodzenie:</label>
+          <textarea id="wynagrodzenieInfo" name="wynagrodzenieInfo" className="form-textarea block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={wynagrodzenieInfo} onChange={(e) => setWynagrodzenieInfo(e.target.value)} placeholder="Wprowadź informację o wynagrodzeniu" />
+          <small>przelewem na podany nr rachunku bankowego lub po złożeniu przez Panią oświadczenia na piśmie – gotówką w siedzibie firmy.</small>
+        </div>
+
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col">
+            <label htmlFor="numberOfEmployees" className="font-semibold block mb-2">Ilość pracowników:</label>
+            <input type="number" id="numberOfEmployees" placeholder="Podaj ilość osób zgłoszonych do ub. wypadkowego" value={numberOfEmployees} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" onChange={(e) => {
+              setNumberOfEmployees(e.target.value);
+              if (e.target.value <= 10) {
+                setWypadkoweRate('1.67%');
+              } else {
+                setWypadkoweRate('');
+              }
+            }} />
+          </div>
+
+          <div className="flex flex-col mb-4 space-y-2">
+            <label htmlFor="ubezpieczenieWypadkowe" className="font-semibold block">Ujęta stopa procentowa na ub. wypadkowe:</label>
+            {numberOfEmployees > 10 ? (
+              <input type="text" id="ubezpieczenieWypadkowe" placeholder="Uzułnij wartość w % jeśli masz powyżej 10 pracowników" value={wypadkoweRate} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" onChange={(e) => setWypadkoweRate(e.target.value)} />
+            ) : (
+              <p className="bg-gray-100 rounded w-full py-2 px-3">{wypadkoweRate} (dla firm zatrudniających mniej niż 10 osób)</p>
+            )}
+
+            <div className="text-sm mt-2">
+              <p>Uwaga: Firma posiadająca więcej niż 10 pracowników i uzyskała z ZUS stopę procentową składki na ubezpieczenie wypadkowe.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-2 mt-4">
+          <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            {isEditMode ? 'Update Company' : 'Create Company'}
+          </button>
+          <button onClick={() => toggleEditMode(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+            Cancel
+          </button>
+          <button onClick={handleClearData} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+            Clear Data
+          </button>
+        </div>
+      </div>
+    </form>
+  );
 }
+
 
 }
 export default CreateCompany;
