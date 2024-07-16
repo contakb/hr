@@ -44,6 +44,7 @@ import Success from './Success';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import TrialEnded from './TrialEnded';
+import EmployeeReportsPage from './EmployeeReportsPage';
 
 const stripePromise = loadStripe('pk_live_51PWCkCC24aqQf542gaveEHeqLSBQ724b0jzLDCs9nGsurKvRp2sHvWepk7waJmeX5e0xSiZtCzxzV39brkyBC7TW00PM67gLmm');
 
@@ -86,6 +87,10 @@ function App() {
 		  <Route path="/salary-selection" element={<PrivateRoute element={SalarySelectionPage} allowedRoles={['admin']} />} />
 		  <Route path="/salary-list" element={<PrivateRoute element={SalaryListPage}  allowedRoles={['admin']}  />} />
 		  <Route path="/Reports" element={<PrivateRoute element={ReportsPage}  allowedRoles={['admin']} />} />
+      <Route path="/employee-reports" element={<PrivateRoute element={EmployeeReportsPage}  allowedRoles={['employee']} />} />
+      <Route path="/employee-reports/:employeeId" element={<PrivateRoute element={EmployeeReportsPage} allowedRoles={['employee']} />} />
+
+      <Route path="/reports/:employeeId" element={<PrivateRoute element={ReportsPage} allowedRoles={['admin', 'employee']} />} />
       <Route path="/settings" element={<SettingsPage />} />
       
       <Route
@@ -106,7 +111,7 @@ function App() {
       <Route path="/calendar" element={<CalendarPage />} />
       <Route path="/empbreakcalendar" element={<AdminBreaksCalendar />} />
       <Route path="/breakcalendar" element={<EmployeeBreaksCalendar />} />
-      <Route path="/holidaybase/:employeeId" element={<HolidayBaseCalculator />} />
+      <Route path="/holidaybase/:employeeId" element={<PrivateRoute element={HolidayBaseCalculator} allowedRoles={['admin', 'employee']} />} />
       <Route
                 path="/employee-account"
                 element={<PrivateRoute element={EmployeeAccount} allowedRoles={['employee']} />}

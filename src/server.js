@@ -2724,7 +2724,7 @@ app.get('/account/:username', isAuthenticated, async (req, res) => {
 });
 
 app.post('/create-company', verifyJWT, async (req, res) => {
-  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe, representativeName,okresRozliczeniowy, poraNocna, wynagrodzenieInfo,regon } = req.body;
+  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe, representativeName,okresRozliczeniowy, poraNocna, wynagrodzenieInfo,regon, wynagrodzenieOption } = req.body;
 
 
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
@@ -2761,7 +2761,8 @@ app.post('/create-company', verifyJWT, async (req, res) => {
           okres_rozliczeniowy: okresRozliczeniowy,
           pora_nocna: poraNocna,
           wynagrodzenie_info: wynagrodzenieInfo,
-          regon
+          regon,
+          wynagrodzenieoption:wynagrodzenieOption
         }
       ])
       .select();
@@ -2832,7 +2833,7 @@ app.get('/api/created_company', verifyJWT, async (req, res) => {
 
 app.put('/update-company/:companyId',verifyJWT, async (req, res) => {
   const companyId = req.params.companyId; // Get the companyId from the URL parameter
-  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe,representativeName, okresRozliczeniowy, poraNocna, wynagrodzenieInfo,regon } = req.body;
+  const { CompanyName, street, number, postcode, city, country, taxOfficeName, PESEL, Taxid, Bankaccount, formaPrawna, wypadkowe,representativeName, okresRozliczeniowy, poraNocna, wynagrodzenieInfo,regon, wynagrodzenieOption } = req.body;
 
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
@@ -2868,7 +2869,8 @@ app.put('/update-company/:companyId',verifyJWT, async (req, res) => {
               okres_rozliczeniowy: okresRozliczeniowy,
               pora_nocna: poraNocna,
               wynagrodzenie_info: wynagrodzenieInfo,
-              regon
+              regon, 
+              wynagrodzenieoption:wynagrodzenieOption
           })
           .eq('company_id', companyId) // Match 'company_id' with the parameter
           .select(); // Chain a select() after update()

@@ -74,7 +74,7 @@ const LandingPage = () => {
             <h3 className="text-2xl font-bold mb-4">Hobby</h3>
             <p className="mb-6">Najpotrzebniejsze funkcjonalności kadrowe</p>
             <p className="text-3xl font-bold mb-4">
-              {billingCycle === 'yearly' ? '$100/year' : '$10/month'}
+              {billingCycle === 'yearly' ? '$200/year' : '$20/month'}
             </p>
             <button
               onClick={() => handlePlanSelection('hobby', billingCycle)}
@@ -87,7 +87,7 @@ const LandingPage = () => {
             <h3 className="text-2xl font-bold mb-4">Firma</h3>
             <p className="mb-6">Wszystko co potrzebujesz do prowadzenia spraw pracowniczych</p>
             <p className="text-3xl font-bold mb-4">
-              {billingCycle === 'yearly' ? '$200/year' : '$20/month'}
+              {billingCycle === 'yearly' ? '$500/year' : '$50/month'}
             </p>
             <button
               onClick={() => handlePlanSelection('freelancer', billingCycle)}
@@ -100,7 +100,7 @@ const LandingPage = () => {
             <h3 className="text-2xl font-bold mb-4">Pro</h3>
             <p className="mb-6">Wszystkie dostępne funkcjonalności</p>
             <p className="text-3xl font-bold mb-4">
-              {billingCycle === 'yearly' ? '$300/year' : '$30/month'}
+              {billingCycle === 'yearly' ? '$1000/year' : '$100/month'}
             </p>
             <button
               onClick={() => handlePlanSelection('startup', billingCycle)}
@@ -157,7 +157,7 @@ const LandingPage = () => {
             <p>© 2024 wszelkie prawa zastrzeżone.</p>
             <div className="flex space-x-4">
               <Link to="#"><img src="https://via.placeholder.com/20" alt="GitHub" className="h-6" /></Link>
-              <p>Stworzone przez <a href="https://vercel.com" className="underline">Vercel</a></p>
+              <p>Stworzone przez <a href="https://vercel.com" className="underline">HR</a></p>
             </div>
           </div>
         </div>

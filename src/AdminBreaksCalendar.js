@@ -7,6 +7,7 @@ import { pl } from 'date-fns/locale';
 import { useRequireAuth } from './useRequireAuth';
 import { toast } from 'react-toastify';
 import { useUser } from './UserContext';
+import axios from 'axios';
 
 const AdminBreaksCalendar = () => {
   const [breaks, setBreaks] = useState([]);
@@ -14,6 +15,10 @@ const AdminBreaksCalendar = () => {
   const [selectedBreaks, setSelectedBreaks] = useState([]);
   const [currentMonthBreaks, setCurrentMonthBreaks] = useState([]);
   const { user } = useUser();
+  const [month, setMonth] = useState(new Date().getMonth() + 1); // JavaScript months are 0-indexed
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [workingHours, setWorkingHours] = useState(null);
+const [holidays, setHolidays] = useState([]);
 
   useEffect(() => {
     const fetchBreaks = async () => {
@@ -34,6 +39,28 @@ const AdminBreaksCalendar = () => {
 
     fetchBreaks();
   }, [user]);
+
+  const fetchAllData = async (currentYear, currentMonth) => {
+    try {
+      const workingHoursResponse = await axios.get(`http://localhost:3001/api/getWorkingHours?year=${currentYear}&month=${currentMonth}`);
+      setWorkingHours(workingHoursResponse.data.work_hours);
+    
+      const holidaysResponse = await axios.get(`http://localhost:3001/api/getHolidays?year=${currentYear}&month=${currentMonth}`);
+      const holidaysData = Array.isArray(holidaysResponse.data) ? holidaysResponse.data : [];
+      const filteredHolidays = holidaysData.filter(holiday => {
+        const holidayDate = new Date(holiday.date);
+        return holidayDate.getFullYear() === parseInt(currentYear, 10) && holidayDate.getMonth() === parseInt(currentMonth, 10) - 1;
+      });
+    
+      setHolidays(filteredHolidays);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+    
+  useEffect(() => {
+    fetchAllData(year, month);
+  }, [year, month]);
 
   useEffect(() => {
     const visibleMonthBreaks = breaks.filter((breakEvent) => {
@@ -68,15 +95,32 @@ const AdminBreaksCalendar = () => {
       isSameDay(new Date(breakEvent.break_end_date), date) ||
       (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
     );
-
-    return breaksOnDate.map((breakEvent) => (
-      <div key={breakEvent.id} className={breakEvent.break_type === 'urlop' && !breakEvent.approved ? 'pending-break' : 'approved-break'}>
-        <strong>{breakEvent.break_type}</strong>
-        <p>{breakEvent.description || 'Break details'}</p>
-      </div>
-    ));
+  
+    const holidayOnDate = holidays.find((holiday) => isSameDay(new Date(holiday.date), date));
+  
+    return (
+      <>
+        {breaksOnDate.map((breakEvent) => {
+          const breakClass = breakEvent.break_type === 'urlop'
+            ? breakEvent.status === 'approved' ? 'approved-break' : breakEvent.status === 'denied' ? 'denied-break' : 'pending-break'
+            : '';
+  
+          return (
+            <div key={breakEvent.id} className={`${breakClass}`}>
+              <strong>{breakEvent.break_type}</strong>
+              <p>{breakEvent.description || 'Break details'}</p>
+            </div>
+          );
+        })}
+        {holidayOnDate && (
+          <div className="holiday-event">
+            <strong>Holiday</strong>
+            <p>{holidayOnDate.holiday_name || 'Holiday'}</p>
+          </div>
+        )}
+      </>
+    );
   };
-
   const tileClassName = ({ date, view }) => {
     if (view === 'month') {
       const breakEvent = breaks.find(breakEvent =>
@@ -84,8 +128,12 @@ const AdminBreaksCalendar = () => {
         isSameDay(new Date(breakEvent.break_end_date), date) ||
         (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
       );
+      const holidayOnDate = holidays.find((holiday) => isSameDay(new Date(holiday.date), date));  
+      const isToday = isSameDay(date, new Date());
 
-      if (breakEvent) {
+      if (isToday) {
+        return 'today-tile';
+      } else if (breakEvent) {
         let className = '';
         switch (breakEvent.break_type) {
           case 'zwolnienie':
@@ -111,40 +159,57 @@ const AdminBreaksCalendar = () => {
             break;
         }
         return className;
+      } else if (holidayOnDate) {
+        return 'holiday-tile';
       }
+      
     }
     return null;
   };
 
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
-      const breakEvent = breaks.find(breakEvent =>
+      const breaksOnDate = breaks.filter(breakEvent =>
         isSameDay(new Date(breakEvent.break_start_date), date) ||
         isSameDay(new Date(breakEvent.break_end_date), date) ||
         (new Date(breakEvent.break_start_date) < date && new Date(breakEvent.break_end_date) > date)
       );
-
-      if (breakEvent) {
-        switch (breakEvent.break_type) {
-          case 'zwolnienie':
-            return <div data-letter="ZW"></div>;
-          case 'ciąża':
-            return <div data-letter="CI"></div>;
-          case 'zasiłek':
-            return <div data-letter="ZS"></div>;
-          case 'bezpłatny':
-            return <div data-letter="BP"></div>;
-          case 'nieobecność':
-            return <div data-letter="NB"></div>;
-          case 'urlop':
-            return <div data-letter="UR"></div>;
-          default:
-            return <div data-letter="DF"></div>;
-        }
-      }
+  
+      const holidayOnDate = holidays.find((holiday) => isSameDay(new Date(holiday.date), date));
+      const isToday = isSameDay(date, new Date());
+  
+      return (
+        <div className="tile-content">
+          {breaksOnDate.map((breakEvent, index) => {
+            switch (breakEvent.break_type) {
+              case 'zwolnienie':
+                return <div key={index} data-letter="ZW"></div>;
+              case 'ciąża':
+                return <div key={index} data-letter="CI"></div>;
+              case 'zasiłek':
+                return <div key={index} data-letter="ZS"></div>;
+              case 'bezpłatny':
+                return <div key={index} data-letter="BP"></div>;
+              case 'nieobecność':
+                return <div key={index} data-letter="NB"></div>;
+              case 'urlop':
+                return <div key={index} data-letter="UR"></div>;
+              default:
+                return <div key={index} data-letter="DF"></div>;
+            }
+          })}
+          {holidayOnDate && (
+            <div key="holiday" data-letter="H">Św.</div>
+          )}
+           {isToday && (
+          <div key="today" data-letter="D">Dziś</div>
+        )}
+        </div>
+      );
     }
     return null;
   };
+  
 
   const handleApproveBreak = async (breakId) => {
     try {
@@ -256,7 +321,11 @@ const AdminBreaksCalendar = () => {
         value={date}
         tileClassName={tileClassName}
         tileContent={tileContent}
-        onActiveStartDateChange={({ activeStartDate }) => setDate(activeStartDate)}
+        onActiveStartDateChange={({ activeStartDate }) => {
+          setDate(activeStartDate);
+          setMonth(activeStartDate.getMonth() + 1);
+          setYear(activeStartDate.getFullYear());
+        }}
       />
 
       <div>

@@ -3,9 +3,17 @@ import { Navigate } from 'react-router-dom';
 import { useUser } from './UserContext';
 
 const PrivateRoute = ({ element: Component, allowedRoles }) => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
+
+  if (loading) {
+    console.log("PrivateRoute: Loading...");
+    return <div>Loading...</div>;
+  }
+
+  console.log("PrivateRoute: User", user);
 
   if (!user) {
+    console.log("PrivateRoute: No user, redirecting to /register");
     return <Navigate to="/LoginUser" />;
   }
 
@@ -21,9 +29,11 @@ const PrivateRoute = ({ element: Component, allowedRoles }) => {
   }
 
   if (allowedRoles.includes(user.role)) {
+    console.log(`PrivateRoute: User role is ${user.role}, rendering component`);
     return <Component />;
   }
 
+  console.log(`PrivateRoute: User role is ${user.role}, redirecting to /unauthorized`);
   return <Navigate to="/unauthorized" />;
 };
 

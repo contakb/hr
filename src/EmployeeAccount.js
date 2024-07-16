@@ -20,6 +20,10 @@ function EmployeeAccount() {
   const navigate = useNavigate();
   const [contracts, setContracts] = useState([]);
   const [contractsVisible, setContractsVisible] = useState(false);
+  const [holidayBaseVisible, setHolidayBaseVisible] = useState(false);
+const [holidayBase, setHolidayBase] = useState(null);
+const [editHolidayBaseMode, setEditHolidayBaseMode] = useState(false);
+
 
   console.log(user); // Check if user data is available
   // If useRequireAuth redirects non-authenticated users, authUser will always be defined here
@@ -30,6 +34,71 @@ function EmployeeAccount() {
 const toggleCalendarSize = () => {
   setIsCalendarExpanded(!isCalendarExpanded);
 };
+
+const fetchHolidayBase = async () => {
+  try {
+    const response = await axiosInstance.get(`http://localhost:3001/employees/${employeeDetails.id}/holiday-base`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'X-Schema-Name': user.schemaName,
+      }
+    });
+
+    if (response.data && response.data.data.length > 0) {
+      setHolidayBase(response.data.data[0]);
+    } else {
+      setHolidayBase(null); // No data found
+    }
+  } catch (error) {
+    console.error('Error fetching holiday base data:', error);
+    setHolidayBase(null);
+  }
+};
+
+const toggleHolidayBase = async () => {
+  if (!holidayBaseVisible) {
+    await fetchHolidayBase();
+  }
+  setHolidayBaseVisible(!holidayBaseVisible);
+};
+
+const handleQuickEditHolidayBase = async (e) => {
+  e.preventDefault();
+  const updatedHolidayBase = {
+    holiday_base: holidayBase.holiday_base === 20 ? 26 : 20, // Toggle between 20 and 26
+  };
+
+  try {
+    const response = await axiosInstance.put(`http://localhost:3001/employees/${employeeDetails.id}/holiday-base`, updatedHolidayBase, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'X-Schema-Name': user.schemaName,
+      }
+    });
+
+    if (response.data) {
+      setHolidayBase(prev => ({ ...prev, holiday_base: updatedHolidayBase.holiday_base }));
+      setEditHolidayBaseMode(false);
+      toast.success('Holiday base updated successfully!');
+    }
+  } catch (error) {
+    console.error('Error updating holiday base:', error);
+    toast.error('Failed to update holiday base.');
+  }
+};
+
+const toggleEditHolidayBaseMode = () => {
+  setEditHolidayBaseMode(!editHolidayBaseMode);
+};
+
+const handleHolidayBasePage = () => {
+  navigate(`/holidaybase/${employeeDetails.id}`);
+};
+
+const handleViewReport = () => {
+  navigate(`/employee-reports/${employeeDetails.id}`);
+};
+
 
 
   const fetchEmployeeDetails = useCallback(async () => {
@@ -143,6 +212,8 @@ const toggleCalendarSize = () => {
     navigate(`/EmployeeContract/${employeeDetails.id}`);
   };
 
+  
+
   const toggleContracts = async () => {
     if (!contractsVisible) {
       try {
@@ -215,6 +286,9 @@ const toggleCalendarSize = () => {
     console.log("Aneks contract gross amount:", aneksGrossAmount);
     console.log("Detected changes:", changes);
 
+  
+    
+
     return (
       <div>
         <p>Aneks details (debug):</p>
@@ -240,9 +314,10 @@ const toggleCalendarSize = () => {
     <div className="bg-gray-100 p-4">
       <div className="flex flex-col lg:flex-row gap-8 justify-center lg:items-start">
         <div className="bg-white shadow rounded-lg p-6 w-full lg:max-w-md">
-          <h1 className="font-bold text-xl mb-4">Twoje dane:</h1>
+          <h1 className="font-bold text-xl mb-4">Konto Pracownika</h1>
           {employeeDetails && (
             <div>
+              <p className="mb-3">Twoje dane:</p>
               <p className="mb-3">Imię: {employeeDetails.name}</p>
               <p className="mb-3">Nazwisko: {employeeDetails.surname}</p>
               <button
@@ -382,6 +457,19 @@ const toggleCalendarSize = () => {
               {contractsVisible ?  'Zamknij umowy':'Moje umowy' }
             </button>
             <button
+  onClick={toggleHolidayBase}
+  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+>
+  {holidayBaseVisible ? 'Zamknij urlop' : 'Podstawa urlopu'}
+</button>
+<button
+                type="button"
+                onClick={handleViewReport}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4"
+              >
+                Raporty i zaświadcznia
+              </button>
+            <button
                 type="button"
                 onClick={handleLogout}
                 className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -450,6 +538,75 @@ const toggleCalendarSize = () => {
                   )}
                 </div>
               )}
+              {holidayBaseVisible && (
+  <div className="border-t pt-4 mt-4">
+    <h3 className="text-lg font-semibold">Podstawa urlopu</h3>
+    {holidayBase ? (
+      <div>
+        {editHolidayBaseMode ? (
+          <form onSubmit={handleQuickEditHolidayBase}>
+            <label htmlFor="holiday_base">Holiday Base:</label>
+            <select
+              name="holiday_base"
+              defaultValue={holidayBase.holiday_base}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value={20}>20 days</option>
+              <option value={26}>26 days</option>
+            </select>
+            <div className="flex gap-2 mb-2">
+              <button
+                type="submit"
+                className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+              >
+                Save Changes
+              </button>
+              <button
+                type="button"
+                onClick={toggleEditHolidayBaseMode}
+                className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div>
+            <p><strong>Education Level:</strong> {holidayBase.education_level}</p>
+            <p><strong>Education End Date:</strong> {holidayBase.education_end_date}</p>
+            <p><strong>Total Staż:</strong> {holidayBase.total_staz_years} years, {holidayBase.total_staz_months} months, {holidayBase.total_staz_days} days</p>
+            <p><strong>Holiday Base:</strong> {holidayBase.holiday_base} days</p>
+            <div className="flex gap-2 mb-2">
+              <button
+                onClick={toggleEditHolidayBaseMode}
+                className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+              >
+                Quick Edit
+              </button>
+              <button
+                onClick={handleHolidayBasePage}
+                className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+              >
+                Edytuj Parametry
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    ) : (
+      <div>
+        <p>Brak podstawy urlopu, dodaj proszę.</p>
+        <button
+          className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+          onClick={handleHolidayBasePage}
+        >
+          Dodaj podstawę
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
         </div>
         <div className={`bg-white shadow rounded-lg p-6 ${isCalendarExpanded ? 'w-full' : 'lg:max-w-md'}`}>
   <div className="flex justify-between items-center mb-4">

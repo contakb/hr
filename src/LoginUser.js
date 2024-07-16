@@ -113,10 +113,14 @@ function LoginUser() {
   
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-xl font-semibold mb-4">{isPasswordRecovery ? "Resetuj hasło" : "Logowanie"}</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 bg-gray-800 p-8 rounded-lg shadow-lg">
+          <div className="text-center">
+          <img className="mx-auto h-12 w-auto" src="https://via.placeholder.com/50" alt="Logo" />
+          
+      <h2 className="mt-6 text-3xl font-extrabold text-white">{isPasswordRecovery ? "Resetuj hasło" : "Logowanie"}</h2>
       {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
-
+      </div>
       {isPasswordRecovery ? (
         // Display password reset view
         <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -203,6 +207,8 @@ function LoginUser() {
         </button>
         </div>
     </div>
+    </div>
+    
   );
 }
 

@@ -35,9 +35,10 @@ function CreateCompany() {
         bankAccount: '',
         ubezpieczenieWypadkowe: '',
         representativeName: '', // Add this line
-        okresRozliczeniowy: '1 miesiąc',
-        poraNocna: '22 - 8',
+        okresRozliczeniowy: '',
+        poraNocna: '',
         wynagrodzenieInfo: '',
+        wynagrodzenieOption: '',
         regon: ''
       };
   const [CompanyName, setCompanyName] = useState('');
@@ -51,8 +52,8 @@ function CreateCompany() {
   const [country, setCountry] = useState('');
   const [Bankaccount, setBankaccount] = useState('');
   const [representativeName, setRepresentativeName] = useState(''); // Add this line
-  const [okresRozliczeniowy, setOkresRozliczeniowy] = useState('1 miesiąc'); // Add this line
-const [poraNocna, setPoraNocna] = useState('22 - 8'); // Add this line
+  const [okresRozliczeniowy, setOkresRozliczeniowy] = useState(''); // Add this line
+const [poraNocna, setPoraNocna] = useState(''); // Add this line
 const [wynagrodzenieInfo, setWynagrodzenieInfo] = useState(''); // Add this line
 const [regon, setRegon] = useState(''); // Add this line
 const [wynagrodzenieOption, setWynagrodzenieOption] = useState('');
@@ -62,7 +63,7 @@ const [wynagrodzenieOption, setWynagrodzenieOption] = useState('');
 const [taxOfficeName, setTaxOfficeName] = useState('');
 const [taxOffices, setTaxOffices] = useState([]);
 const [taxOffice, setTaxOffice] = useState('');
-const [formData, setFormData] = useState(initialFormData);
+const [formData, setFormData] = useState('');
 const [formaPrawna, setformaPrawna] = useState('');
 const [numberOfEmployees, setNumberOfEmployees] = useState('');
 const [wypadkoweRate, setWypadkoweRate] = useState('1.67%');
@@ -227,6 +228,7 @@ const goToNextStep = () => {
   setRepresentativeName(''); // Add this line
   setPoraNocna('22 - 8'); // Add this line
   setWynagrodzenieInfo(''); // Add this line
+  setWynagrodzenieOption(''); // Add this line
   setRegon(''); // Add this line
   setCreatedCompany(null); // Track the created company
   // Reset any other form-related states, if necessary
@@ -323,6 +325,7 @@ const goToNextStep = () => {
       okresRozliczeniowy,
       poraNocna,
       wynagrodzenieInfo,
+      wynagrodzenieOption,
       regon
   };
 
@@ -363,6 +366,7 @@ setCountry('');
   setOkresRozliczeniowy('1 miesiąc');
   setPoraNocna('22 - 8');
   setWynagrodzenieInfo('');
+  setWynagrodzenieOption('');
   setRegon('');
 
   // Switch back to view mode after a delay
@@ -389,6 +393,7 @@ const createdCompanyData = {
   okresRozliczeniowy,
   poraNocna,
   wynagrodzenieInfo,
+  wynagrodzenieOption,
   regon
 };
 
@@ -488,6 +493,7 @@ const toggleEditMode = (editMode) => {
       setOkresRozliczeniowy(companyData.okres_rozliczeniowy || '1 miesiąc');
       setPoraNocna(companyData.pora_nocna || '22 - 8');
       setWynagrodzenieInfo(companyData.wynagrodzenie_info || '');
+      setWynagrodzenieOption(companyData.wynagrodzenieoption || '');
       setRegon(companyData.regon || '');
       // Find the option that matches the taxOffice ID from companyData
       const selectedTaxOfficeOption = taxOfficeOptions.find(option => option.label === companyData.tax_office);
@@ -556,6 +562,7 @@ const handleUpdateCompany = async (event, companyId) => {
       okresRozliczeniowy,
       poraNocna,
       wynagrodzenieInfo,
+      wynagrodzenieOption,
       regon
       
     };
@@ -646,6 +653,10 @@ return (
                               <div className="mb-4">
                                   <label className="block text-gray-700 text-sm font-bold">Pora nocna:</label>
                                   <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.pora_nocna}</p>
+                              </div>
+                              <div className="mb-4">
+                                  <label className="block text-gray-700 text-sm font-bold">Wypłata wynagrodzenias:</label>
+                                  <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">{companyData.wynagrodzenieoption}</p>
                               </div>
                           </AccordionDetails>
                       </Accordion>
@@ -739,6 +750,7 @@ function renderForm() {
         <div className="flex flex-col mb-4">
           <label className="mb-2 font-semibold" htmlFor="formaPrawna">Forma Prawna:</label>
           <select id="formaPrawna" name="formaPrawna" value={formData.formaPrawna} onChange={handleChange} className="border border-gray-300 rounded-md p-2 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <option value="" disabled hidden>wybierz formę</option>
             <option value="osoba_prawna">Osoba Prawna</option>
             <option value="osoba_fizyczna">Osoba Fizyczna</option>
           </select>
@@ -783,7 +795,8 @@ function renderForm() {
 
         <div className="flex flex-col">
           <label htmlFor="okresRozliczeniowy" className="font-semibold">Okres rozliczeniowy:</label>
-          <select id="okresRozliczeniowy" name="okresRozliczeniowy" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={okresRozliczeniowy} onChange={(e) => setOkresRozliczeniowy(e.target.value)}>
+          <select id="okresRozliczeniowy" name="okresRozliczeniowy" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={okresRozliczeniowy} onChange={(e) => setOkresRozliczeniowy(e.target.value) }>
+          <option value="" disabled hidden>wybierz okres</option>
             <option value="1 miesiąc">1 miesiąc</option>
             <option value="2 miesiące">2 miesiące</option>
             <option value="3 miesiące">3 miesiące</option>
@@ -793,6 +806,7 @@ function renderForm() {
         <div className="flex flex-col">
           <label htmlFor="poraNocna" className="font-semibold">Pora nocna:</label>
           <select id="poraNocna" name="poraNocna" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={poraNocna} onChange={(e) => setPoraNocna(e.target.value)}>
+          <option value="" disabled hidden>wybierz godziny</option>
             <option value="22 - 8">22 - 8</option>
             <option value="23 - 7">23 - 7</option>
             <option value="24 - 6">24 - 6</option>
@@ -800,8 +814,9 @@ function renderForm() {
         </div>
 
         <div className="flex flex-col">
-          <label htmlFor="wynagrodzenieOption" className="font-semibold">Wynagrodzenie opcja:</label>
-          <select id="wynagrodzenieOption" name="wynagrodzenieOption" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={wynagrodzenieOption} onChange={(e) => setWynagrodzenieOption(e.target.value)}>
+          <label htmlFor="wynagrodzenieOption" className="font-semibold">Termin wypłaty:</label>
+          <select id="wynagrodzenieOption" name="wynagrodzenieOption" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={wynagrodzenieInfo} onChange={(e) => setWynagrodzenieInfo(e.target.value)}>
+          <option value="" disabled hidden>wybierz termin</option>
             <option value="z dołu ostatniego dnia miesiąca kalendarzowego">z dołu ostatniego dnia miesiąca kalendarzowego</option>
             <option value="do 5 dnia następnego miesiąca kalendarzowego">do 5 dnia następnego miesiąca kalendarzowego</option>
             <option value="do 10 dnia następnego miesiąca kalendarzowego">do 10 dnia następnego miesiąca kalendarzowego</option>
@@ -809,9 +824,12 @@ function renderForm() {
         </div>
 
         <div className="flex flex-col">
-          <label htmlFor="wynagrodzenieInfo" className="font-semibold">Wynagrodzenie:</label>
-          <textarea id="wynagrodzenieInfo" name="wynagrodzenieInfo" className="form-textarea block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={wynagrodzenieInfo} onChange={(e) => setWynagrodzenieInfo(e.target.value)} placeholder="Wprowadź informację o wynagrodzeniu" />
-          <small>przelewem na podany nr rachunku bankowego lub po złożeniu przez Panią oświadczenia na piśmie – gotówką w siedzibie firmy.</small>
+          <label htmlFor="wynagrodzenieOption" className="font-semibold">Wynagrodzenie wypłacane jest:</label>
+          <select id="wynagrodzenieOption" name="wynagrodzenieOption" className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none" value={wynagrodzenieOption} onChange={(e) => setWynagrodzenieOption(e.target.value)}>
+            <option value="" disabled hidden>wybierz rodzaj</option>
+            <option value="przelewem na podany nr rachunku bankowego">przelewem na podany nr rachunku bankowego</option>
+            <option value="gotówką w siedzibie firmy - po złożeniu oświadczenia na piśmie">gotówką w siedzibie firmy - po złożeniu oświadczenia na piśmie</option>
+          </select>
         </div>
 
         <div className="flex flex-col space-y-4">

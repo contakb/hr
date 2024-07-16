@@ -3,7 +3,7 @@ import axios from 'axios';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import { useUser } from './UserContext'; // Ensure correct path
 import { useRequireAuth } from './useRequireAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function ReportsPage() {
   const currentYear = new Date().getFullYear();
@@ -24,10 +24,12 @@ const [selectedRange, setSelectedRange] = useState(3); // Default to 3 months
 const [contracts, setContracts] = useState([]);
 const [companyData, setCompanyData] = useState(null);
 const [error, setError] = useState(null);
-const user = useRequireAuth();
+const { user } = useUser();
   const navigate = useNavigate();
   const [showBreakDetails, setShowBreakDetails] = useState(false);
-
+  const { employeeId } = useParams();
+  console.log('Employee ID from useParams:', employeeId); // Debugging log
+  const [employeeDetails, setEmployeeDetails] = useState(null);
 
 
 
@@ -118,6 +120,42 @@ const handleHolidaybreakpage = (id) => {
   navigate(`/holidaybase/${id}`);
 };
 
+const fetchEmployeeDetails = async (employeeIdToUse) => {
+  console.log('fetchEmployeeDetails called with employeeId:', employeeIdToUse); // Debugging log
+  try {
+    const response = await axiosInstance.get(`http://localhost:3001/employees/${employeeIdToUse}`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'X-Schema-Name': user.schemaName,
+      }
+    });
+    console.log('Employee Details:', response.data); // Add this line for debugging
+    setEmployeeDetails(response.data);
+  } catch (error) {
+    console.error('Error fetching employee details:', error);
+  }
+};
+
+const toggleContracts = async (employeeIdToUse) => {
+  try {
+    const response = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeIdToUse}`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'X-Schema-Name': user.schemaName,
+      }
+    });
+    console.log("Fetched contracts:", response.data.contracts);
+    const combinedContracts = combineContracts(response.data.contracts);
+    console.log("Combined contracts:", combinedContracts);
+    setContracts(combinedContracts);
+  } catch (error) {
+    console.error('Error fetching contracts:', error);
+    setContracts([]);
+  }
+};
+
+
+
 const handleGenerateReport = async () => {
   
   setIsReportGenerated(false); // Reset the flag before generating a new report
@@ -125,36 +163,46 @@ const handleGenerateReport = async () => {
   try {
     let responseData;
 
-    if (reportType === 'earnings-certificate' && selectedEmployee) {
-      const range = parseInt(selectedRange); // Convert the selected range to an integer
+    const employeeIdToUse = user.role === 'employee' ? user.id : selectedEmployee;
 
+    console.log('Using employeeId:', employeeIdToUse); // Debugging log
+
+    
+    await fetchEmployeeDetails(employeeIdToUse); // Fetch employee details
+    await toggleContracts(employeeIdToUse); // Fetch contracts
+
+    if (reportType === 'earnings-certificate' && (selectedEmployee || user.role === 'employee')) {
+      // Fetch contracts if not already done
+      
+      const range = parseInt(selectedRange); // Convert the selected range to an integer
+    
       // Calculate the period for the last three completed months
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth(); // Note: January is 0
-
+    
       // Calculate end month and year
       const calculatedEndYear = currentMonth === 0 ? currentYear - 1 : currentYear;
       const calculatedEndMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-
+    
       // Calculate start month and year based on the selected range
       const calculatedStartYear = (calculatedEndMonth - range + 1) >= 0 ? calculatedEndYear : calculatedEndYear - 1;
       const calculatedStartMonth = (calculatedEndMonth - range + 1) >= 0 ? calculatedEndMonth - range + 1 : 12 + (calculatedEndMonth - range + 1);
-
+    
       const periodStart = `${calculatedStartMonth + 1}/${calculatedStartYear}`;
       const periodEnd = `${calculatedEndMonth + 1}/${calculatedEndYear}`;
-
+    
       console.log(`Period Start: ${periodStart}`); // Log the start of the period
       console.log(`Period End: ${periodEnd}`); // Log the end of the period
-
+    
       setPeriodStart(periodStart);
       setPeriodEnd(periodEnd);
-
+    
       // Split the period into start and end parts
       const [splitStartMonth, splitStartYear] = periodStart.split('/');
       const [splitEndMonth, splitEndYear] = periodEnd.split('/');
-
-      const response = await axiosInstance.get(`http://localhost:3001/api/salary/recent/${selectedEmployee}?startYear=${splitStartYear}&startMonth=${splitStartMonth}&endYear=${splitEndYear}&endMonth=${splitEndMonth}`, {
+    
+      const response = await axiosInstance.get(`http://localhost:3001/api/salary/recent/${employeeIdToUse}?startYear=${splitStartYear}&startMonth=${splitStartMonth}&endYear=${splitEndYear}&endMonth=${splitEndMonth}`, {
         headers: {
           'Authorization': `Bearer ${user.access_token}`, // Use the access token
           'X-Schema-Name': user.schemaName, // Send the schema name as a header
@@ -162,13 +210,13 @@ const handleGenerateReport = async () => {
       });
       
       const recentData = response.data;
-  
+    
       // Calculate averages or other necessary details for the report
       const totalGross = recentData.reduce((acc, curr) => acc + curr.gross_total, 0);
       const totalNet = recentData.reduce((acc, curr) => acc + curr.net_amount, 0);
       setTotalGrossAmount(totalGross / recentData.length);
       setTotalNetAmount(totalNet / recentData.length);
-  
+    
       setReportData(recentData); // Store the fetched data
       setIsReportGenerated(true);
     } else if (reportType === 'social-insurance') {
@@ -194,8 +242,8 @@ const handleGenerateReport = async () => {
       responseData = processSocialInsuranceData(response.data);
       setReportData(responseData); // Set the processed data
       setIsReportGenerated(true);
-    } else if (reportType === 'available-holiday-days' && selectedEmployee) {
-      const contractsResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${selectedEmployee}`, {
+    } else if (reportType === 'available-holiday-days' && employeeIdToUse)  {
+      const contractsResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeIdToUse}`, {
         headers: {
           'Authorization': `Bearer ${user.access_token}`,
           'X-Schema-Name': user.schemaName,
@@ -210,7 +258,7 @@ const handleGenerateReport = async () => {
       // Fetch holiday base data
       let holidayBase = 0;
       try {
-        const holidayBaseResponse = await axiosInstance.get(`http://localhost:3001/employees/${selectedEmployee}/holiday-base`, {
+        const holidayBaseResponse = await axiosInstance.get(`http://localhost:3001/employees/${employeeIdToUse}/holiday-base`, {
           headers: {
             Authorization: `Bearer ${user.access_token}`,
             'x-schema-name': user.schemaName,
@@ -277,7 +325,7 @@ const handleGenerateReport = async () => {
 
       // Fetch breaks taken by the employee
       const breaksResponse = await axiosInstance.get('/api/get-health-breaks', {
-        params: { employee_id: selectedEmployee },
+        params: { employee_id: employeeIdToUse },
         headers: {
           'Authorization': `Bearer ${user.access_token}`,
           'X-Schema-Name': user.schemaName,
@@ -325,7 +373,7 @@ const handleGenerateReport = async () => {
         breakDetails: breaks.filter(brk => brk.break_type === 'urlop' && new Date(brk.break_start_date).getFullYear() === selectedYear) // Add break details for the current year
       }]); // Store the calculated available holiday days
       setIsReportGenerated(true);
-      } 
+    }
       else {
       // Existing logic for other report types
       const response = await axiosInstance.get(`http://localhost:3001/reports?month=${month}&year=${year}`, {
@@ -397,30 +445,33 @@ const fetchCompanyData = async () => {
 useEffect(() => {
   fetchCompanyData();
 }, []);
-  
-  const toggleContracts = async () => {
-      try {
-        const response = await axiosInstance.get(`http://localhost:3001/api/contracts/${selectedEmployee}`, {
-          headers: {
-            'Authorization': `Bearer ${user.access_token}`, // Use the access token
-            'X-Schema-Name': user.schemaName, // Send the schema name as a header
-          }
-        });
-        console.log("Fetched contracts:", response.data.contracts);
-        const combinedContracts = combineContracts(response.data.contracts);
-        console.log("Combined contracts:", combinedContracts);
-        setContracts(combinedContracts);
-      } catch (error) {
-        console.error('Error fetching contracts:', error);
-        setContracts([]);
-      }
-  };
 
-  useEffect(() => {
-    if (selectedEmployee) {
-      toggleContracts();
-    }
-  }, [selectedEmployee]);  // Depend on selectedEmployee
+useEffect(() => {
+  if (user.role === 'employee' && !employeeId) {
+    navigate('/'); // Redirect if employee tries to access without their ID
+  }
+}, [user, employeeId, navigate]);
+
+
+
+useEffect(() => {
+  if (user.role === 'employee' && employeeId) {
+    console.log('Fetching details for employeeId:', employeeId); // Add this line for debugging
+    fetchEmployeeDetails(employeeId);
+    toggleContracts(employeeId);
+  }
+}, [user, employeeId]);
+
+
+  
+useEffect(() => {
+  if (user.role === 'admin' && selectedEmployee) {
+    fetchEmployeeDetails(selectedEmployee);
+    toggleContracts(selectedEmployee);
+  }
+}, [user, selectedEmployee]);
+
+  
 
   function combineContracts(contracts) {
     // Sort contracts by contract_from_date in ascending order
@@ -518,10 +569,12 @@ useEffect(() => {
   }, []);
 
   
+
+  
   
   const renderFormFields = () => {
     if (reportType === 'earnings-certificate') {
-      return (
+      return user.role === 'admin' ? (
         <>
           <label>
             Employee:
@@ -542,20 +595,22 @@ useEffect(() => {
             </select>
           </label>
         </>
+      ) : (
+        <p>Generating report for: {user.email}</p>
       );
     } else if (reportType === 'available-holiday-days') {
-      return (
+      return user.role === 'admin' ? (
         <>
-        <label>
-          Pracownik:
-          <select value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
-            <option value="">Wybierz pracownika</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>{employee.name} {employee.surname}</option>
-            ))}
-          </select>
-        </label>
-        <label>
+          <label>
+            Pracownik:
+            <select value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
+              <option value="">Wybierz pracownika</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>{employee.name} {employee.surname}</option>
+              ))}
+            </select>
+          </label>
+          <label>
             Rok:
             <select value={year} onChange={(e) => setYear(e.target.value)}>
               {Array.from({ length: 20 }, (_, i) => currentYear - 10 + i).map((y) => (
@@ -564,9 +619,12 @@ useEffect(() => {
             </select>
           </label>
         </>
+      ) : (
+        <p>Generating report for: {user.email}</p>
       );
     }
   };
+  
   
 
   const renderCompanyData = () => {
@@ -587,13 +645,14 @@ useEffect(() => {
   const renderReportTable = () => {
     const monthName = month ? new Date(year, month - 1).toLocaleString('default', { month: 'long' }) : '';
     if (!isReportGenerated) return null; // Do not render if the report has not been generated
+
+    console.log("Report Data:", reportData); // Add this line for debugging
   
     const getEmployeeName = (employeeId) => {
       const employee = employees.find(emp => emp.id === employeeId);
       return employee ? `${employee.name} ${employee.surname}` : 'Unknown';
     };
   
-    // Console logs should be outside of the return statement
     console.log("Selected Employee ID:", selectedEmployee);
     console.log("Employees Array:", employees);
   
@@ -603,44 +662,36 @@ useEffect(() => {
     // Now return the JSX
     return (
       <div ref={reportRef}>
-
-       {reportType === 'earnings-certificate' && (
+      {reportType === 'earnings-certificate' && (
         <>
-        <div class="signature-area">
-
-<div className="signature" >
-  <p>{renderCompanyData()} {/* Render company data */}</p>
-</div>
-</div>
+          <div className="signature-area">
+            <div className="signature">
+              <p>{renderCompanyData()} {/* Render company data */}</p>
+            </div>
+          </div>
           <h1>Zaświadczenie</h1>
-          
-          
-          {selectedEmployeeData && (
-            
+          {employeeDetails && (
             <div>
-              <p>Zaświadcza się, że Pan/Pani: {selectedEmployeeData ? `${selectedEmployeeData.name} ${selectedEmployeeData.surname}` : 'Unknown'}</p>
-              <p>Pesel: {selectedEmployeeData.pesel}</p>
-              <p>zam. adres: {selectedEmployeeData.city}</p>
-             
-
+              <p>Zaświadcza się, że Pan/Pani: {employeeDetails.name} {employeeDetails.surname}</p>
+              <p>Pesel: {employeeDetails.pesel}</p>
+              <p>zam. adres: {employeeDetails.city}</p>
               <p>jest zatrudniony w {companyData?.company_name ?? "Brak danych firmy"}</p>
-              {/* Add more details as needed */}
             </div>
           )}
-  <div>
-    {contracts.map(({ original, aneks }) => (
-      <div key={original.id}>
-        {/* Render Original Contract Details */}
-        <p>na umowę na czas: {original.typ_umowy}</p>
-              <p>od dnia {new Date(original.contract_from_date).toLocaleDateString()} do dnia: {aneks.length > 0 ? new Date(aneks[aneks.length - 1].contract_to_date).toLocaleDateString() : new Date(original.contract_to_date).toLocaleDateString()}</p>
-              <p>na stanowisku: {original.stanowisko}</p>
-              <p>w wymiarze etatu: {original.etat}</p>
-              <p>Data zatrudnienia: {new Date(original.workstart_date).toLocaleDateString()}</p>
-        {/* ...other original contract details... */}
-      </div>
-    ))}
-  </div>
-  <h3>Średnie wynagrodzenie z ostanich: ({selectedRange}) miesięcy za okres od {periodStart} to {periodEnd}</h3>
+          <div>
+            {contracts.map(({ original, aneks }) => (
+              <div key={original.id}>
+                {/* Render Original Contract Details */}
+                <p>na umowę na czas: {original.typ_umowy}</p>
+                <p>od dnia {new Date(original.contract_from_date).toLocaleDateString()} do dnia: {aneks.length > 0 ? new Date(aneks[aneks.length - 1].contract_to_date).toLocaleDateString() : new Date(original.contract_to_date).toLocaleDateString()}</p>
+                <p>na stanowisku: {original.stanowisko}</p>
+                <p>w wymiarze etatu: {original.etat}</p>
+                <p>Data zatrudnienia: {new Date(original.workstart_date).toLocaleDateString()}</p>
+                {/* ...other original contract details... */}
+              </div>
+            ))}
+          </div>
+          <h3>Średnie wynagrodzenie z ostatnich: ({selectedRange}) miesięcy za okres od {periodStart} do {periodEnd}</h3>
           <p>Average Gross Amount : {formatNumber(totalGrossAmount)}</p>
           <p>Average Net Amount : {formatNumber(totalNetAmount)}</p>
 
@@ -648,138 +699,135 @@ useEffect(() => {
           <p>Firma nie znajduje się w stanie likwidacji ani upadłości.</p>
           <p>Zaświadczenie zachowuje ważność przez okres 1 miesiąca od daty wystawienia.</p>
 
-{/* Signature Block */}
-<div class="signature-area">
-
-      <div className="signature" >
-        <p>Company Representative Signature</p>
-        <div class="signature-line"></div>
-        <p>Name: [Company Representative Name]</p>
-      </div>
-      </div>
-          
+          {/* Signature Block */}
+          <div className="signature-area">
+            <div className="signature">
+              <p>Company Representative Signature</p>
+              <div className="signature-line"></div>
+              <p>Name: [Company Representative Name]</p>
+            </div>
+          </div>
         </>
       )}
        {reportType === 'available-holiday-days' && (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Zestawienie urlopowe</h1>
-    {selectedEmployeeData && (
-      <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-5xl">
-        <p className="text-lg font-semibold mb-2">Pracownik: {selectedEmployeeData.name} {selectedEmployeeData.surname}</p>
-        {reportData[0]?.noHolidayBase ? (
-          <p className="text-red-500">
-            Nie dodano podstawy urlopowej dla wybranego pracownika. Proszę uzupełnić detale w ustawieniach pracownika{' '}
-            <button 
-              className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
-              onClick={() => handleHolidaybreakpage(selectedEmployee)}
-            >
-              Dodaj podstawę
-            </button>
-          </p>
-        ) : (
-          <>
-            <table className="min-w-full bg-white border-collapse block md:table">
-              <thead className="block md:table-header-group">
-                <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative">
-                  <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Opis</th>
-                  <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Dane</th>
-                </tr>
-              </thead>
-              <tbody className="block md:table-row-group">
-                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data raportu</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.reportDate}</td>
-                </tr>
-                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Podstawa urlopu</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayBase} dni</td>
-                </tr>
-                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący za przepracowany okres</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillNow} dni</td>
-                </tr>
-                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na dziś, tj. {reportData[0]?.reportDate}</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDays} dni</td>
-                </tr>
-                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący na koniec umowy do dnia {reportData[0]?.lastContractEndDate}</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.totalHolidayDays} dni</td>
-                </tr>
-                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">
-                    Urlop wykorzystany
-                    <button
-                      className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded text-xs"
-                      onClick={() => setShowBreakDetails(!showBreakDetails)}
-                    >
-                      {showBreakDetails ? 'zamknij' : 'szczegóły'}
-                    </button>
-                  </td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysCurrentYear} dni</td>
-                </tr>
-                {showBreakDetails && (
-                  <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                    <td colSpan="2" className="p-2 md:border md:border-gray-300 text-left block md:table-cell">
-                      {reportData[0]?.breakDetails?.length > 0 ? (
-                        <div className="mt-4">
-                          <h2 className="text-xl font-bold mb-2">Break Details</h2>
-                          <table className="min-w-full bg-white border-collapse block md:table">
-                            <thead className="block md:table-header-group">
-                              <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative">
-                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Break Type</th>
-                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Start Date</th>
-                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">End Date</th>
-                                <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Days</th>
-                              </tr>
-                            </thead>
-                            <tbody className="block md:table-row-group">
-                              {reportData[0]?.breakDetails?.map((breakDetail) => (
-                                <tr key={breakDetail.id} className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_type}</td>
-                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_start_date).toLocaleDateString()}</td>
-                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_end_date).toLocaleDateString()}</td>
-                                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_days}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <p className="mt-4 text-gray-600">No breaks used this year.</p>
-                      )}
-                    </td>
-                  </tr>
-                )}
-                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na koniec umowy, tj.{reportData[0]?.lastContractEndDate}</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillEndOfYear} dni</td>
-                </tr>
-                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Niewykorzystany urlop z roku poprzedniego</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDaysPreviousYear} days</td>
-                </tr>
-                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Wykorzystany urlop w roku poprzednim</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysPreviousYear} days</td>
-                </tr>
-                <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data rozpoczęcia pracy:</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.firstContractStartDate}</td>
-                </tr>
-                <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Ostatni dzień umowy:</td>
-                  <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.lastContractEndDate}</td>
-                </tr>
-              </tbody>
-            </table>
-            
-          </>
+      <>
+        <h1 className="text-2xl font-bold mb-4">Zestawienie urlopowe</h1>
+        {employeeDetails && (
+          <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-5xl">
+            <p className="text-lg font-semibold mb-2">Pracownik: {employeeDetails.name} {employeeDetails.surname}</p>
+            {reportData[0]?.noHolidayBase ? (
+              <p className="text-red-500">
+                Nie dodano podstawy urlopowej dla wybranego pracownika. Proszę uzupełnić detale w ustawieniach pracownika{' '}
+                <button 
+                  className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+                  onClick={() => handleHolidaybreakpage(selectedEmployee)}
+                >
+                  Dodaj podstawę
+                </button>
+              </p>
+            ) : (
+              <>
+                <table className="min-w-full bg-white border-collapse block md:table">
+                  <thead className="block md:table-header-group">
+                    <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative">
+                      <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Opis</th>
+                      <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Dane</th>
+                    </tr>
+                  </thead>
+                  <tbody className="block md:table-row-group">
+                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data raportu</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.reportDate}</td>
+                    </tr>
+                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Podstawa urlopu</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayBase} dni</td>
+                    </tr>
+                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący za przepracowany okres</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillNow} dni</td>
+                    </tr>
+                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na dziś, tj. {reportData[0]?.reportDate}</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDays} dni</td>
+                    </tr>
+                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop przysługujący na koniec umowy do dnia {reportData[0]?.lastContractEndDate}</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.totalHolidayDays} dni</td>
+                    </tr>
+                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">
+                        Urlop wykorzystany
+                        <button
+                          className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded text-xs"
+                          onClick={() => setShowBreakDetails(!showBreakDetails)}
+                        >
+                          {showBreakDetails ? 'zamknij' : 'szczegóły'}
+                        </button>
+                      </td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysCurrentYear} dni</td>
+                    </tr>
+                    {showBreakDetails && (
+                      <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                        <td colSpan="2" className="p-2 md:border md:border-gray-300 text-left block md:table-cell">
+                          {reportData[0]?.breakDetails?.length > 0 ? (
+                            <div className="mt-4">
+                              <h2 className="text-xl font-bold mb-2">Break Details</h2>
+                              <table className="min-w-full bg-white border-collapse block md:table">
+                                <thead className="block md:table-header-group">
+                                  <tr className="border border-gray-300 md:border-none block md:table-row absolute -top-full md:top-auto -left-full md:left-auto md:relative">
+                                    <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Break Type</th>
+                                    <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Start Date</th>
+                                    <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">End Date</th>
+                                    <th className="bg-gray-100 p-2 text-gray-600 font-bold md:border md:border-gray-300 text-left block md:table-cell">Days</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="block md:table-row-group">
+                                  {reportData[0]?.breakDetails?.map((breakDetail) => (
+                                    <tr key={breakDetail.id} className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_type}</td>
+                                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_start_date).toLocaleDateString()}</td>
+                                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{new Date(breakDetail.break_end_date).toLocaleDateString()}</td>
+                                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{breakDetail.break_days}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p className="mt-4 text-gray-600">No breaks used this year.</p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Urlop do wykorzystania na koniec umowy, tj.{reportData[0]?.lastContractEndDate}</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.holidayDaysTillEndOfYear} dni</td>
+                    </tr>
+                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Niewykorzystany urlop z roku poprzedniego</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.availableHolidayDaysPreviousYear} days</td>
+                    </tr>
+                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Wykorzystany urlop w roku poprzednim</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.usedHolidayDaysPreviousYear} days</td>
+                    </tr>
+                    <tr className="bg-white border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Data rozpoczęcia pracy:</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.firstContractStartDate}</td>
+                    </tr>
+                    <tr className="bg-gray-200 border border-gray-300 md:border-none block md:table-row">
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">Ostatni dzień umowy:</td>
+                      <td className="p-2 md:border md:border-gray-300 text-left block md:table-cell">{reportData[0]?.lastContractEndDate}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+          </div>
         )}
-      </div>
+      </>
     )}
-  </>
-)}
 
       {reportType === 'total-gross-amount' && (
   <>
@@ -972,10 +1020,16 @@ useEffect(() => {
             className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           >
             <option value="">Wybierz rodzaj raportu</option>
+            {user.role === 'admin' && (
+              <>
             <option value="total-gross-amount">Total Gross Amount by Month and Year</option>
             <option value="total-net-amount">Total Net Amount by Month and Year</option>
-            <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
+            
             <option value="social-insurance">Składki ZUS za okres</option>
+            
+            </>
+                )}
+            <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
             <option value="available-holiday-days">Zestawienie urlopowe - pracownik</option> {/* New Option */}
           </select>
         </label>

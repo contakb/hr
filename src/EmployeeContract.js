@@ -405,19 +405,8 @@ return (
           <p><strong>Pracodawca:</strong> {companyData.company_name}</p>
           <p><strong>ul:</strong> {companyData.street} {companyData.number}, {companyData.post_code}, {companyData.city}, {companyData.country}</p>
           <p><strong>NIP:</strong> {companyData.taxid}</p>
-          <p class="flex flex-col space-y-2 max-w-xs"><strong>NIP:</strong> {companyData.representative_name}</p>
-          <div className="flex flex-col space-y-2 max-w-xs">
-  <label htmlFor="representative_name" className="font-bold">Reprezentowaną przez:</label>
-  <input
-    type="text"
-    id="representative_name"
-    name="representative_name" // Add the name attribute
-    className="form-input block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-grey-600 focus:outline-none"
-    value={companyData.representative_name}
-    onChange={handleInputChange}
-    placeholder="Wprowadź osobę reprezentującą firmę przy podpisaniu umowy"
-  />
-</div>
+          <p class="flex flex-col space-y-2 max-w-xs"><strong>Reprezentowaną przez:</strong> {companyData.representative_name}</p>
+          
 
           <div class="h-4"></div> 
           <p><strong>a Panią/Panem</strong></p>
@@ -503,15 +492,7 @@ return (
                 <ul className="list-disc list-inside ml-4">
                 <li>{workingHours.dailyHours} norma dobowa</li>
                   <li>{workingHours.weeklyHours} norma tygodniowa</li>
-                    czasu pracy w okresie rozliczeniowym wynoszącym
-                    <select value={settlementPeriod} onChange={handleSettlementPeriodChange} className="ml-2 inline-block border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                      <option value="1-miesięczne">1-miesięczne</option>
-                      <option value="2-miesięczne">2-miesięczne</option>
-                      <option value="3-miesięczne">3-miesięczne</option>
-                      <option value="4-miesięczne">4-miesięczne</option>
-                      <option value="12-miesięczne">12-miesięczne</option>
-                    </select>
-                  
+                    czasu pracy w okresie rozliczeniowym wynoszącym: {companyData.okres_rozliczeniowy}
                 </ul>
               </li>
               <li>Obowiązujący Panią wymiar czasu pracy ustalany jest na podstawie art. 129 Kodeksu pracy i wynosi:
@@ -573,8 +554,8 @@ return (
               <li>Nie obejmuje Panią żaden zakładowy układ zbiorowy pracy.</li>
               <li>Dodatkowe zapisy:
                 <ul className="list-disc list-inside ml-4">
-                  <li>Wynagrodzenie za pracę wypłacane jest raz w miesiącu z dołu ostatniego dnia miesiąca kalendarzowego przelewem na podany nr rachunku bankowego lub po złożeniu przez Panią oświadczenia na piśmie – gotówką w siedzibie firmy.</li>
-                  <li>Pora nocna obejmuje: godz.: 22 - 8</li>
+                  <li>Wynagrodzenie za pracę wypłacane jest raz w miesiącu {companyData.wynagrodzenie_info} {companyData.wynagrodzenieoption}</li>
+                  <li>Pora nocna obejmuje: godz.: {companyData.pora_nocna}</li>
                   <li>Obecność w pracy potwierdza się przez podpisanie listy obecności znajdującej się w siedzibie firmy. Każde wyjście poza siedzibę firmy wymaga zgody przełożonego.</li>
                   <li>Nieobecność w pracy usprawiedliwia się najpóźniej w drugim dniu jej trwania przez zgłoszenie tego faktu bezpośredniemu przełożonemu lub pracownikowi działu kadr.</li>
                 </ul>
@@ -592,7 +573,7 @@ return (
           <div>
             <p>Podpis osoby reprezentującej firmę</p>
             <div class="signature-line w-full border-t border-gray-400"></div>
-            <p>{userInput}</p>
+            <p>{companyData.representative_name}</p>
           </div>
         </div>
       
