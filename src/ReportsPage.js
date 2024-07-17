@@ -1007,8 +1007,9 @@ useEffect(() => {
 
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-8">
-    <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-5xl"> {/* Adjusted max-w-full */}
+    <div className="bg-gray-100 p-4">
+  <div className="flex flex-col lg:flex-row gap-8 justify-center lg:items-start">
+  <div className="flex flex-col bg-white p-1 shadow rounded-lg lg:flex-row gap-4">
       <h2 className="text-2xl font-bold mb-4">Generuj raport</h2>
       <div className="mb-8">
       <div className="mb-4">
@@ -1083,6 +1084,7 @@ useEffect(() => {
       <h2 className="text-2xl font-bold mb-4">Dane wybranego raportu</h2>
       {isReportGenerated && renderReportTable()}
     </div>
+  </div>
   </div>
   </div>
 );

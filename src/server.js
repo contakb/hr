@@ -470,6 +470,116 @@ app.get('/check-employee', verifyJWT, async (req, res) => {
   }
 });
 
+app.post('/api/badania', verifyJWT, async (req, res) => {
+  const { employee_id, type, issue_date, termination_date } = req.body;
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('badania')
+      .insert([{ employee_id, type, issue_date, termination_date }])
+      .select();
+
+    if (error) {
+      console.error('Error inserting badania data:', error);
+      res.status(500).send('Error occurred while saving badania data.');
+      return;
+    }
+
+    res.status(200).send(data);
+  } catch (err) {
+    console.error('An unexpected error occurred:', err);
+    res.status(500).send('An unexpected error occurred.');
+  }
+});
+
+app.get('/api/badania/:employee_id', verifyJWT, async (req, res) => {
+  const { employee_id } = req.params;
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('badania')
+      .select('*')
+      .eq('employee_id', employee_id);
+
+    if (error) {
+      console.error('Error fetching badania data:', error);
+      res.status(500).send('Error occurred while fetching badania data.');
+      return;
+    }
+
+    res.status(200).send(data);
+  } catch (err) {
+    console.error('An unexpected error occurred:', err);
+    res.status(500).send('An unexpected error occurred.');
+  }
+});
+
+
+app.put('/api/badania/:id', verifyJWT, async (req, res) => {
+  const { id } = req.params;
+  const { type, issue_date, termination_date } = req.body;
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('badania')
+      .update({ type, issue_date, termination_date })
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Error updating badania data:', error);
+      res.status(500).send('Error occurred while updating badania data.');
+      return;
+    }
+
+    res.status(200).send(data);
+  } catch (err) {
+    console.error('An unexpected error occurred:', err);
+    res.status(500).send('An unexpected error occurred.');
+  }
+});
+
+app.delete('/api/badania/:id', verifyJWT, async (req, res) => {
+  const { id } = req.params;
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName },
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('badania')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting badanie:', error);
+      res.status(500).send('Error occurred while deleting badanie.');
+      return;
+    }
+
+    res.status(200).send(data);
+  } catch (err) {
+    console.error('An unexpected error occurred:', err);
+    res.status(500).send('An unexpected error occurred.');
+  }
+});
 
 
 
