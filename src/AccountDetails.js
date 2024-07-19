@@ -297,10 +297,13 @@ return (
           >
             Change Plan
           </button>
+          <h1 className="font-bold text-xl mb-4">Dane użytkownika:</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-wrap -mx-2">
+        
           <div className="w-full md:w-1/2 px-2 mb-4">
-            <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+          
+            <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">Imię:</label>
             <input
               id="name"
               type="text"
@@ -312,7 +315,7 @@ return (
             />
           </div>
           <div className="w-full md:w-1/2 px-2 mb-4">
-            <label htmlFor="surname" className="block text-gray-700 text-sm font-bold mb-2">Surname:</label>
+            <label htmlFor="surname" className="block text-gray-700 text-sm font-bold mb-2">Nazwisko:</label>
             <input
               id="surname"
               type="text"
@@ -433,13 +436,13 @@ return (
       
       </div>
       <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="font-bold text-xl mb-4">Kalendarz:</h2>
+            <h2 className="font-bold text-xl mb-4">Kalendarz terminów:</h2>
             <CalendarPage />
           </div>
           </div>
           <div className={`bg-white shadow rounded-lg p-6 ${isCalendarExpanded ? 'w-full' : 'lg:max-w-md'}`}>
   <div className="flex justify-between items-center mb-4">
-    <h2 className="font-bold text-xl">Kalendarz:</h2>
+    <h2 className="font-bold text-xl">Kalendarz przerw:</h2>
     <button
       type="button"
       onClick={toggleCalendarSize}

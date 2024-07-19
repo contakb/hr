@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import axiosInstance from './axiosInstance'; // Adjust the import path as necessary
 import EmployeeBreaksCalendar from './EmployeeBreaksCalendar'; // Import the calendar component
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 function EmployeeAccount() {
   const [employeeDetails, setEmployeeDetails] = useState(null);
@@ -23,6 +25,11 @@ function EmployeeAccount() {
   const [holidayBaseVisible, setHolidayBaseVisible] = useState(false);
 const [holidayBase, setHolidayBase] = useState(null);
 const [editHolidayBaseMode, setEditHolidayBaseMode] = useState(false);
+const [editingBadanie, setEditingBadanie] = useState(null);
+const [badania, setBadania] = useState([]);
+const [badaniaVisible, setBadaniaVisible] = useState(false);
+const [editBadanieMode, setEditBadanieMode] = useState(false);
+  
 
 
   console.log(user); // Check if user data is available
@@ -126,9 +133,36 @@ const handleViewReport = () => {
     }
   }, [user]);
 
+  // Add function to fetch badania
+const fetchBadania = async () => {
+  try {
+    const response = await axiosInstance.get(`http://localhost:3001/api/badania/${employeeDetails.id}`, {
+      headers: {
+        Authorization: `Bearer ${user.access_token}`,
+        'x-schema-name': user.schemaName,
+      },
+    });
+    setBadania(response.data);
+  } catch (error) {
+    console.error('Error fetching badania:', error);
+    toast.error('Failed to fetch badania.');
+  }
+};
+
+  // Toggle function for badania visibility
+  const toggleBadania = async () => {
+    if (!badaniaVisible) {
+      await fetchBadania();
+    }
+    setBadaniaVisible(!badaniaVisible);
+    setEditBadanieMode(false); // Ensure edit mode is off when toggling visibility
+  };
+  
+
   useEffect(() => {
     if (user) {
       fetchEmployeeDetails();
+    
     }
     // New logic to fetch tax offices
     axios.get('http://localhost:3001/tax-offices')
@@ -305,6 +339,61 @@ const handleViewReport = () => {
     );
   };
 
+  const handleBadanieChange = (e) => {
+    const { name, value } = e.target;
+    setEditingBadanie((prevBadanie) => ({
+      ...prevBadanie,
+      [name]: value,
+    }));
+  };
+
+  const handleBadanieDateChange = (date, name) => {
+    setEditingBadanie((prevBadanie) => ({
+      ...prevBadanie,
+      [name]: date,
+    }));
+  };
+
+  const handleBadanieSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const url = `http://localhost:3001/api/badania/${editingBadanie.id}`;
+      await axiosInstance.put(url, editingBadanie, {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`,
+          'X-Schema-Name': user.schemaName,
+        },
+      });
+      toast.success('Badanie updated successfully');
+      fetchBadania(); // Re-fetch badania data
+      setEditingBadanie(null); // Clear form
+      
+    setEditBadanieMode(false); // Exit edit mode
+    } catch (error) {
+      console.error('Error updating badanie:', error);
+      toast.error('Failed to update badanie');
+    }
+  };
+
+  const handleEditBadanie = (badanie) => {
+    setEditingBadanie({
+      ...badanie,
+      issue_date: new Date(badanie.issue_date),
+      termination_date: new Date(badanie.termination_date),
+    });
+    setEditBadanieMode(true);
+  };
+
+  const handleCancelEditBadanie = () => {
+    setEditingBadanie(null);
+    setEditBadanieMode(false);
+  };
+  
+
+  const handleRedirectToMedicalExamination = (id) => {
+  window.location.href = `http://localhost:3000/medical-examination/${employeeDetails.id}`;
+};
+
 
   if (isLoading) {
     return <div>Ładowanie...</div>;
@@ -469,6 +558,12 @@ const handleViewReport = () => {
               >
                 Raporty i zaświadcznia
               </button>
+              <button
+  onClick={toggleBadania}
+  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+>
+  {badaniaVisible ? 'Zamknij badania' : 'Moje badania'}
+</button>
             <button
                 type="button"
                 onClick={handleLogout}
@@ -538,6 +633,92 @@ const handleViewReport = () => {
                   )}
                 </div>
               )}
+               {badaniaVisible && (
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-semibold">Badania Lekarskie</h3>
+            {editBadanieMode ? (
+              <form onSubmit={handleBadanieSubmit}>
+                <label htmlFor="type">Typ badania:</label>
+                <select
+                  name="type"
+                  value={editingBadanie.type}
+                  onChange={handleBadanieChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="wstępne">wstępne</option>
+                  <option value="okresowe">okresowe</option>
+                  <option value="kontrolne">kontrolne</option>
+                </select>
+                <label htmlFor="issue_date" className="mt-4">Data od:</label>
+                <DatePicker
+                  selected={editingBadanie.issue_date}
+                  onChange={(date) => handleBadanieDateChange(date, 'issue_date')}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                <label htmlFor="termination_date" className="mt-4">Data do:</label>
+                <DatePicker
+                  selected={editingBadanie.termination_date}
+                  onChange={(date) => handleBadanieDateChange(date, 'termination_date')}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                <div className="flex gap-2 mt-4">
+                  <button
+                    type="submit"
+                    className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEditBadanie}
+                    className="bg-gray-500 hover:bg-gray-700 text-white font-medium py-1 px-2 rounded text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                <table className="min-w-full bg-white table-auto text-xs mt-4">
+                  <thead>
+                    <tr>
+                      <th className="py-1 px-2 border-b">Data od</th>
+                      <th className="py-1 px-2 border-b">Data do</th>
+                      <th className="py-1 px-2 border-b">Typ badania</th>
+                      <th className="py-1 px-2 border-b">Akcje</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {badania.length > 0 ? (
+                      badania.map((badanie) => (
+                        <tr key={badanie.id}>
+                          <td className="py-1 px-2 border-b">{new Date(badanie.issue_date).toLocaleDateString()}</td>
+                          <td className="py-1 px-2 border-b">{new Date(badanie.termination_date).toLocaleDateString()}</td>
+                          <td className="py-1 px-2 border-b">{badanie.type}</td>
+                          <td className="py-1 px-2 border-b flex gap-2">
+                            <button onClick={() => handleEditBadanie(badanie)} className="text-blue-500">
+                              Edytuj
+                            </button>
+                            <button onClick={() => handleRedirectToMedicalExamination(badanie.id)} className="text-green-500">
+                              Zobacz
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="py-1 px-2 border-b" colSpan="4">
+                          No badania available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
               {holidayBaseVisible && (
   <div className="border-t pt-4 mt-4">
     <h3 className="text-lg font-semibold">Podstawa urlopu</h3>
@@ -623,7 +804,11 @@ const handleViewReport = () => {
 </div>
 
       </div>
+      
+
+      
     </div>
+   
   );
 }
 

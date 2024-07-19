@@ -44,11 +44,15 @@ const [stanowisko, setStanowisko] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingBadanieId, setEditingBadanieId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const accessDeniedToastShown = useRef(false);
 
 
 console.log('Location:', location);
   // Initial state for employeeData
   const [employeeData, setEmployeeData] = useState(location.state?.employee || null);
+
+  
 
   
     // Add this function to handle the back button click
@@ -57,13 +61,20 @@ const handleBackClick = () => {
   // or you can navigate to a specific route, e.g., navigate('/dashboard');
 };
 
+console.log('Employee ID from useParams:', employeeId);
+console.log('User from context:', user);
+
+
+
+
 useEffect(() => {
   if(inputRef.current) {
     inputRef.current.focus();
   }
 }, [userInput]);  // Re-focus every time userInput changes, though typically you might not need this unless there are specific reasons for refocusing.
 
-const fetchEmployeeData = async () => {
+useEffect(() => {
+const checkAccessAndFetchData = async () => {
   
     try {
       const employeeResponse = await axiosInstance.get(`http://localhost:3001/api/employees/${employeeId}`, {
@@ -72,6 +83,19 @@ const fetchEmployeeData = async () => {
           'x-schema-name': user.schemaName, // Pass the schemaName as a custom header
         }
       });
+
+      const employeeData = employeeResponse.data.employee;
+        setEmployee(employeeData);
+
+        if (user.role === 'employee' && user.email !== employeeData.user_email) {
+          if (!accessDeniedToastShown.current) {
+            toast.error('Access denied. You can only view your own data.');
+            accessDeniedToastShown.current = true;
+          }
+          navigate('/unauthorized');
+          return;
+        }
+
       const contractResponse = await axiosInstance.get(`http://localhost:3001/api/contracts/${employeeId}`, {
         headers: {
           Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
@@ -102,6 +126,12 @@ const fetchEmployeeData = async () => {
       console.error('Error fetching data:', error);
     }
 };
+
+
+checkAccessAndFetchData()
+fetchCompanyData();
+fetchBadaniaData();
+}, [employeeId, user, navigate]);
 
 
 const fetchCompanyData = async () => {
@@ -256,6 +286,7 @@ const opisstanowiska = [
   // Add more options as needed
 ];
 
+
 const fetchBadaniaData = async () => {
   try {
     const response = await axiosInstance.get(`http://localhost:3001/api/badania/${employeeId}`, {
@@ -264,17 +295,19 @@ const fetchBadaniaData = async () => {
         'x-schema-name': user.schemaName,
       }
     });
+    if (user.role === 'employee' && user.email !== employeeData.user_email) {
+      if (!accessDeniedToastShown.current) {
+        toast.error('Access denied. You can only view your own data.');
+        accessDeniedToastShown.current = true;
+      }
+      navigate('/unauthorized');
+      return;
+    }
     setBadania(response.data);
   } catch (error) {
     console.error('Error fetching badania data:', error);
   }
 };
-
-useEffect(() => {
-  fetchCompanyData();
-  fetchEmployeeData();
-  fetchBadaniaData();
-}, [employeeId, user]);
 
 const handleBadanieChange = (e) => {
   setNewBadanie({ ...newBadanie, [e.target.name]: e.target.value });
@@ -378,12 +411,54 @@ const onDateChange = (date) => {
     
     
     return (
-      
       <div className="bg-white p-8">
         <div className="max-w-2xl mx-auto">
+          {/* List of badania */}
+          <h2 className="text-xl font-semibold mb-2">Badania for Employee {employeeId}</h2>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full bg-white table-auto text-xs">
+              <thead>
+                <tr>
+                  <th className="py-1 px-2 border-b">Data od</th>
+                  <th className="py-1 px-2 border-b">Data do</th>
+                  <th className="py-1 px-2 border-b">Typ badania</th>
+                  <th className="py-1 px-2 border-b">Akcje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {badania.length > 0 ? (
+                  badania.map((badanie) => (
+                    <tr key={badanie.id}>
+                      <td className="py-1 px-2 border-b">{new Date(badanie.issue_date).toLocaleDateString()}</td>
+                      <td className="py-1 px-2 border-b">{new Date(badanie.termination_date).toLocaleDateString()}</td>
+                      <td className="py-1 px-2 border-b">{badanie.type}</td>
+                      <td className="py-1 px-2 border-b">
+                        <button onClick={() => handleEditBadanie(badanie)} className="text-blue-500">Edit</button>
+                        <button onClick={() => handleDeleteBadanie(badanie.id)} className="text-red-500 ml-2">Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="py-1 px-2 border-b text-center" colSpan="4">No badania available</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {!showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-green-500 text-white text-xs p-1 rounded mt-4"
+            >
+              Dodaj badanie
+            </button>
+          )}
+  
           {/* Form for adding/editing badania */}
           {showForm && (
-            <form onSubmit={handleBadanieSubmit} className="mb-4">
+            <form onSubmit={handleBadanieSubmit} className="mb-4 mt-4">
               <h3 className="text-l font-semibold">{isEditing ? 'Edytuj badanie' : 'Dodaj badanie'}</h3>
               <table className="min-w-full bg-white table-auto text-xs">
                 <thead>
@@ -443,48 +518,10 @@ const onDateChange = (date) => {
               </div>
             </form>
           )}
-    
-          
-          {/* List of badania */}
-          <h2 className="text-xl font-semibold mb-2">Badania for Employee {employeeId}</h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full bg-white table-auto text-xs">
-              <thead>
-                <tr>
-                  <th className="py-1 px-2 border-b">Data od</th>
-                  <th className="py-1 px-2 border-b">Data do</th>
-                  <th className="py-1 px-2 border-b">Typ badania</th>
-                  <th className="py-1 px-2 border-b">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {badania.map((badanie) => (
-                  <tr key={badanie.id}>
-                    <td className="py-1 px-2 border-b">{new Date(badanie.issue_date).toLocaleDateString()}</td>
-                    <td className="py-1 px-2 border-b">{new Date(badanie.termination_date).toLocaleDateString()}</td>
-                    <td className="py-1 px-2 border-b">{badanie.type}</td>
-                    <td className="py-1 px-2 border-b">
-                      <button onClick={() => handleEditBadanie(badanie)} className="text-blue-500">Edit</button>
-                      <button onClick={() => handleDeleteBadanie(badanie.id)} className="text-red-500 ml-2">Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-green-500 text-white text-xs p-1 rounded mt-4"
-            >
-              Dodaj badanie
-            </button>
-          )}
-            </table>
-           
-    
-          </div>
+  
           {/* Dropdown for selecting a contract */}
           <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-2">wybierz umowę</h2>
+            <h2 className="text-xl font-semibold mb-2">Wybierz umowę</h2>
             <select
               className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding bg-no-repeat border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
               onChange={handleContractSelection}
@@ -497,9 +534,19 @@ const onDateChange = (date) => {
               ))}
             </select>
           </div>
-    
+  
           <div className="printable-section bg-white p-8 text-xs">
             <div className="contract-container bg-100 p-4 rounded-lg shadow">
+              {/* Other existing content */}
+          <div className="mt-4">
+            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
+            <button onClick={() => window.print()} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              Print or Save as PDF
+            </button>
+            <button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              Download PDF
+            </button>
+          </div>
               {/* Contract details */}
               {selectedContract ? (
                 <div className="border border-gray-300 p-4">
@@ -519,7 +566,7 @@ const onDateChange = (date) => {
                       </div>
                     </div>
                   </header>
-    
+  
                   <section className="contract-section mb-4">
                     <div className="text-center mb-2">
                       <h1 className="text-lg font-bold">SKIEROWANIE NA BADANIA LEKARSKIE</h1>
@@ -529,7 +576,7 @@ const onDateChange = (date) => {
                         <option value="kontrolne">kontrolne</option>
                       </select>
                     </div>
-    
+  
                     <div className="h-8"></div>
                     <p>
                       Działając na podstawie art.229 § 4a ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy (Dz.U. z 2020 r. poz. 1320 z późn. zm.), kieruję na badania lekarskie:
@@ -673,23 +720,11 @@ const onDateChange = (date) => {
               )}
             </div>
           </div>
-    
+  
           
-    
-          {/* Other existing content */}
-          <div className="mt-4">
-            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
-            <button onClick={() => window.print()} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Print or Save as PDF
-            </button>
-            <button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Download PDF
-            </button>
-          </div>
         </div>
       </div>
     );
-    
-}
+  }
 
 export default MedicalExaminationView;

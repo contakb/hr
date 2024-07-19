@@ -1006,89 +1006,91 @@ useEffect(() => {
 
 
 
-  return (
-    <div className="bg-gray-100 p-4">
-  <div className="flex flex-col lg:flex-row gap-8 justify-center lg:items-start">
-  <div className="flex flex-col bg-white p-1 shadow rounded-lg lg:flex-row gap-4">
-      <h2 className="text-2xl font-bold mb-4">Generuj raport</h2>
-      <div className="mb-8">
-      <div className="mb-4">
-        <label className="block mb-2 text-lg font-medium text-gray-700">
-          Rodzaj raportu:
-          <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value)}
-            className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          >
-            <option value="">Wybierz rodzaj raportu</option>
-            {user.role === 'admin' && (
-              <>
-            <option value="total-gross-amount">Total Gross Amount by Month and Year</option>
-            <option value="total-net-amount">Total Net Amount by Month and Year</option>
-            
-            <option value="social-insurance">Składki ZUS za okres</option>
-            
-            </>
+return (
+  <div className="min-h-screen bg-gray-100 p-4">
+    <div className="max-w-6xl mx-auto sm:px-6 lg:px-8">
+      <div className="flex flex-col bg-white p-1 shadow rounded-lg lg:flex-row gap-4">
+        {/* Report Options Section */}
+        <div className="flex-1 bg-white p-4 shadow rounded-lg">
+          <h2 className="text-2xl font-bold mb-4">Generuj raport</h2>
+          <div className="mb-4">
+            <label className="block mb-2 text-lg font-medium text-gray-700">
+              Rodzaj raportu:
+              <select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              >
+                <option value="">Wybierz rodzaj raportu</option>
+                {user.role === 'admin' && (
+                  <>
+                    <option value="total-gross-amount">Total Gross Amount by Month and Year</option>
+                    <option value="total-net-amount">Total Net Amount by Month and Year</option>
+                    <option value="social-insurance">Składki ZUS za okres</option>
+                  </>
                 )}
-            <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
-            <option value="available-holiday-days">Zestawienie urlopowe - pracownik</option> {/* New Option */}
-          </select>
-        </label>
-      </div>
-        {renderFormFields()}
-        {reportType !== 'earnings-certificate' && reportType !== 'available-holiday-days' && (
-        <div className="grid grid-cols-2 gap-4">
-          <label className="block text-lg font-medium text-gray-700">
-            Miesiąc:
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
+                <option value="available-holiday-days">Zestawienie urlopowe - pracownik</option>
+              </select>
+            </label>
+          </div>
+          {renderFormFields()}
+          {reportType !== 'earnings-certificate' && reportType !== 'available-holiday-days' && (
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block text-lg font-medium text-gray-700">
+                Miesiąc:
+                <select
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                >
+                  {months.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-lg font-medium text-gray-700">
+                Rok:
+                <select
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <div className="mt-6 flex space-x-4">
+            <button
+              onClick={handleGenerateReport}
+              className="inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              {months.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-lg font-medium text-gray-700">
-            Rok:
-            <select
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              Generuj
+            </button>
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
-              {years.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </label>
+              Drukuj
+            </button>
+          </div>
         </div>
-      )}
-      <div className="mt-6 flex space-x-4">
-        <button
-          onClick={handleGenerateReport}
-          className="inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Generuj
-        </button>
-        <button
-          onClick={handlePrint}
-          className="inline-flex items-center px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-        >
-          Drukuj
-        </button>
+        
+        {/* Report Details Section */}
+        <div className="flex-1 bg-white p-4 shadow rounded-lg">
+        <h2 className="text-2xl font-bold mb-4">Dane wybranego raportu</h2>
+          <div className="flex justify-between items-center mb-4">
+           
+            {isReportGenerated && renderReportTable()}
+          </div>
+        </div>
       </div>
     </div>
-
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Dane wybranego raportu</h2>
-      {isReportGenerated && renderReportTable()}
-    </div>
-  </div>
-  </div>
   </div>
 );
-
 }
 
 export default ReportsPage;

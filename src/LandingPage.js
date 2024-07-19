@@ -74,7 +74,7 @@ const LandingPage = () => {
             <h3 className="text-2xl font-bold mb-4">Hobby</h3>
             <p className="mb-6">Najpotrzebniejsze funkcjonalności kadrowe</p>
             <p className="text-3xl font-bold mb-4">
-              {billingCycle === 'yearly' ? '$200/year' : '$20/month'}
+              {billingCycle === 'yearly' ? '200/rok' : '20/mc'}
             </p>
             <button
               onClick={() => handlePlanSelection('hobby', billingCycle)}
@@ -87,7 +87,7 @@ const LandingPage = () => {
             <h3 className="text-2xl font-bold mb-4">Firma</h3>
             <p className="mb-6">Wszystko co potrzebujesz do prowadzenia spraw pracowniczych</p>
             <p className="text-3xl font-bold mb-4">
-              {billingCycle === 'yearly' ? '$500/year' : '$50/month'}
+              {billingCycle === 'yearly' ? '500/rok' : '50/mc'}
             </p>
             <button
               onClick={() => handlePlanSelection('freelancer', billingCycle)}
@@ -100,7 +100,7 @@ const LandingPage = () => {
             <h3 className="text-2xl font-bold mb-4">Pro</h3>
             <p className="mb-6">Wszystkie dostępne funkcjonalności</p>
             <p className="text-3xl font-bold mb-4">
-              {billingCycle === 'yearly' ? '$1000/year' : '$100/month'}
+              {billingCycle === 'yearly' ? '1000/rok' : '100/mc'}
             </p>
             <button
               onClick={() => handlePlanSelection('startup', billingCycle)}
