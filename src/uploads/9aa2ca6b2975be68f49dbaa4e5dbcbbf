@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="windows-1250"?>
+<ROOT xmlns="http://www.cdn.com.pl/optima/offline">
+  <KONTRAHENCI>
+    <WERSJA>2.00</WERSJA>
+    <BAZA_ZRD_ID />
+    <BAZA_DOC_ID />
+    <KONTRAHENT>
+      <ID_ZRODLA>29426DD9-56E0-45A0-A920-F07247AC6270</ID_ZRODLA>
+      <ZEZWOLENIE />
+      <OPIS />
+      <CHRONIONY />
+      <RODZAJ />
+      <EKSPORT>krajowy</EKSPORT>
+      <EKSPORT_ENOVA>Krajowy</EKSPORT_ENOVA>
+      <FINALNY>Nie</FINALNY>
+      <PLATNIK_VAT>Tak</PLATNIK_VAT>
+      <MEDIALNY />
+      <POWIAZANY_UOV>Nie</POWIAZANY_UOV>
+      <KATEGORIA />
+      <KATEGORIA_ID />
+      <FORMA_PLATNOSCI>Przelew</FORMA_PLATNOSCI>
+      <FORMA_PLATNOSCI_ID>00000000-0003-0001-0002-000000000000</FORMA_PLATNOSCI_ID>
+      <MAX_ZWLOKA>0</MAX_ZWLOKA>
+      <CENY />
+      <JEST_LIMIT_KREDYTU>Tak</JEST_LIMIT_KREDYTU>
+      <LIMIT_KREDYTU>0.00</LIMIT_KREDYTU>
+      <INFORMACJE />
+      <INDYWIDUALNY_TERMIN>Tak</INDYWIDUALNY_TERMIN>
+      <TERMIN>14</TERMIN>
+      <ADRESY>
+        <ADRES>
+          <STATUS>aktualny</STATUS>
+          <AKRONIM>00048</AKRONIM>
+          <EAN />
+          <GLN />
+          <NAZWA1>Oddział Wojewódzki Związku  Ochotniczych Straży</NAZWA1>
+          <NAZWA2>Pożarnych RP Woj. Mazowieckiego</NAZWA2>
+          <KRAJ>Polska</KRAJ>
+          <WOJEWODZTWO />
+          <POWIAT />
+          <GMINA />
+          <ULICA>Markowska 18A</ULICA>
+          <NR_DOMU />
+          <NR_LOKALU />
+          <MIASTO>Warszawa</MIASTO>
+          <KOD_POCZTOWY>03-742</KOD_POCZTOWY>
+          <POCZTA>Warszawa</POCZTA>
+          <DODATKOWE />
+          <NIP>527-24-06-730</NIP>
+          <REGON />
+          <PESEL />
+          <TELEFON1 />
+          <TELEFON2 />
+          <FAX />
+          <URL />
+          <EMAIL />
+          <BANK_NR />
+          <BANK_ID />
+          <NR_RACHUNKU />
+          <IBAN />
+        </ADRES>
+      </ADRESY>
+      <GRUPY>
+        <GRUPA>
+          <NAZWA />
+        </GRUPA>
+      </GRUPY>
+      <PRZEDSTAWICIELE>
+        <PRZEDSTAWICIEL>
+          <NAZWISKO />
+          <IMIE />
+          <TYTUL />
+          <PLEC />
+          <KRAJ />
+          <WOJEWODZTWO />
+          <POWIAT />
+          <GMINA />
+          <ULICA />
+          <NR_DOMU />
+          <NR_LOKALU />
+          <MIASTO />
+          <KOD_POCZTOWY />
+          <POCZTA />
+          <DODATKOWE />
+          <TELEFON />
+          <GSM />
+          <EMAIL />
+        </PRZEDSTAWICIEL>
+      </PRZEDSTAWICIELE>
+    </KONTRAHENT>
+    <KONTRAHENT>
+      <ID_ZRODLA>29426DD9-56E0-45A0-A920-F07247AC6270</ID_ZRODLA>
+      <ZEZWOLENIE />
+      <OPIS />
+      <CHRONIONY />
+      <RODZAJ />
+      <EKSPORT>krajowy</EKSPORT>
+      <EKSPORT_ENOVA>Krajowy</EKSPORT_ENOVA>
+      <FINALNY>Nie</FINALNY>
+      <PLATNIK_VAT>Tak</PLATNIK_VAT>
+      <MEDIALNY />
+      <POWIAZANY_UOV>Nie</POWIAZANY_UOV>
+      <KATEGORIA />
+      <KATEGORIA_ID />
+      <FORMA_PLATNOSCI>Przelew</FORMA_PLATNOSCI>
+      <FORMA_PLATNOSCI_ID>00000000-0003-0001-0002-000000000000</FORMA_PLATNOSCI_ID>
+      <MAX_ZWLOKA>0</MAX_ZWLOKA>
+      <CENY />
+      <JEST_LIMIT_KREDYTU>Tak</JEST_LIMIT_KREDYTU>
+      <LIMIT_KREDYTU>0.00</LIMIT_KREDYTU>
+      <INFORMACJE />
+      <INDYWIDUALNY_TERMIN>Tak</INDYWIDUALNY_TERMIN>
+      <TERMIN>14</TERMIN>
+      <ADRESY>
+        <ADRES>
+          <STATUS>aktualny</STATUS>
+          <AKRONIM>00048</AKRONIM>
+          <EAN />
+          <GLN />
+          <NAZWA1>Oddział Wojewódzki Związku  Ochotniczych Straży</NAZWA1>
+          <NAZWA2>Pożarnych RP Woj. Mazowieckiego</NAZWA2>
+          <KRAJ>Polska</KRAJ>
+          <WOJEWODZTWO />
+          <POWIAT />
+          <GMINA />
+          <ULICA>Markowska 18A</ULICA>
+          <NR_DOMU />
+          <NR_LOKALU />
+          <MIASTO>Warszawa</MIASTO>
+          <KOD_POCZTOWY>03-742</KOD_POCZTOWY>
+          <POCZTA>Warszawa</POCZTA>
+          <DODATKOWE />
+          <NIP>527-24-06-730</NIP>
+          <REGON />
+          <PESEL />
+          <TELEFON1 />
+          <TELEFON2 />
+          <FAX />
+          <URL />
+          <EMAIL />
+          <BANK_NR />
+          <BANK_ID />
+          <NR_RACHUNKU />
+          <IBAN />
+        </ADRES>
+      </ADRESY>
+      <GRUPY>
+        <GRUPA>
+          <NAZWA />
+        </GRUPA>
+      </GRUPY>
+      <PRZEDSTAWICIELE>
+        <PRZEDSTAWICIEL>
+          <NAZWISKO />
+          <IMIE />
+          <TYTUL />
+          <PLEC />
+          <KRAJ />
+          <WOJEWODZTWO />
+          <POWIAT />
+          <GMINA />
+          <ULICA />
+          <NR_DOMU />
+          <NR_LOKALU />
+          <MIASTO />
+          <KOD_POCZTOWY />
+          <POCZTA />
+          <DODATKOWE />
+          <TELEFON />
+          <GSM />
+          <EMAIL />
+        </PRZEDSTAWICIEL>
+      </PRZEDSTAWICIELE>
+    </KONTRAHENT>
+    <KONTRAHENT>
+      <ID_ZRODLA>6C7525F1-23B8-4491-B57E-899598DDFC4F</ID_ZRODLA>
+      <ZEZWOLENIE />
+      <OPIS />
+      <CHRONIONY />
+      <RODZAJ />
+      <EKSPORT>krajowy</EKSPORT>
+      <EKSPORT_ENOVA>Krajowy</EKSPORT_ENOVA>
+      <FINALNY>Nie</FINALNY>
+      <PLATNIK_VAT>Tak</PLATNIK_VAT>
+      <MEDIALNY />
+      <POWIAZANY_UOV>Nie</POWIAZANY_UOV>
+      <KATEGORIA />
+      <KATEGORIA_ID />
+      <FORMA_PLATNOSCI>Przelew</FORMA_PLATNOSCI>
+      <FORMA_PLATNOSCI_ID>00000000-0003-0001-0002-000000000000</FORMA_PLATNOSCI_ID>
+      <MAX_ZWLOKA>0</MAX_ZWLOKA>
+      <CENY />
+      <JEST_LIMIT_KREDYTU>Tak</JEST_LIMIT_KREDYTU>
+      <LIMIT_KREDYTU>0.00</LIMIT_KREDYTU>
+      <INFORMACJE />
+      <INDYWIDUALNY_TERMIN>Tak</INDYWIDUALNY_TERMIN>
+      <TERMIN>60</TERMIN>
+      <ADRESY>
+        <ADRES>
+          <STATUS>aktualny</STATUS>
+          <AKRONIM>00181</AKRONIM>
+          <EAN />
+          <GLN />
+          <NAZWA1>JASTRZĘBSKA SPÓŁKA WĘGLOWA SPÓŁKA AKCYJNA</NAZWA1>
+          <NAZWA2 />
+          <KRAJ>Polska</KRAJ>
+          <WOJEWODZTWO>śląskie</WOJEWODZTWO>
+          <POWIAT>Jastrzębie-Zdrój</POWIAT>
+          <GMINA>Jastrzębie-Zdrój</GMINA>
+          <ULICA>Aleja Jana Pawła II</ULICA>
+          <NR_DOMU>4</NR_DOMU>
+          <NR_LOKALU />
+          <MIASTO>Jastrzębie-Zdrój</MIASTO>
+          <KOD_POCZTOWY>44-330</KOD_POCZTOWY>
+          <POCZTA>Jastrzębie-Zdrój</POCZTA>
+          <DODATKOWE />
+          <NIP>6330005110</NIP>
+          <REGON />
+          <PESEL />
+          <TELEFON1>327564671</TELEFON1>
+          <TELEFON2 />
+          <FAX>327564464</FAX>
+          <URL />
+          <EMAIL>MSTOZEK@JSW.PL</EMAIL>
+          <BANK_NR />
+          <BANK_ID />
+          <NR_RACHUNKU />
+          <IBAN />
+        </ADRES>
+      </ADRESY>
+      <GRUPY>
+        <GRUPA>
+          <NAZWA />
+        </GRUPA>
+      </GRUPY>
+      <PRZEDSTAWICIELE>
+        <PRZEDSTAWICIEL>
+          <NAZWISKO />
+          <IMIE />
+          <TYTUL />
+          <PLEC />
+          <KRAJ />
+          <WOJEWODZTWO />
+          <POWIAT />
+          <GMINA />
+          <ULICA />
+          <NR_DOMU />
+          <NR_LOKALU />
+          <MIASTO />
+          <KOD_POCZTOWY />
+          <POCZTA />
+          <DODATKOWE />
+          <TELEFON />
+          <GSM />
+          <EMAIL />
+        </PRZEDSTAWICIEL>
+      </PRZEDSTAWICIELE>
+    </KONTRAHENT>
+    <KONTRAHENT>
+      <ID_ZRODLA>6C7525F1-23B8-4491-B57E-899598DDFC4F</ID_ZRODLA>
+      <ZEZWOLENIE />
+      <OPIS />
+      <CHRONIONY />
+      <RODZAJ />
+      <EKSPORT>krajowy</EKSPORT>
+      <EKSPORT_ENOVA>Krajowy</EKSPORT_ENOVA>
+      <FINALNY>Nie</FINALNY>
+      <PLATNIK_VAT>Tak</PLATNIK_VAT>
+      <MEDIALNY />
+      <POWIAZANY_UOV>Nie</POWIAZANY_UOV>
+      <KATEGORIA />
+      <KATEGORIA_ID />
+      <FORMA_PLATNOSCI>Przelew</FORMA_PLATNOSCI>
+      <FORMA_PLATNOSCI_ID>00000000-0003-0001-0002-000000000000</FORMA_PLATNOSCI_ID>
+      <MAX_ZWLOKA>0</MAX_ZWLOKA>
+      <CENY />
+      <JEST_LIMIT_KREDYTU>Tak</JEST_LIMIT_KREDYTU>
+      <LIMIT_KREDYTU>0.00</LIMIT_KREDYTU>
+      <INFORMACJE />
+      <INDYWIDUALNY_TERMIN>Tak</INDYWIDUALNY_TERMIN>
+      <TERMIN>60</TERMIN>
+      <ADRESY>
+        <ADRES>
+          <STATUS>aktualny</STATUS>
+          <AKRONIM>00181</AKRONIM>
+          <EAN />
+          <GLN />
+          <NAZWA1>JASTRZĘBSKA SPÓŁKA WĘGLOWA SPÓŁKA AKCYJNA</NAZWA1>
+          <NAZWA2 />
+          <KRAJ>Polska</KRAJ>
+          <WOJEWODZTWO>śląskie</WOJEWODZTWO>
+          <POWIAT>Jastrzębie-Zdrój</POWIAT>
+          <GMINA>Jastrzębie-Zdrój</GMINA>
+          <ULICA>Aleja Jana Pawła II</ULICA>
+          <NR_DOMU>4</NR_DOMU>
+          <NR_LOKALU />
+          <MIASTO>Jastrzębie-Zdrój</MIASTO>
+          <KOD_POCZTOWY>44-330</KOD_POCZTOWY>
+          <POCZTA>Jastrzębie-Zdrój</POCZTA>
+          <DODATKOWE />
+          <NIP>6330005110</NIP>
+          <REGON />
+          <PESEL />
+          <TELEFON1>327564671</TELEFON1>
+          <TELEFON2 />
+          <FAX>327564464</FAX>
+          <URL />
+          <EMAIL>MSTOZEK@JSW.PL</EMAIL>
+          <BANK_NR />
+          <BANK_ID />
+          <NR_RACHUNKU />
+          <IBAN />
+        </ADRES>
+      </ADRESY>
+      <GRUPY>
+        <GRUPA>
+          <NAZWA />
+        </GRUPA>
+      </GRUPY>
+      <PRZEDSTAWICIELE>
+        <PRZEDSTAWICIEL>
+          <NAZWISKO />
+          <IMIE />
+          <TYTUL />
+          <PLEC />
+          <KRAJ />
+          <WOJEWODZTWO />
+          <POWIAT />
+          <GMINA />
+          <ULICA />
+          <NR_DOMU />
+          <NR_LOKALU />
+          <MIASTO />
+          <KOD_POCZTOWY />
+          <POCZTA />
+          <DODATKOWE />
+          <TELEFON />
+          <GSM />
+          <EMAIL />
+        </PRZEDSTAWICIEL>
+      </PRZEDSTAWICIELE>
+    </KONTRAHENT>
+  </KONTRAHENCI>
+  <REJESTRY_SPRZEDAZY_VAT>
+    <WERSJA>2.00</WERSJA>
+    <BAZA_ZRD_ID />
+    <BAZA_DOC_ID />
+    <REJESTR_SPRZEDAZY_VAT>
+      <ID_ZRODLA>5480D3C1-843E-4DCB-B965-ADB18DD088C0</ID_ZRODLA>
+      <REJESTR>SPT</REJESTR>
+      <DATA_WYSTAWIENIA>2023-10-02</DATA_WYSTAWIENIA>
+      <DATA_SPRZEDAZY>2023-10-02</DATA_SPRZEDAZY>
+      <TERMIN>2023-10-16</TERMIN>
+      <NUMER>FV/001/10/23</NUMER>
+      <KOREKTA>Nie</KOREKTA>
+      <KOREKTA_NUMER />
+      <FISKALNA>Nie</FISKALNA>
+      <DETALICZNA>Nie</DETALICZNA>
+      <EKSPORT>nie</EKSPORT>
+      <EKSPORT_ENOVA>Krajowy</EKSPORT_ENOVA>
+      <FINALNY>Nie</FINALNY>
+      <TYP_PODMIOTU>kontrahent</TYP_PODMIOTU>
+      <PODMIOT>00048</PODMIOT>
+      <PODMIOT_ID>29426DD9-56E0-45A0-A920-F07247AC6270</PODMIOT_ID>
+      <NAZWA1>Oddział Wojewódzki Związku  Ochotniczych Straży</NAZWA1>
+      <NAZWA2>Pożarnych RP Woj. Mazowieckiego</NAZWA2>
+      <NIP>527-24-06-730</NIP>
+      <KRAJ>Polska</KRAJ>
+      <WOJEWODZTWO />
+      <POWIAT />
+      <GMINA />
+      <ULICA>Markowska 18A</ULICA>
+      <NR_DOMU />
+      <NR_LOKALU />
+      <MIASTO>Warszawa</MIASTO>
+      <KOD_POCZTOWY>03-742</KOD_POCZTOWY>
+      <POCZTA>Warszawa</POCZTA>
+      <DODATKOWE />
+      <KATEGORIA />
+      <KATEGORIA_ID />
+      <OPIS>FV</OPIS>
+      <MPP>Nie</MPP>
+      <PODATEK_W_OSS>Nie</PODATEK_W_OSS>
+      <DEKLARACJA_OSS />
+      <KOD_KRAJU_ODBIORCY>PL</KOD_KRAJU_ODBIORCY>
+      <KRAJ_WYDANIA_W>PL</KRAJ_WYDANIA_W>
+      <WALUTA>PLN</WALUTA>
+      <DATA_KURSU>2023-10-02</DATA_KURSU>
+      <FORMA_PLATNOSCI>Gotówka za pobraniem</FORMA_PLATNOSCI>
+      <FORMA_PLATNOSCI_ID>B57F9831-8C26-409C-AE81-ED1A25C67139</FORMA_PLATNOSCI_ID>
+      <POZYCJE>
+        <POZYCJA>
+          <KATEGORIA />
+          <KATEGORIA_ID />
+          <STAWKA_VAT>8.00</STAWKA_VAT>
+          <STATUS_VAT>opodatkowana</STATUS_VAT>
+          <NETTO>3420.00</NETTO>
+          <VAT>273.60</VAT>
+          <NETTO_SYS>3420.00</NETTO_SYS>
+          <VAT_SYS>273.60</VAT_SYS>
+          <NETTO_SYS2>3420.00</NETTO_SYS2>
+          <VAT_SYS2>273.60</VAT_SYS2>
+          <RODZAJ_SPRZEDAZY>towary</RODZAJ_SPRZEDAZY>
+        </POZYCJA>
+        <POZYCJA>
+          <KATEGORIA />
+          <KATEGORIA_ID />
+          <STAWKA_VAT>23.00</STAWKA_VAT>
+          <STATUS_VAT>opodatkowana</STATUS_VAT>
+          <NETTO>20.33</NETTO>
+          <VAT>4.68</VAT>
+          <NETTO_SYS>20.33</NETTO_SYS>
+          <VAT_SYS>4.68</VAT_SYS>
+          <NETTO_SYS2>20.33</NETTO_SYS2>
+          <VAT_SYS2>4.68</VAT_SYS2>
+          <RODZAJ_SPRZEDAZY>usługi</RODZAJ_SPRZEDAZY>
+        </POZYCJA>
+      </POZYCJE>
+      <PLATNOSCI>
+        <PLATNOSC>
+          <ID_ZRODLA_PLAT />
+          <TERMIN_PLAT>2023-10-16</TERMIN_PLAT>
+          <FORMA_PLATNOSCI_PLAT>Gotówka za pobraniem</FORMA_PLATNOSCI_PLAT>
+          <FORMA_PLATNOSCI_ID_PLAT>B57F9831-8C26-409C-AE81-ED1A25C67139</FORMA_PLATNOSCI_ID_PLAT>
+          <KWOTA_PLAT>3718.61</KWOTA_PLAT>
+          <KWOTA_PLN_PLAT>3718.61</KWOTA_PLN_PLAT>
+          <WALUTA_PLAT><![CDATA[]]></WALUTA_PLAT>
+          <WALUTA_DOK><![CDATA[]]></WALUTA_DOK>
+          <KIERUNEK>przychód</KIERUNEK>
+          <TYP_PODMIOTU>kontrahent</TYP_PODMIOTU>
+          <PODMIOT>00048</PODMIOT>
+          <PODMIOT_ID>29426DD9-56E0-45A0-A920-F07247AC6270</PODMIOT_ID>
+        </PLATNOSC>
+      </PLATNOSCI>
+      <KODY_JPK />
+    </REJESTR_SPRZEDAZY_VAT>
+    <REJESTR_SPRZEDAZY_VAT>
+      <ID_ZRODLA>9985D6E2-F1E3-4ED9-8084-096CBD82066E</ID_ZRODLA>
+      <REJESTR>SPT</REJESTR>
+      <DATA_WYSTAWIENIA>2023-10-02</DATA_WYSTAWIENIA>
+      <DATA_SPRZEDAZY>2023-10-02</DATA_SPRZEDAZY>
+      <TERMIN>2023-12-01</TERMIN>
+      <NUMER>FV/002/10/23</NUMER>
+      <KOREKTA>Nie</KOREKTA>
+      <KOREKTA_NUMER />
+      <FISKALNA>Nie</FISKALNA>
+      <DETALICZNA>Nie</DETALICZNA>
+      <EKSPORT>nie</EKSPORT>
+      <EKSPORT_ENOVA>Krajowy</EKSPORT_ENOVA>
+      <FINALNY>Nie</FINALNY>
+      <TYP_PODMIOTU>kontrahent</TYP_PODMIOTU>
+      <PODMIOT>00181</PODMIOT>
+      <PODMIOT_ID>6C7525F1-23B8-4491-B57E-899598DDFC4F</PODMIOT_ID>
+      <NAZWA1>JASTRZĘBSKA SPÓŁKA WĘGLOWA SPÓŁKA AKCYJNA</NAZWA1>
+      <NAZWA2 />
+      <NIP>6330005110</NIP>
+      <KRAJ>Polska</KRAJ>
+      <WOJEWODZTWO>śląskie</WOJEWODZTWO>
+      <POWIAT>Jastrzębie-Zdrój</POWIAT>
+      <GMINA>Jastrzębie-Zdrój</GMINA>
+      <ULICA>Aleja Jana Pawła II</ULICA>
+      <NR_DOMU>4</NR_DOMU>
+      <NR_LOKALU />
+      <MIASTO>Jastrzębie-Zdrój</MIASTO>
+      <KOD_POCZTOWY>44-330</KOD_POCZTOWY>
+      <POCZTA>Jastrzębie-Zdrój</POCZTA>
+      <DODATKOWE />
+      <KATEGORIA />
+      <KATEGORIA_ID />
+      <OPIS>FV</OPIS>
+      <MPP>Nie</MPP>
+      <PODATEK_W_OSS>Nie</PODATEK_W_OSS>
+      <DEKLARACJA_OSS />
+      <KOD_KRAJU_ODBIORCY>PL</KOD_KRAJU_ODBIORCY>
+      <KRAJ_WYDANIA_W>PL</KRAJ_WYDANIA_W>
+      <WALUTA>PLN</WALUTA>
+      <DATA_KURSU>2023-10-02</DATA_KURSU>
+      <FORMA_PLATNOSCI>Gotówka za pobraniem</FORMA_PLATNOSCI>
+      <FORMA_PLATNOSCI_ID>B57F9831-8C26-409C-AE81-ED1A25C67139</FORMA_PLATNOSCI_ID>
+      <POZYCJE>
+        <POZYCJA>
+          <KATEGORIA />
+          <KATEGORIA_ID />
+          <STAWKA_VAT>8.00</STAWKA_VAT>
+          <STATUS_VAT>opodatkowana</STATUS_VAT>
+          <NETTO>6300.00</NETTO>
+          <VAT>504.00</VAT>
+          <NETTO_SYS>6300.00</NETTO_SYS>
+          <VAT_SYS>504.00</VAT_SYS>
+          <NETTO_SYS2>6300.00</NETTO_SYS2>
+          <VAT_SYS2>504.00</VAT_SYS2>
+          <RODZAJ_SPRZEDAZY>towary</RODZAJ_SPRZEDAZY>
+        </POZYCJA>
+      </POZYCJE>
+      <PLATNOSCI>
+        <PLATNOSC>
+          <ID_ZRODLA_PLAT />
+          <TERMIN_PLAT>2023-12-01</TERMIN_PLAT>
+          <FORMA_PLATNOSCI_PLAT>Gotówka za pobraniem</FORMA_PLATNOSCI_PLAT>
+          <FORMA_PLATNOSCI_ID_PLAT>B57F9831-8C26-409C-AE81-ED1A25C67139</FORMA_PLATNOSCI_ID_PLAT>
+          <KWOTA_PLAT>6804.00</KWOTA_PLAT>
+          <KWOTA_PLN_PLAT>6804.00</KWOTA_PLN_PLAT>
+          <WALUTA_PLAT><![CDATA[]]></WALUTA_PLAT>
+          <WALUTA_DOK><![CDATA[]]></WALUTA_DOK>
+          <KIERUNEK>przychód</KIERUNEK>
+          <TYP_PODMIOTU>kontrahent</TYP_PODMIOTU>
+          <PODMIOT>00181</PODMIOT>
+          <PODMIOT_ID>6C7525F1-23B8-4491-B57E-899598DDFC4F</PODMIOT_ID>
+        </PLATNOSC>
+      </PLATNOSCI>
+      <KODY_JPK />
+    </REJESTR_SPRZEDAZY_VAT>
+  </REJESTRY_SPRZEDAZY_VAT>
+</ROOT>

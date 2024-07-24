@@ -6,11 +6,14 @@ import StepIndicator from './StepIndicator'; // Adjust the path as necessary
 import { useSetup } from './SetupContext'; // Import the context to use steps
 import axiosInstance from './axiosInstance';
 import { useRequireAuth } from './useRequireAuth';
+import Modal from './Modal'; // Import the Modal component
+import SalaryCalculator from './SalaryCalculator'; // Import the SalaryCalculator component
 
 function AddContractForm() {
   const { employeeId, contractId, employeeName } = useParams();
   const navigate = useNavigate();
   console.log('Employee ID:', employeeId);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [grossAmount, setGrossAmount] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -258,6 +261,21 @@ const viewEmployeeContract = () => {
     setGrossAmount(event.target.value);
   };
 
+  const navigateToCalculator = () => {
+    navigate('/salary-calculator', { state: { grossAmount, employeeId } });
+  };
+
+  // Open the calculator
+const openCalculator = () => {
+  console.log('Opening calculator with Employee ID:', employeeId); // Log before opening
+  setIsModalOpen(true);
+};
+
+  const closeCalculator = () => {
+    setIsModalOpen(false);
+  };
+
+
   const handleStartDateChange = (event) => {
     const newStartDate = event.target.value;
     setStartDate(newStartDate);
@@ -314,14 +332,19 @@ const viewEmployeeContract = () => {
       )}
       <form onSubmit={handleSubmit} className="space-y-4 bg-white shadow rounded p-6">
       <div className="flex flex-wrap -mx-2">
-            <div className="w-full px-2 mb-4">
-        <label className="block text-sm font-medium text-gray-700">Gross Amount:</label>
-        <input 
-        type="text" 
-        value={grossAmount} 
-        onChange={handleGrossAmountChange} 
-        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
-        </div>
+      <div className="w-full px-2 mb-4">
+  <label className="block text-sm font-medium text-gray-700">Gross Amount:</label>
+  <input 
+    type="text" 
+    value={grossAmount} 
+    onChange={handleGrossAmountChange} 
+    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
+  />
+  <button type="button" onClick={openCalculator} className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm">
+                  Calculate Net Salary
+                </button>
+</div>
+
 
         <div className="w-1/2 px-2 mb-4">
         <label className="block text-sm font-medium text-gray-700">Start Date:</label>
@@ -447,6 +470,10 @@ const viewEmployeeContract = () => {
 
     </div>
     </div>
+     {/* Modal for salary calculator */}
+     <Modal isOpen={isModalOpen} onClose={closeCalculator} title="Salary Calculator">
+        <SalaryCalculator grossAmount={grossAmount} employeeId={employeeId} />
+      </Modal>
     </div>
     
   );

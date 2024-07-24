@@ -12,6 +12,11 @@ const bcrypt = require('bcrypt');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
+
+// dla konwertera
+const multer = require('multer');
+const xml2js = require('xml2js');
+
 // src/server.js
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
@@ -66,6 +71,155 @@ app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
 }));
+
+// Set up multer for file uploads
+const upload = multer({ dest: 'uploads/' });
+
+// Helper function to safely parse floats
+const safeParseFloat = (value) => {
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+// Endpoint to handle XML file upload and conversion to TXT
+app.post('/upload', upload.single('file'), (req, res) => {
+  const xmlFile = req.file.path;
+
+  fs.readFile(xmlFile, 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error reading XML file');
+    }
+
+    xml2js.parseString(data, { explicitArray: false }, (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Error parsing XML file');
+      }
+
+      const kontrahenci = result.ROOT.KONTRAHENCI.KONTRAHENT;
+      const rejestry = result.ROOT.REJESTRY_SPRZEDAZY_VAT.REJESTR_SPRZEDAZY_VAT;
+
+      // Fixed header part of the output
+      let output = 'INFO{\n';
+      output += 'Nazwa programu =Faktura Small Business\n';
+      output += 'Wersja szablonu =4\n';
+      output += 'dane_z_oddzialu =1\n';
+      output += 'Kontrahent{\n';
+      output += 'id =7732331591\n';
+      output += 'kod =CzarMed Łukasz Czarnecki\n';
+      output += 'nazwa =CzarMed Łukasz Czarnecki\n';
+      output += 'miejscowosc =Bedoń Przykościelny\n';
+      output += 'NIP =7732331591\n';
+      output += '}\n';
+
+      // Create a map of kontrahenci by ID_ZRODLA for easy lookup
+      const kontrahentMap = {};
+      kontrahenci.forEach(kontrahent => {
+        kontrahentMap[kontrahent.ID_ZRODLA] = kontrahent;
+      });
+
+      // Dynamically generated part of the output
+      rejestry.forEach(rejestr => {
+        const kontrahent = kontrahentMap[rejestr.PODMIOT_ID];
+        if (kontrahent) {
+          output += 'Kontrahent{\n';
+          output += `id =${kontrahent.ID_ZRODLA}\n`;
+          output += `kod =${kontrahent.ADRESY.ADRES.NAZWA1}\n`;
+          output += `nazwa =${kontrahent.ADRESY.ADRES.NAZWA1} ${kontrahent.ADRESY.ADRES.NAZWA2}\n`;
+          output += `miejscowosc =${kontrahent.ADRESY.ADRES.MIASTO}\n`;
+          output += `ulica =${kontrahent.ADRESY.ADRES.ULICA}\n`;
+          output += `kodpocz =${kontrahent.ADRESY.ADRES.KOD_POCZTOWY}\n`;
+          output += `nip =${kontrahent.ADRESY.ADRES.NIP}\n`;
+          output += 'rejon = \n'; // Placeholder as rejon is not in the XML
+          output += 'tel1 = \n'; // Placeholder as tel1 is not in the XML
+          output += 'tel2 = \n'; // Placeholder as tel2 is not in the XML
+          output += 'fax = \n'; // Placeholder as fax is not in the XML
+          output += 'email = \n'; // Placeholder as email is not in the XML
+          output += 'idKraju = 7401\n'; // Static value as per AMS file
+          output += '}\n';
+        }
+
+        // Add corresponding document (rejestr)
+        output += 'Dokument{\n';
+        output += `rodzaj_dok =sprzedaży\n`;
+        output += `dozaplaty =0.00\n`; // Assuming 'dozaplaty' is not available in the XML
+        const wdozaplaty = Array.isArray(rejestr.POZYCJE.POZYCJA)
+          ? rejestr.POZYCJE.POZYCJA.reduce((total, pozycja) => {
+            return total + safeParseFloat(pozycja.NETTO) + safeParseFloat(pozycja.VAT);
+          }, 0)
+          : safeParseFloat(rejestr.POZYCJE.POZYCJA.NETTO) + safeParseFloat(rejestr.POZYCJE.POZYCJA.VAT);
+        output += `wdozaplaty =${wdozaplaty.toFixed(2)}\n`;
+        output += `rejestr_platnosci =BANK\n`; // Assuming 'rejestr_platnosci' is not available in the XML
+        output += `forma_platnosci =${rejestr.FORMA_PLATNOSCI}\n`;
+        output += `JPK_V7 =\n`; // Assuming 'JPK_V7' is not available in the XML
+        output += `khid =${rejestr.PODMIOT_ID}\n`;
+        output += `khkod =${rejestr.NAZWA1}\n`;
+        output += `khnazwa =${rejestr.NAZWA1} ${rejestr.NAZWA2}\n`;
+        output += `khnip =${rejestr.NIP}\n`;
+        output += `khadres =${rejestr.ULICA}\n`;
+        output += `khmiasto =${rejestr.MIASTO}\n`;
+        output += `khkodPocz =${rejestr.KOD_POCZTOWY}\n`;
+        output += `kwota =${wdozaplaty.toFixed(2)}\n`;
+        output += `symbol FK =FAK\n`; // Assuming 'symbol FK' is not available in the XML
+        output += `data =${rejestr.DATA_WYSTAWIENIA}\n`;
+        output += `dataSp =${rejestr.DATA_SPRZEDAZY}\n`;
+        output += `terminPlatnosci =${rejestr.TERMIN}\n`;
+        output += `FK nazwa =${rejestr.NUMER}\n`;
+        output += `opis FK =${rejestr.OPIS}\n`; // Assuming 'opis FK' is available in the XML
+        output += 'Zapis{\n';
+        output += `strona =WN\n`; // Assuming 'strona' is not available in the XML
+        output += `Pozycja =0\n`; // Assuming 'Pozycja' is not available in the XML
+        output += `ZapisRownolegly =0\n`; // Assuming 'ZapisRownolegly' is not available in the XML
+        output += `kwota =${wdozaplaty.toFixed(2)}\n`;
+        output += `konto = \n`; // Assuming 'konto' is not available in the XML
+        output += `opis =\n`; // Assuming 'opis' is not available in the XML
+        output += `NumerDok =${rejestr.NUMER}\n`;
+        output += '}\n';
+
+        const pozycje = Array.isArray(rejestr.POZYCJE.POZYCJA) ? rejestr.POZYCJE.POZYCJA : [rejestr.POZYCJE.POZYCJA];
+        pozycje.forEach(pozycja => {
+          const netto = safeParseFloat(pozycja.NETTO);
+          const vat = safeParseFloat(pozycja.VAT);
+          const brutto = netto + vat;
+          output += 'Rejestr{\n';
+          output += `Skrot =Sprzedaż\n`; // Assuming 'Skrot' is not available in the XML
+          output += `Nazwa =Sprzedaż\n`; // Assuming 'Nazwa' is not available in the XML
+          output += `Rodzaj =1\n`; // Assuming 'Rodzaj' is not available in the XML
+          output += `ABC =1\n`; // Assuming 'ABC' is not available in the XML
+          output += `metoda_VAT =0\n`; // Assuming 'metoda_VAT' is not available in the XML
+          output += `datarej =\n`; // Assuming 'datarej' is not available in the XML
+          output += `okres =\n`; // Assuming 'okres' is not available in the XML
+          output += `stawka =${pozycja.STAWKA_VAT}\n`;
+          output += `brutto =${brutto.toFixed(2)}\n`;
+          output += `netto =${netto.toFixed(2)}\n`;
+          output += `vat =${vat.toFixed(2)}\n`;
+          output += `JPK_V7 =\n`; // Assuming 'JPK_V7' is not available in the XML
+          output += '}\n';
+        });
+
+        output += '}\n';
+      });
+
+      output += '}\n';
+
+      const outputPath = path.join(__dirname, 'output.txt');
+      fs.writeFile(outputPath, output, 'utf8', (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send('Error writing TXT file');
+        }
+
+        res.download(outputPath, 'output.txt', (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).send('Error downloading TXT file');
+          }
+        });
+      });
+    });
+  });
+});
 
 app.post('/create-payment-intent', async (req, res) => {
   const { amount, currency } = req.body;

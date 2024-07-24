@@ -6,7 +6,6 @@ import Login from './Login';
 import AccountDetails from './AccountDetails';
 import LoginUser from './LoginUser';
 import CreateCompanyForm from './CreateCompanyForm';
-import SalaryCalculator from './SalaryCalculator';
 import EmployeeForm from './EmployeeForm';
 import EmployeeList from './EmployeeList'; // Import the EmployeeList component
 import AddContractForm from './AddContractForm';
@@ -45,6 +44,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import TrialEnded from './TrialEnded';
 import EmployeeReportsPage from './EmployeeReportsPage';
+import Konwerterxml from './Konwerterxml';
+import SalaryCalculator from './SalaryCalculator';
 
 const stripePromise = loadStripe('pk_live_51PWCkCC24aqQf542gaveEHeqLSBQ724b0jzLDCs9nGsurKvRp2sHvWepk7waJmeX5e0xSiZtCzxzV39brkyBC7TW00PM67gLmm');
 
@@ -79,7 +80,8 @@ function App() {
           <Route path="/LoginUser" element={<LoginUser />} />
           <Route path="*" element={<Navigate to="/" />} />
 		  <Route path="/company" element={<CreateCompanyForm />} />
-		  <Route path="/salaryCalculator" element={<SalaryCalculator />} />
+      <Route path="/konwerterxml" element={<Konwerterxml />} />
+		  <Route path="/salary-calculator" element={<SalaryCalculator />} />
 		  <Route path="/createEmployee" element={<EmployeeForm />} />
 		  <Route path="/employeeList" element={<PrivateRoute element={EmployeeList} allowedRoles={['admin']} />} />
 		  <Route path="/add-contract/:employeeId" element={<AddContractForm />} />

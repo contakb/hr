@@ -1,64 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from './UserContext';
-import axiosInstance from './axiosInstance';
-import { toast } from 'react-toastify';
+import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 
-const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
+const SalaryCalculator = () => {
+  const [employeeData, setEmployeeData] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [salaryDetails, setSalaryDetails] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [editableGrossAmount, setEditableGrossAmount] = useState(initialGrossAmount); // Editable gross amount state
-  const { user } = useUser();
 
-  useEffect(() => {
-    console.log('SalaryCalculator Component Initialized');
-    console.log(`Received Props - initialGrossAmount: ${initialGrossAmount}, employeeId: ${employeeId}`);
-    setEditableGrossAmount(initialGrossAmount); // Initialize editableGrossAmount with the initial grossAmount
-  }, [initialGrossAmount, employeeId]);
+  const location = useLocation();
+  const grossAmountValue = location.state?.grossAmount || 0;
 
-  const fetchAllParameters = async (employeeId) => {
+  const fetchAllParameters = async (employee) => {
     try {
-      const response = await axiosInstance.get(`/api/employee-params/${employeeId}`, {
+      console.log(`Fetching parameters for employee ${employee.employee_id}`);
+      const response = await axios.get(`http://localhost:3001/api/employee-params/${employee.employee_id}`, {
         headers: {
           'Authorization': `Bearer ${user.access_token}`,
           'X-Schema-Name': user.schemaName,
         }
       });
-      const params = response.data.parameters[0] || {};
-      const koszty = params.koszty ?? 250;
-      const ulga = params.ulga ?? 300;
-
-      console.log(`Parameters fetched for employee ${employeeId}: koszty=${koszty}, ulga=${ulga}`);
-      const usedDefault = params.koszty === undefined || params.ulga === undefined;
-
-      if (usedDefault) {
-        toast.warn(`Using default tax parameters for employee ID: ${employeeId}. Koszty: 250, Ulga: 300`);
-      }
-
-      return { koszty, ulga, usedDefault };
+      const params = response.data.parameters[0] || {}; 
+      const { koszty = 250, ulga = 300 } = params;
+      console.log(`Parameters fetched for employee ${employee.employee_id}: koszty=${koszty}, ulga=${ulga}`);
+      return { ...employee, koszty, ulga };
     } catch (error) {
-      console.error(`Error fetching parameters for employee ${employeeId}:`, error);
-      toast.warn(`Using default tax parameters for employee ID: ${employeeId}. Koszty: 250, Ulga: 300`);
-      return { koszty: 250, ulga: 300, usedDefault: true };
-    }
-  };
-
-  const fetchEmployee = async (employeeId) => {
-    try {
-      const response = await axiosInstance.get(`/api/employees/${employeeId}`, {
-        headers: {
-          'Authorization': `Bearer ${user.access_token}`,
-          'X-Schema-Name': user.schemaName,
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching employee with ID ${employeeId}:`, error);
-      return null;
+      console.error(`Error fetching parameters for employee ${employee.employee_id}:`, error);
+      return employee;
     }
   };
 
   const getAgeFromPesel = (pesel) => {
-    if (!pesel || pesel.length !== 11) return null;
+    if (pesel.length !== 11) return null;
     let year = parseInt(pesel.substring(0, 2), 10);
     let month = parseInt(pesel.substring(2, 4), 10);
     if (month > 80) {
@@ -85,32 +58,39 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
     return age;
   };
 
-  const calculateSalary = (grossAmount, employee, koszty, ulga) => {
-    console.log(`Calculating salary for employee ID ${employee.employee_id || employee.id}`);
-    console.log(`Koszty: ${koszty}, Ulga: ${ulga}`);
+  const calculateSalary = (grossAmountValue, employee) => {
+    console.log(`Calculating salary for employee ID ${employee.employee_id}`);
+    const employeeKoszty = employee.koszty !== undefined ? employee.koszty : 250;
+    const employeeUlga = employee.ulga !== undefined ? employee.ulga : 300;
+    console.log(`Koszty: ${employeeKoszty}, Ulga: ${employeeUlga}`);
 
-    let customGrossAmount = parseFloat(grossAmount);
+    let customGrossAmount = parseFloat(grossAmountValue);
     customGrossAmount = customGrossAmount > 0 ? customGrossAmount : 0;
+    console.log("customGrossAmount:", customGrossAmount);
 
+    // Calculate social security and health insurance contributions
     const emeryt_pr = (customGrossAmount * 0.0976).toFixed(2);
     const emeryt_ub = (customGrossAmount * 0.0976).toFixed(2);
     const rent_pr = (customGrossAmount * 0.065).toFixed(2);
     const rent_ub = (customGrossAmount * 0.015).toFixed(2);
     const chorobowe = (customGrossAmount * 0.0245).toFixed(2);
-    const wypadkowe = (customGrossAmount * 0.0167).toFixed(2);
+    const wypadkowe = (customGrossAmount * 0.0167).toFixed(2); // Assuming 1.67% for accident insurance
     const FP = (customGrossAmount * 0.0245).toFixed(2);
     const FGSP = (customGrossAmount * 0.001).toFixed(2);
-
-    let wyn_chorobowe = 0;
+    
+    // Podstawa zdrowotne calculation
+    let wyn_chorobowe = 0; // Placeholder if needed for additional calculations
     let podstawa_zdrow = (customGrossAmount - customGrossAmount * 0.0976 - customGrossAmount * 0.015 - customGrossAmount * 0.0245).toFixed(2);
-
-    let pod_zal = (customGrossAmount - customGrossAmount * 0.1371 - koszty).toFixed(2);
+    
+    // Podstawa zaliczki calculation
+    let pod_zal = (customGrossAmount - customGrossAmount * 0.1371 - employeeKoszty).toFixed(2);
     let currentMonthTaxBase = parseFloat(pod_zal);
     let newAccumulatedTaxBase = currentMonthTaxBase;
 
     console.log(`Current Month Tax Base: ${currentMonthTaxBase}`);
     console.log(`New Accumulated Tax Base: ${newAccumulatedTaxBase}`);
 
+    // Tax calculation
     const taxThreshold = 120000;
     const youngEmployeeTaxThreshold = 85528;
     let tax;
@@ -134,7 +114,7 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
       }
     }
 
-    let zaliczka = tax - ulga;
+    let zaliczka = tax - employeeUlga;
     zaliczka = zaliczka < 0 ? 0 : zaliczka.toFixed(0);
 
     let zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
@@ -144,7 +124,7 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
     let netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
 
     return {
-      grossAmount,
+      grossAmount: grossAmountValue,
       netAmount,
       emeryt_pr,
       emeryt_ub,
@@ -160,45 +140,35 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
       zaliczka,
       zal_2021,
       zdrowotne,
-      ulga,
-      koszty,
+      ulga: employeeUlga,
+      koszty: employeeKoszty,
       social_base: customGrossAmount
     };
   };
 
   const handleCalculate = async () => {
+    if (!selectedEmployee) return;
     setLoading(true);
-    const employee = await fetchEmployee(employeeId);
-    if (!employee) {
-      setLoading(false);
-      toast.error(`Employee data not found for ID: ${employeeId}`);
-      return;
-    }
-    const { koszty, ulga, usedDefault } = await fetchAllParameters(employeeId);
-
-    if (usedDefault) {
-      toast.warn(`Using default tax parameters for employee ID: ${employeeId}. Koszty: 250, Ulga: 300`);
-    }
-
-    const salaryDetails = calculateSalary(editableGrossAmount, employee, koszty, ulga);
+    const updatedEmployee = await fetchAllParameters(selectedEmployee);
+    const salaryDetails = calculateSalary(grossAmountValue, updatedEmployee);
     setSalaryDetails(salaryDetails);
     setLoading(false);
   };
 
+  useEffect(() => {
+    // Fetch employee data and setEmployeeData
+  }, []);
+
   return (
     <div className="salary-selection-page">
       <h1>Salary Calculator</h1>
-      <div>
-        <label>Gross Amount: </label>
-        <input
-          type="number"
-          value={editableGrossAmount}
-          onChange={(e) => setEditableGrossAmount(e.target.value)}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-        />
-        <button onClick={handleCalculate} className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm">
-          Recalculate
-        </button>
+      <div className="employee-list">
+        {employeeData.map((employee) => (
+          <div key={employee.employee_id} className="employee-card" onClick={() => setSelectedEmployee(employee)}>
+            <h2>{employee.name} {employee.surname}</h2>
+            <button onClick={handleCalculate}>Calculate Salary</button>
+          </div>
+        ))}
       </div>
       {loading && <p>Loading...</p>}
       {salaryDetails && (

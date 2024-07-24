@@ -638,24 +638,9 @@ const fetchBadania = async () => {
             <h3 className="text-lg font-semibold">Badania Lekarskie</h3>
             {editBadanieMode ? (
               <form onSubmit={handleBadanieSubmit}>
-                <label htmlFor="type">Typ badania:</label>
-                <select
-                  name="type"
-                  value={editingBadanie.type}
-                  onChange={handleBadanieChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="wstępne">wstępne</option>
-                  <option value="okresowe">okresowe</option>
-                  <option value="kontrolne">kontrolne</option>
-                </select>
-                <label htmlFor="issue_date" className="mt-4">Data od:</label>
-                <DatePicker
-                  selected={editingBadanie.issue_date}
-                  onChange={(date) => handleBadanieDateChange(date, 'issue_date')}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-                <label htmlFor="termination_date" className="mt-4">Data do:</label>
+                
+                
+                <label htmlFor="termination_date" className="mt-4">Data ważności:</label>
                 <DatePicker
                   selected={editingBadanie.termination_date}
                   onChange={(date) => handleBadanieDateChange(date, 'termination_date')}
@@ -682,8 +667,8 @@ const fetchBadania = async () => {
                 <table className="min-w-full bg-white table-auto text-xs mt-4">
                   <thead>
                     <tr>
-                      <th className="py-1 px-2 border-b">Data od</th>
-                      <th className="py-1 px-2 border-b">Data do</th>
+                      <th className="py-1 px-2 border-b">Data wystawienia</th>
+                      <th className="py-1 px-2 border-b">Data ważności</th>
                       <th className="py-1 px-2 border-b">Typ badania</th>
                       <th className="py-1 px-2 border-b">Akcje</th>
                     </tr>

@@ -1,0 +1,146 @@
+INFO{
+Nazwa programu =Faktura Small Business
+Wersja szablonu =4
+dane_z_oddzialu =1
+Kontrahent{
+id =7732331591
+kod =CzarMed Łukasz Czarnecki
+nazwa =CzarMed Łukasz Czarnecki
+miejscowosc =Bedoń Przykościelny
+NIP =7732331591
+}
+Kontrahent{
+id =29426DD9-56E0-45A0-A920-F07247AC6270
+kod =Oddział Wojewódzki Związku  Ochotniczych Straży
+nazwa =Oddział Wojewódzki Związku  Ochotniczych Straży Pożarnych RP Woj. Mazowieckiego
+miejscowosc =Warszawa
+ulica =Markowska 18A
+kodpocz =03-742
+nip =527-24-06-730
+rejon = 
+tel1 = 
+tel2 = 
+fax = 
+email = 
+idKraju = 7401
+}
+Dokument{
+rodzaj_dok =sprzedaży
+dozaplaty =0.00
+wdozaplaty =3718.61
+rejestr_platnosci =BANK
+forma_platnosci =Gotówka za pobraniem
+JPK_V7 =
+khid =29426DD9-56E0-45A0-A920-F07247AC6270
+khkod =Oddział Wojewódzki Związku  Ochotniczych Straży
+khnazwa =Oddział Wojewódzki Związku  Ochotniczych Straży Pożarnych RP Woj. Mazowieckiego
+khnip =527-24-06-730
+khadres =Markowska 18A
+khmiasto =Warszawa
+khkodPocz =03-742
+kwota =3718.61
+symbol FK =FAK
+data =2023-10-02
+dataSp =2023-10-02
+terminPlatnosci =2023-10-16
+FK nazwa =FV/001/10/23
+opis FK =FV
+Zapis{
+strona =WN
+Pozycja =0
+ZapisRownolegly =0
+kwota =3718.61
+konto = 
+opis =
+NumerDok =FV/001/10/23
+}
+Rejestr{
+Skrot =Sprzedaż
+Nazwa =Sprzedaż
+Rodzaj =1
+ABC =1
+metoda_VAT =0
+datarej =
+okres =
+stawka =8.00
+brutto =3693.60
+netto =3420.00
+vat =273.60
+JPK_V7 =
+}
+Rejestr{
+Skrot =Sprzedaż
+Nazwa =Sprzedaż
+Rodzaj =1
+ABC =1
+metoda_VAT =0
+datarej =
+okres =
+stawka =23.00
+brutto =25.01
+netto =20.33
+vat =4.68
+JPK_V7 =
+}
+}
+Kontrahent{
+id =6C7525F1-23B8-4491-B57E-899598DDFC4F
+kod =JASTRZĘBSKA SPÓŁKA WĘGLOWA SPÓŁKA AKCYJNA
+nazwa =JASTRZĘBSKA SPÓŁKA WĘGLOWA SPÓŁKA AKCYJNA 
+miejscowosc =Jastrzębie-Zdrój
+ulica =Aleja Jana Pawła II
+kodpocz =44-330
+nip =6330005110
+rejon = 
+tel1 = 
+tel2 = 
+fax = 
+email = 
+idKraju = 7401
+}
+Dokument{
+rodzaj_dok =sprzedaży
+dozaplaty =0.00
+wdozaplaty =6804.00
+rejestr_platnosci =BANK
+forma_platnosci =Gotówka za pobraniem
+JPK_V7 =
+khid =6C7525F1-23B8-4491-B57E-899598DDFC4F
+khkod =JASTRZĘBSKA SPÓŁKA WĘGLOWA SPÓŁKA AKCYJNA
+khnazwa =JASTRZĘBSKA SPÓŁKA WĘGLOWA SPÓŁKA AKCYJNA 
+khnip =6330005110
+khadres =Aleja Jana Pawła II
+khmiasto =Jastrzębie-Zdrój
+khkodPocz =44-330
+kwota =6804.00
+symbol FK =FAK
+data =2023-10-02
+dataSp =2023-10-02
+terminPlatnosci =2023-12-01
+FK nazwa =FV/002/10/23
+opis FK =FV
+Zapis{
+strona =WN
+Pozycja =0
+ZapisRownolegly =0
+kwota =6804.00
+konto = 
+opis =
+NumerDok =FV/002/10/23
+}
+Rejestr{
+Skrot =Sprzedaż
+Nazwa =Sprzedaż
+Rodzaj =1
+ABC =1
+metoda_VAT =0
+datarej =
+okres =
+stawka =8.00
+brutto =6804.00
+netto =6300.00
+vat =504.00
+JPK_V7 =
+}
+}
+}

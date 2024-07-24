@@ -122,6 +122,8 @@ const checkAccessAndFetchData = async () => {
       } else {
         setSelectedContractId(null);
       }
+      fetchCompanyData();
+fetchBadaniaData();
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -129,8 +131,7 @@ const checkAccessAndFetchData = async () => {
 
 
 checkAccessAndFetchData()
-fetchCompanyData();
-fetchBadaniaData();
+
 }, [employeeId, user, navigate]);
 
 
@@ -295,19 +296,14 @@ const fetchBadaniaData = async () => {
         'x-schema-name': user.schemaName,
       }
     });
-    if (user.role === 'employee' && user.email !== employeeData.user_email) {
-      if (!accessDeniedToastShown.current) {
-        toast.error('Access denied. You can only view your own data.');
-        accessDeniedToastShown.current = true;
-      }
-      navigate('/unauthorized');
-      return;
-    }
+    
     setBadania(response.data);
   } catch (error) {
     console.error('Error fetching badania data:', error);
   }
 };
+
+
 
 const handleBadanieChange = (e) => {
   setNewBadanie({ ...newBadanie, [e.target.name]: e.target.value });
@@ -414,6 +410,7 @@ const onDateChange = (date) => {
       <div className="bg-white p-8">
         <div className="max-w-2xl mx-auto">
           {/* List of badania */}
+          
           <h2 className="text-xl font-semibold mb-2">Badania for Employee {employeeId}</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full bg-white table-auto text-xs">
@@ -433,8 +430,11 @@ const onDateChange = (date) => {
                       <td className="py-1 px-2 border-b">{new Date(badanie.termination_date).toLocaleDateString()}</td>
                       <td className="py-1 px-2 border-b">{badanie.type}</td>
                       <td className="py-1 px-2 border-b">
+                     
                         <button onClick={() => handleEditBadanie(badanie)} className="text-blue-500">Edit</button>
+                        {user.role !== 'employee' && (
                         <button onClick={() => handleDeleteBadanie(badanie.id)} className="text-red-500 ml-2">Delete</button>
+                      )}
                       </td>
                     </tr>
                   ))
@@ -446,15 +446,15 @@ const onDateChange = (date) => {
               </tbody>
             </table>
           </div>
-          
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-green-500 text-white text-xs p-1 rounded mt-4"
-            >
-              Dodaj badanie
-            </button>
-          )}
+      
+          {!showForm && user.role !== 'employee' && (
+  <button
+    onClick={() => setShowForm(true)}
+    className="bg-green-500 text-white text-xs p-1 rounded mt-4"
+  >
+    Dodaj badanie
+  </button>
+)}
   
           {/* Form for adding/editing badania */}
           {showForm && (
@@ -463,14 +463,14 @@ const onDateChange = (date) => {
               <table className="min-w-full bg-white table-auto text-xs">
                 <thead>
                   <tr>
-                    <th className="py-1 px-2 border-b">Typ badania</th>
-                    <th className="py-1 px-2 border-b">Data od</th>
+                  {user.role !== 'employee' && (<th className="py-1 px-2 border-b">Typ badania</th>)}
+                  {user.role !== 'employee' && (<th className="py-1 px-2 border-b">Data od</th>)}
                     <th className="py-1 px-2 border-b">Data do</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="py-1 px-2 border-b">
+                  {user.role !== 'employee' && (<td className="py-1 px-2 border-b">
                       <select
                         name="type"
                         value={newBadanie.type}
@@ -482,14 +482,17 @@ const onDateChange = (date) => {
                         <option value="okresowe">okresowe</option>
                         <option value="kontrolne">kontrolne</option>
                       </select>
+                
                     </td>
-                    <td className="py-1 px-2 border-b">
+                    )}
+                     {user.role !== 'employee' && (<td className="py-1 px-2 border-b">
                       <DatePicker
                         selected={newBadanie.issue_date}
                         onChange={(date) => handleBadanieDateChange(date, 'issue_date')}
                         className="text-xs p-1 rounded border-gray-300 w-full"
                       />
                     </td>
+                    )}
                     <td className="py-1 px-2 border-b">
                       <DatePicker
                         selected={newBadanie.termination_date}
