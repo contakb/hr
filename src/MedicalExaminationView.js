@@ -40,7 +40,18 @@ const [stanowisko, setStanowisko] = useState([]);
     const [year, setYear] = useState(date.getFullYear());
     
     const [badania, setBadania] = useState([]);
-  const [newBadanie, setNewBadanie] = useState({ type: '', issue_date: '', termination_date: '' });
+    const [newBadanie, setNewBadanie] = useState({
+      type: '',
+      issue_date: new Date(),
+      termination_date: new Date(),
+      stanowisko: [],
+      physicalfactors: [],
+      dusts: [],
+      chemicalfactors: [],
+      biologicalfactors: [],
+      otherfactors: []
+    });
+    
   const [isEditing, setIsEditing] = useState(false);
   const [editingBadanieId, setEditingBadanieId] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -298,6 +309,20 @@ const fetchBadaniaData = async () => {
     });
     
     setBadania(response.data);
+    if (response.data.length > 0) {
+      const firstBadanie = response.data[0];
+      setNewBadanie({
+        type: firstBadanie.type,
+        issue_date: new Date(firstBadanie.issue_date),
+        termination_date: new Date(firstBadanie.termination_date),
+        stanowisko: firstBadanie.stanowisko || [],
+        physicalfactors: firstBadanie.physicalfactors || [],
+        dusts: firstBadanie.dusts || [],
+        chemicalfactors: firstBadanie.chemicalfactors || [],
+        biologicalfactors: firstBadanie.biologicalfactors || [],
+        otherfactors: firstBadanie.otherfactors || [],
+      });
+    }
   } catch (error) {
     console.error('Error fetching badania data:', error);
   }
@@ -320,7 +345,16 @@ const handleBadanieSubmit = async (e) => {
       ? `http://localhost:3001/api/badania/${editingBadanieId}`
       : 'http://localhost:3001/api/badania';
     const method = isEditing ? 'put' : 'post';
-    await axiosInstance[method](url, { ...newBadanie, employee_id: employeeId }, {
+    await axiosInstance[method](url, { 
+      ...newBadanie, 
+      employee_id: employeeId,
+      stanowisko,
+      physicalFactors,
+      dusts,
+      chemicalFactors,
+      biologicalFactors,
+      otherFactors
+    }, {
       headers: {
         Authorization: `Bearer ${user.access_token}`,
         'x-schema-name': user.schemaName,
@@ -328,7 +362,7 @@ const handleBadanieSubmit = async (e) => {
     });
     setIsEditing(false);
     setEditingBadanieId(null);
-    setNewBadanie({ type: '', issue_date: '', termination_date: '' });
+    setNewBadanie({ type: '', issue_date: new Date(), termination_date: new Date() });
     toast.success('Badanie saved successfully');
     fetchBadaniaData(); // Re-fetch badania data
     setShowForm(false); // Hide form after submit
@@ -339,16 +373,25 @@ const handleBadanieSubmit = async (e) => {
 };
 
 
+
+
 const handleEditBadanie = (badanie) => {
   setNewBadanie({
     type: badanie.type,
     issue_date: new Date(badanie.issue_date),
     termination_date: new Date(badanie.termination_date),
+    stanowisko: badanie.stanowisko || [],
+    physicalFactors: badanie.physicalFactors || [],
+    dusts: badanie.dusts || [],
+    chemicalFactors: badanie.chemicalFactors || [],
+    biologicalFactors: badanie.biologicalFactors || [],
+    otherFactors: badanie.otherFactors || [],
   });
   setIsEditing(true);
   setEditingBadanieId(badanie.id);
   setShowForm(true);
 };
+
 
 const handleDeleteBadanie = async (id) => {
   try {
@@ -410,7 +453,6 @@ const onDateChange = (date) => {
       <div className="bg-white p-8">
         <div className="max-w-2xl mx-auto">
           {/* List of badania */}
-          
           <h2 className="text-xl font-semibold mb-2">Badania for Employee {employeeId}</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full bg-white table-auto text-xs">
@@ -419,6 +461,12 @@ const onDateChange = (date) => {
                   <th className="py-1 px-2 border-b">Data od</th>
                   <th className="py-1 px-2 border-b">Data do</th>
                   <th className="py-1 px-2 border-b">Typ badania</th>
+                  <th className="py-1 px-2 border-b">Stanowisko</th>
+                  <th className="py-1 px-2 border-b">Czynniki fizyczne</th>
+                  <th className="py-1 px-2 border-b">Pyły</th>
+                  <th className="py-1 px-2 border-b">Czynniki chemiczne</th>
+                  <th className="py-1 px-2 border-b">Czynniki biologiczne</th>
+                  <th className="py-1 px-2 border-b">Inne czynniki</th>
                   <th className="py-1 px-2 border-b">Akcje</th>
                 </tr>
               </thead>
@@ -430,47 +478,62 @@ const onDateChange = (date) => {
                       <td className="py-1 px-2 border-b">{new Date(badanie.termination_date).toLocaleDateString()}</td>
                       <td className="py-1 px-2 border-b">{badanie.type}</td>
                       <td className="py-1 px-2 border-b">
-                     
-                        <button onClick={() => handleEditBadanie(badanie)} className="text-blue-500">Edit</button>
+                        {badanie.stanowisko ? badanie.stanowisko.map(item => JSON.parse(item).label).join(', ') : 'N/A'}
+                      </td>
+                      <td className="py-1 px-2 border-b">{badanie.physicalfactors ? badanie.physicalfactors.map(item => item.label).join(', ') : 'N/A'}</td>
+                      <td className="py-1 px-2 border-b">{badanie.dusts ? badanie.dusts.map(item => item.label).join(', ') : 'N/A'}</td>
+                      <td className="py-1 px-2 border-b">{badanie.chemicalfactors ? badanie.chemicalfactors.map(item => item.label).join(', ') : 'N/A'}</td>
+                      <td className="py-1 px-2 border-b">{badanie.biologicalfactors ? badanie.biologicalfactors.map(item => item.label).join(', ') : 'N/A'}</td>
+                      <td className="py-1 px-2 border-b">{badanie.otherfactors ? badanie.otherfactors.map(item => item.label).join(', ') : 'N/A'}</td>
+                      <td className="py-1 px-2 border-b">
                         {user.role !== 'employee' && (
-                        <button onClick={() => handleDeleteBadanie(badanie.id)} className="text-red-500 ml-2">Delete</button>
-                      )}
+                          <>
+                            <button onClick={() => handleEditBadanie(badanie)} className="text-blue-500">Edit</button>
+                            <button onClick={() => handleDeleteBadanie(badanie.id)} className="text-red-500 ml-2">Delete</button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td className="py-1 px-2 border-b text-center" colSpan="4">No badania available</td>
+                    <td className="py-1 px-2 border-b text-center" colSpan="10">No badania available</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-      
+    
           {!showForm && user.role !== 'employee' && (
-  <button
-    onClick={() => setShowForm(true)}
-    className="bg-green-500 text-white text-xs p-1 rounded mt-4"
-  >
-    Dodaj badanie
-  </button>
-)}
-  
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-green-500 text-white text-xs p-1 rounded mt-4"
+            >
+              Dodaj badanie
+            </button>
+          )}
+    
           {/* Form for adding/editing badania */}
-          {showForm && (
+          {showForm && user.role !== 'employee' && (
             <form onSubmit={handleBadanieSubmit} className="mb-4 mt-4">
               <h3 className="text-l font-semibold">{isEditing ? 'Edytuj badanie' : 'Dodaj badanie'}</h3>
               <table className="min-w-full bg-white table-auto text-xs">
                 <thead>
                   <tr>
-                  {user.role !== 'employee' && (<th className="py-1 px-2 border-b">Typ badania</th>)}
-                  {user.role !== 'employee' && (<th className="py-1 px-2 border-b">Data od</th>)}
+                    <th className="py-1 px-2 border-b">Typ badania</th>
+                    <th className="py-1 px-2 border-b">Data od</th>
                     <th className="py-1 px-2 border-b">Data do</th>
+                    <th className="py-1 px-2 border-b">Stanowisko</th>
+                    <th className="py-1 px-2 border-b">Czynniki fizyczne</th>
+                    <th className="py-1 px-2 border-b">Pyły</th>
+                    <th className="py-1 px-2 border-b">Czynniki chemiczne</th>
+                    <th className="py-1 px-2 border-b">Czynniki biologiczne</th>
+                    <th className="py-1 px-2 border-b">Inne czynniki</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                  {user.role !== 'employee' && (<td className="py-1 px-2 border-b">
+                    <td className="py-1 px-2 border-b">
                       <select
                         name="type"
                         value={newBadanie.type}
@@ -482,22 +545,73 @@ const onDateChange = (date) => {
                         <option value="okresowe">okresowe</option>
                         <option value="kontrolne">kontrolne</option>
                       </select>
-                
                     </td>
-                    )}
-                     {user.role !== 'employee' && (<td className="py-1 px-2 border-b">
+                    <td className="py-1 px-2 border-b">
                       <DatePicker
                         selected={newBadanie.issue_date}
                         onChange={(date) => handleBadanieDateChange(date, 'issue_date')}
                         className="text-xs p-1 rounded border-gray-300 w-full"
                       />
                     </td>
-                    )}
                     <td className="py-1 px-2 border-b">
                       <DatePicker
                         selected={newBadanie.termination_date}
                         onChange={(date) => handleBadanieDateChange(date, 'termination_date')}
                         className="text-xs p-1 rounded border-gray-300 w-full"
+                      />
+                    </td>
+                    <td className="py-1 px-2 border-b">
+                      <CreatableSelect
+                        isMulti
+                        options={opisstanowiska}
+                        value={stanowisko}
+                        onChange={setStanowisko}
+                        placeholder="dodaj opis..."
+                      />
+                    </td>
+                    <td className="py-1 px-2 border-b">
+                      <CreatableSelect
+                        isMulti
+                        options={physicalOptions}
+                        value={physicalFactors}
+                        onChange={setPhysicalFactors}
+                        placeholder="brak lub dodaj czynnik..."
+                      />
+                    </td>
+                    <td className="py-1 px-2 border-b">
+                      <CreatableSelect
+                        isMulti
+                        options={dustOptions}
+                        value={dusts}
+                        onChange={setDusts}
+                        placeholder="brak lub dodaj pyły..."
+                      />
+                    </td>
+                    <td className="py-1 px-2 border-b">
+                      <CreatableSelect
+                        isMulti
+                        options={chemicalOptions}
+                        value={chemicalFactors}
+                        onChange={setChemicalFactors}
+                        placeholder="brak lub dodaj czynnik..."
+                      />
+                    </td>
+                    <td className="py-1 px-2 border-b">
+                      <CreatableSelect
+                        isMulti
+                        options={biologicalOptions}
+                        value={biologicalFactors}
+                        onChange={setBiologicalFactors}
+                        placeholder="brak lub dodaj czynnik..."
+                      />
+                    </td>
+                    <td className="py-1 px-2 border-b">
+                      <CreatableSelect
+                        isMulti
+                        options={otherOptions}
+                        value={otherFactors}
+                        onChange={setOtherFactors}
+                        placeholder="brak lub dodaj czynnik..."
                       />
                     </td>
                   </tr>
@@ -512,7 +626,17 @@ const onDateChange = (date) => {
                   onClick={() => {
                     setShowForm(false);
                     setIsEditing(false);
-                    setNewBadanie({ type: '', issue_date: '', termination_date: '' });
+                    setNewBadanie({
+                      type: '',
+                      issue_date: new Date(),
+                      termination_date: new Date(),
+                      stanowisko: [],
+                      physicalfactors: [],
+                      dusts: [],
+                      chemicalFactors: [],
+                      biologicalFactors: [],
+                      otherFactors: [],
+                    });
                   }}
                   className="bg-gray-500 text-white text-xs p-2 rounded"
                 >
@@ -521,8 +645,9 @@ const onDateChange = (date) => {
               </div>
             </form>
           )}
-  
-          {/* Dropdown for selecting a contract */}
+        
+    
+          {/* Contract Section */}
           <div className="mb-4">
             <h2 className="text-xl font-semibold mb-2">Wybierz umowę</h2>
             <select
@@ -537,197 +662,160 @@ const onDateChange = (date) => {
               ))}
             </select>
           </div>
-  
-          <div className="printable-section bg-white p-8 text-xs">
-            <div className="contract-container bg-100 p-4 rounded-lg shadow">
-              {/* Other existing content */}
-          <div className="mt-4">
-            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
-            <button onClick={() => window.print()} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Print or Save as PDF
-            </button>
-            <button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Download PDF
-            </button>
-          </div>
-              {/* Contract details */}
-              {selectedContract ? (
-                <div className="border border-gray-300 p-4">
-                  <header className="header mb-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p>{companyData.company_name}</p>
-                        <p>
-                          <strong>ul:</strong> {companyData.street} {companyData.number}, {companyData.post_code}, {companyData.city}
-                        </p>
-                        <p>
-                          <strong>NIP:</strong> {companyData.taxid}
-                        </p>
-                      </div>
-                      <div>
-                        <p>{companyData.city}, dnia {selectedContract && selectedContract.contract_from_date ? new Date(selectedContract.contract_from_date).toLocaleDateString() : "N/A"}</p>
-                      </div>
-                    </div>
-                  </header>
-  
-                  <section className="contract-section mb-4">
-                    <div className="text-center mb-2">
-                      <h1 className="text-lg font-bold">SKIEROWANIE NA BADANIA LEKARSKIE</h1>
-                      <select className="form-select block w-1/5 mx-auto mt-1 text-xs font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none">
-                        <option value="okresowe">wstępne</option>
-                        <option value="wstepne">okresowe</option>
-                        <option value="kontrolne">kontrolne</option>
-                      </select>
-                    </div>
-  
-                    <div className="h-8"></div>
-                    <p>
-                      Działając na podstawie art.229 § 4a ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy (Dz.U. z 2020 r. poz. 1320 z późn. zm.), kieruję na badania lekarskie:
-                    </p>
-                    <div className="h-4"></div>
-                    <p>
-                      <strong>Panią/Panem: {employee.name} {employee.surname}</strong>
-                    </p>
-                    <p>
-                      <strong>nr PESEL:</strong> zam. ul. {employee.pesel} {employee.number} {employee.postcode} {employee.city}
-                    </p>
-                    <p>
-                      <strong>zamieszkałego:</strong>ul. {employee.street} {employee.number}, {employee.postcode}, {employee.city}
-                    </p>
-                    <div className="h-4"></div>
-                    <p>
-                      zatrudnionego/zatrudnioną(*) lub podejmującego/podejmującą(*) pracę na stanowisku lub stanowiskach pracy: {selectedContract?.stanowisko}
-                    </p>
-                    <div className="h-4"></div>
-                    <p>określenie stanowiska/stanowisk(*) pracy(***):</p>
-                    <div className="flex-1">
-                      <td className="border px-4 py-2">
-                        <CreatableSelect
-                          isMulti
-                          options={opisstanowiska}
-                          value={stanowisko}
-                          onChange={setStanowisko}
-                          placeholder="dodaj opis......"
-                        />
-                      </td>
-                    </div>
-                    <div className="h-4"></div>
-                    <p>
-                      Opis warunków pracy uwzględniający informacje o występowaniu na stanowisku lub stanowiskach pracy czynników niebezpiecznych, szkodliwych dla zdrowia lub czynników uciążliwych i innych wynikających ze sposobu wykonywania pracy, z podaniem wielkości narażenia oraz aktualnych wyników badań i pomiarów czynników szkodliwych dla zdrowia, wykonanych na tym stanowisku/stanowiskach – należy wpisać nazwę czynnika/czynników i wielkość/wielkości narażenia(****):
-                    </p>
-                    <div className="h-2"></div>
-                    <div className="overflow-x-auto">
-                      <table className="table-auto w-full text-left">
-                        <tbody>
-                          <tr>
-                            <td className="border px-4 py-2"><strong>I. Czynniki fizyczne:</strong></td>
-                            <td className="border px-4 py-2">
-                              <CreatableSelect
-                                isMulti
-                                options={physicalOptions}
-                                value={physicalFactors}
-                                onChange={setPhysicalFactors}
-                                placeholder="brak lub dodaj czynnik..."
-                              />
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="border px-4 py-2"><strong>II. Pyły:</strong></td>
-                            <td className="border px-4 py-2">
-                              <CreatableSelect
-                                isMulti
-                                options={dustOptions}
-                                value={dusts}
-                                onChange={setDusts}
-                                placeholder="brak lub dodaj pyły......"
-                              />
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="border px-4 py-2"><strong>III.Czynniki chemiczne:</strong></td>
-                            <td className="border px-4 py-2">
-                              <CreatableSelect
-                                isMulti
-                                options={chemicalOptions}
-                                value={chemicalFactors}
-                                onChange={setChemicalFactors}
-                                placeholder="brak lub dodaj czynnik......"
-                              />
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="border px-4 py-2"><strong>IV. Czynniki biologiczne:</strong></td>
-                            <td className="border px-4 py-2">
-                              <CreatableSelect
-                                isMulti
-                                options={biologicalOptions}
-                                value={biologicalFactors}
-                                onChange={setBiologicalFactors}
-                                placeholder="brak lub dodaj czynnik......"
-                              />
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="border px-4 py-2"><strong>V. Inne czynniki, w tym niebezpieczne:</strong></td>
-                            <td className="border px-4 py-2">
-                              <CreatableSelect
-                                isMulti
-                                options={otherOptions}
-                                value={otherFactors}
-                                onChange={setOtherFactors}
-                                placeholder="brak lub dodaj czynnik......"
-                              />
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="h-2"></div>
-                    <p>Łączna liczba czynników niebezpiecznych, szkodliwych dla zdrowia lub czynników uciążliwych i innych wynikających ze sposobu wykonywania pracy wskazanych w skierowaniu:</p>
-                    <select className="form-select block w-full mt-1">
-                      <option value="0">Brak</option>
-                      {Array.from({ length: 10 }, (_, i) => (
-                        <option key={i + 1} value={i + 1}>{i + 1}</option>
-                      ))}
-                    </select>
-                  </section>
-                  <div className="h-10"></div>
-                  <div className="grid grid-cols-2 gap-2 text-center">
-                    <div>
-                      <p>Podpis osoby reprezentującej firmę</p>
-                      <div className="signature-line w-full border-t border-gray-400"></div>
-                    </div>
-                  </div>
-                  <div className="text-xs mt-4">
-                    <h2 className="font-bold mb-2">Objaśnienia:</h2>
-                    <p>(*) Niepotrzebne skreślić.</p>
-                    <p>
-                      (**) W przypadku osoby, której nie nadano numeru PESEL – seria, numer i nazwa dokumentu potwierdzającego tożsamość, a w przypadku osoby przyjmowanej do pracy - data urodzenia
-                    </p>
-                    <p>(***) Opisać: rodzaj pracy, podstawowe czynności, sposób i czas ich wykonywania</p>
-                    <p>(****) Opis warunków pracy uwzględniający w szczególności przepisy:</p>
-                    <ul>
-                      <li>a) art. 222 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu substancji chemicznych, ich mieszanin, czynników lub procesów technologicznych o działaniu rakotwórczym lub mutagennym</li>
-                      <li>b) art. 2221 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu szkodliwych czynników biologicznych,</li>
-                      <li>c) art. 227 § 2 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące badań i pomiarów czynników szkodliwych dla zdrowia,</li>
-                      <li>d) art. 228 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu najwyższych dopuszczalnych stężeń i natężeń czynników szkodliwych dla zdrowia w środowisku pracy,</li>
-                      <li>e) art. 25 pkt 1 ustawy z dnia 29 listopada 2000 r. – Prawo atomowe (Dz. U. z 2021 r. poz. 1941 oraz z 2022 r. poz. 974) dotyczące wskaźników pozwalających na wyznaczenie dawek promieniowania jonizującego stosowanych przy ocenie narażenia na promieniowanie jonizujące;</li>
-                    </ul>
-                    <p>2) załącznika nr 1 do rozporządzenia Ministra Zdrowia i Opieki Społecznej z dnia 30 maja 1996 r. w sprawie przeprowadzania badań lekarskich pracowników, zakresu profilaktycznej opieki zdrowotnej nad pracownikami oraz orzeczeń lekarskich wydawanych do celów przewidzianych w Kodeksie pracy (Dz. U. z 2023 r. poz. 607)</p>
-                    <div className="h-2"></div>
-                    <p>Skierowanie na badania lekarskie jest wydawane w dwóch egzemplarzach, z których jeden otrzymuje osoba kierowana na badania.</p>
-                  </div>
-                </div>
-              ) : (
-                <p>No contract selected.</p>
-              )}
+    
+          {/* Render Section */}
+          <div className="contract-container bg-100 p-4 rounded-lg shadow">
+            <div className="mt-4">
+              <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={handleBackClick}>Back</button>
+              <button onClick={() => window.print()} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Print or Save as PDF
+              </button>
+              <button onClick={handleDownloadPDFClick} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Download PDF
+              </button>
+            </div>
+            <div className="printable-section bg-white p-8 text-xs">
+    {selectedContract ? (
+      <div className="border border-gray-300 p-4">
+        <header className="header mb-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p>{companyData.company_name}</p>
+              <p>
+                <strong>ul:</strong> {companyData.street} {companyData.number}, {companyData.post_code}, {companyData.city}
+              </p>
+              <p>
+                <strong>NIP:</strong> {companyData.taxid}
+              </p>
+            </div>
+            <div>
+              {companyData.city}, dnia {newBadanie.issue_date ? new Date(newBadanie.issue_date).toLocaleDateString() : "N/A"}
             </div>
           </div>
-  
-          
+        </header>
+
+        <section className="contract-section mb-4">
+          <div className="text-center mb-2">
+            <h1 className="text-lg font-bold">SKIEROWANIE NA BADANIA LEKARSKIE</h1>
+            <p>{newBadanie.type}</p>
+          </div>
+          <div className="h-8"></div>
+          <p>
+            Działając na podstawie art.229 § 4a ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy (Dz.U. z 2020 r. poz. 1320 z późn. zm.), kieruję na badania lekarskie:
+          </p>
+          <div className="h-4"></div>
+          <p>
+            <strong>Panią/Panem: {employee.name} {employee.surname}</strong>
+          </p>
+          <p>
+            <strong>nr PESEL:</strong> zam. ul. {employee.pesel} {employee.number} {employee.postcode} {employee.city}
+          </p>
+          <p>
+            <strong>zamieszkałego:</strong>ul. {employee.street} {employee.number}, {employee.postcode}, {employee.city}
+          </p>
+          <div className="h-4"></div>
+          <p>
+            zatrudnionego/zatrudnioną(*) lub podejmującego/podejmującą(*) pracę na stanowisku lub stanowiskach pracy: {selectedContract?.stanowisko}
+          </p>
+          <div className="h-4"></div>
+          <p>określenie stanowiska/stanowisk(*) pracy(***):</p>
+          <div className="flex-1">
+            <td className="border px-4 py-2">
+              <div>{newBadanie.stanowisko ? newBadanie.stanowisko.map(item => {
+                try {
+                  return JSON.parse(item).label;
+                } catch (e) {
+                  return item; // Fallback in case JSON parsing fails
+                }
+              }).join(', ') : "Brak danych"}</div>
+            </td>
+          </div>
+          <div className="h-4"></div>
+          <p>
+            Opis warunków pracy uwzględniający informacje o występowaniu na stanowisku lub stanowiskach pracy czynników niebezpiecznych, szkodliwych dla zdrowia lub czynników uciążliwych i innych wynikających ze sposobu wykonywania pracy, z podaniem wielkości narażenia oraz aktualnych wyników badań i pomiarów czynników szkodliwych dla zdrowia, wykonanych na tym stanowisku/stanowiskach – należy wpisać nazwę czynnika/czynników i wielkość/wielkości narażenia(****):
+          </p>
+          <div className="h-2"></div>
+          <div className="overflow-x-auto">
+            <table className="table-auto w-full text-left">
+              <tbody>
+                <tr>
+                  <td className="border px-4 py-2"><strong>I. Czynniki fizyczne:</strong></td>
+                  <td className="border px-4 py-2">
+                    <div>{newBadanie.physicalfactors ? newBadanie.physicalfactors.map(item => item.label).join(', ') : "Brak danych"}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border px-4 py-2"><strong>II. Pyły:</strong></td>
+                  <td className="border px-4 py-2">
+                    <div>{newBadanie.dusts ? newBadanie.dusts.map(item => item.label).join(', ') : "Brak danych"}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border px-4 py-2"><strong>III. Czynniki chemiczne:</strong></td>
+                  <td className="border px-4 py-2">
+                    <div>{newBadanie.chemicalfactors ? newBadanie.chemicalfactors.map(item => item.label).join(', ') : "Brak danych"}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border px-4 py-2"><strong>IV. Czynniki biologiczne:</strong></td>
+                  <td className="border px-4 py-2">
+                    <div>{newBadanie.biologicalfactors ? newBadanie.biologicalfactors.map(item => item.label).join(', ') : "Brak danych"}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border px-4 py-2"><strong>V. Inne czynniki, w tym niebezpieczne:</strong></td>
+                  <td className="border px-4 py-2">
+                    <div>{newBadanie.otherfactors ? newBadanie.otherfactors.map(item => item.label).join(', ') : "Brak danych"}</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="h-2"></div>
+          <p>Łączna liczba czynników niebezpiecznych, szkodliwych dla zdrowia lub czynników uciążliwych i innych wynikających ze sposobu wykonywania pracy wskazanych w skierowaniu:</p>
+          <select className="form-select block w-full mt-1">
+            <option value="0">Brak</option>
+            {Array.from({ length: 10 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>{i + 1}</option>
+            ))}
+          </select>
+        </section>
+        <div className="h-10"></div>
+        <div className="grid grid-cols-2 gap-2 text-center">
+          <div>
+            <p>Podpis osoby reprezentującej firmę</p>
+            <div className="signature-line w-full border-t border-gray-400"></div>
+          </div>
+        </div>
+        <div className="text-xs mt-4">
+          <h2 className="font-bold mb-2">Objaśnienia:</h2>
+          <p>(*) Niepotrzebne skreślić.</p>
+          <p>
+            (**) W przypadku osoby, której nie nadano numeru PESEL – seria, numer i nazwa dokumentu potwierdzającego tożsamość, a w przypadku osoby przyjmowanej do pracy - data urodzenia
+          </p>
+          <p>(***) Opisać: rodzaj pracy, podstawowe czynności, sposób i czas ich wykonywania</p>
+          <p>(****) Opis warunków pracy uwzględniający w szczególności przepisy:</p>
+          <ul>
+            <li>a) art. 222 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu substancji chemicznych, ich mieszanin, czynników lub procesów technologicznych o działaniu rakotwórczym lub mutagennym</li>
+            <li>b) art. 2221 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu szkodliwych czynników biologicznych,</li>
+            <li>c) art. 227 § 2 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące badań i pomiarów czynników szkodliwych dla zdrowia,</li>
+            <li>d) art. 228 § 3 ustawy z dnia 26 czerwca 1974 r. – Kodeks pracy dotyczące wykazu najwyższych dopuszczalnych stężeń i natężeń czynników szkodliwych dla zdrowia w środowisku pracy,</li>
+            <li>e) art. 25 pkt 1 ustawy z dnia 29 listopada 2000 r. – Prawo atomowe (Dz. U. z 2021 r. poz. 1941 oraz z 2022 r. poz. 974) dotyczące wskaźników pozwalających na wyznaczenie dawek promieniowania jonizującego stosowanych przy ocenie narażenia na promieniowanie jonizujące;</li>
+          </ul>
+          <p>2) załącznika nr 1 do rozporządzenia Ministra Zdrowia i Opieki Społecznej z dnia 30 maja 1996 r. w sprawie przeprowadzania badań lekarskich pracowników, zakresu profilaktycznej opieki zdrowotnej nad pracownikami oraz orzeczeń lekarskich wydawanych do celów przewidzianych w Kodeksie pracy (Dz. U. z 2023 r. poz. 607)</p>
+          <div className="h-2"></div>
+          <p>Skierowanie na badania lekarskie jest wydawane w dwóch egzemplarzach, z których jeden otrzymuje osoba kierowana na badania.</p>
+        </div>
+      </div>
+    ) : (
+      <p>No contract selected.</p>
+    )}
+  </div>
+          </div>
         </div>
       </div>
     );
+    
   }
 
 export default MedicalExaminationView;

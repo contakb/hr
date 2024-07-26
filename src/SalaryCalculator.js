@@ -8,6 +8,7 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
   const [loading, setLoading] = useState(false);
   const [editableGrossAmount, setEditableGrossAmount] = useState(initialGrossAmount); // Editable gross amount state
   const { user } = useUser();
+  const [showDetails, setShowDetails] = useState(false); // State for toggling more details
 
   useEffect(() => {
     console.log('SalaryCalculator Component Initialized');
@@ -37,7 +38,7 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
       return { koszty, ulga, usedDefault };
     } catch (error) {
       console.error(`Error fetching parameters for employee ${employeeId}:`, error);
-      toast.warn(`Using default tax parameters for employee ID: ${employeeId}. Koszty: 250, Ulga: 300`);
+      
       return { koszty: 250, ulga: 300, usedDefault: true };
     }
   };
@@ -101,7 +102,6 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
     const FP = (customGrossAmount * 0.0245).toFixed(2);
     const FGSP = (customGrossAmount * 0.001).toFixed(2);
 
-    let wyn_chorobowe = 0;
     let podstawa_zdrow = (customGrossAmount - customGrossAmount * 0.0976 - customGrossAmount * 0.015 - customGrossAmount * 0.0245).toFixed(2);
 
     let pod_zal = (customGrossAmount - customGrossAmount * 0.1371 - koszty).toFixed(2);
@@ -137,7 +137,7 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
     let zaliczka = tax - ulga;
     zaliczka = zaliczka < 0 ? 0 : zaliczka.toFixed(0);
 
-    let zal_2021 = (parseFloat(pod_zal) * 0.17 - 43.76).toFixed(2);
+    let zal_2021 = (parseFloat(pod_zal) * 0.17 - (ulga === 0 ? 0 : 43.76)).toFixed(2);
     zal_2021 = zal_2021 > 0 ? zal_2021 : '0';
     let zdrowotne = parseFloat(zal_2021) < parseFloat(podstawa_zdrow) * 0.09 ? parseFloat(zal_2021) : (parseFloat(podstawa_zdrow) * 0.09).toFixed(2);
 
@@ -154,7 +154,6 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
       wypadkowe,
       FP,
       FGSP,
-      wyn_chorobowe: wyn_chorobowe.toFixed(2),
       podstawa_zdrow,
       podstawa_zaliczki: pod_zal,
       zaliczka,
@@ -187,46 +186,62 @@ const SalaryCalculator = ({ grossAmount: initialGrossAmount, employeeId }) => {
 
   return (
     <div className="salary-selection-page">
-      <h1>Salary Calculator</h1>
-      <div>
-        <label>Gross Amount: </label>
-        <input
-          type="number"
-          value={editableGrossAmount}
-          onChange={(e) => setEditableGrossAmount(e.target.value)}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-        />
-        <button onClick={handleCalculate} className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm">
-          Recalculate
-        </button>
-      </div>
-      {loading && <p>Loading...</p>}
-      {salaryDetails && (
-        <div className="salary-details">
-          <h2>Salary Details</h2>
-          <p>Gross Amount: {salaryDetails.grossAmount}</p>
-          <p>Net Amount: {salaryDetails.netAmount}</p>
-          <p>Emeryt Pracownik: {salaryDetails.emeryt_pr}</p>
-          <p>Emeryt Ubezpieczyciel: {salaryDetails.emeryt_ub}</p>
-          <p>Rent Pracownik: {salaryDetails.rent_pr}</p>
-          <p>Rent Ubezpieczyciel: {salaryDetails.rent_ub}</p>
-          <p>Chorobowe: {salaryDetails.chorobowe}</p>
-          <p>Wypadkowe: {salaryDetails.wypadkowe}</p>
-          <p>FP: {salaryDetails.FP}</p>
-          <p>FGSP: {salaryDetails.FGSP}</p>
-          <p>Wyn Chorobowe: {salaryDetails.wyn_chorobowe}</p>
-          <p>Podstawa Zdrow: {salaryDetails.podstawa_zdrow}</p>
-          <p>Podstawa Zaliczki: {salaryDetails.podstawa_zaliczki}</p>
-          <p>Zaliczka: {salaryDetails.zaliczka}</p>
-          <p>Zal 2021: {salaryDetails.zal_2021}</p>
-          <p>Zdrowotne: {salaryDetails.zdrowotne}</p>
-          <p>Ulga: {salaryDetails.ulga}</p>
-          <p>Koszty: {salaryDetails.koszty}</p>
-          <p>Social Base: {salaryDetails.social_base}</p>
+      
+      
+      <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">Gross Amount:</label>
+          <input
+            type="text"
+            value={editableGrossAmount}
+            onChange={(e) => setEditableGrossAmount(e.target.value)}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          <button
+            onClick={handleCalculate}
+            className="mt-4 w-full bg-blue-500 text-white py-2 rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            Recalculate
+          </button>
         </div>
-      )}
+        {loading && <p className="text-blue-500">Loading...</p>}
+        {salaryDetails && (
+          <div className="salary-details mt-6">
+            <h2 className="text-2xl font-bold mb-4">Salary Details</h2>
+            <p className="text-sm text-gray-600"><strong>Gross Amount:</strong> {salaryDetails.grossAmount}</p>
+            <p className="text-lg font-semibold text-green-500"><strong>Net Amount:</strong> {salaryDetails.netAmount}</p>
+            {showDetails && (
+              <>
+                <p className="text-sm text-gray-600"><strong>Emeryt Pracownik:</strong> {salaryDetails.emeryt_pr}</p>
+                <p className="text-sm text-gray-600"><strong>Emeryt Ubezpieczyciel:</strong> {salaryDetails.emeryt_ub}</p>
+                <p className="text-sm text-gray-600"><strong>Rent Pracownik:</strong> {salaryDetails.rent_pr}</p>
+                <p className="text-sm text-gray-600"><strong>Rent Ubezpieczyciel:</strong> {salaryDetails.rent_ub}</p>
+                <p className="text-sm text-gray-600"><strong>Chorobowe:</strong> {salaryDetails.chorobowe}</p>
+                <p className="text-sm text-gray-600"><strong>Wypadkowe:</strong> {salaryDetails.wypadkowe}</p>
+                <p className="text-sm text-gray-600"><strong>FP:</strong> {salaryDetails.FP}</p>
+                <p className="text-sm text-gray-600"><strong>FGSP:</strong> {salaryDetails.FGSP}</p>
+                <p className="text-sm text-gray-600"><strong>Podstawa Zdrow:</strong> {salaryDetails.podstawa_zdrow}</p>
+                <p className="text-sm text-gray-600"><strong>Podstawa Zaliczki:</strong> {salaryDetails.podstawa_zaliczki}</p>
+                <p className="text-sm text-gray-600"><strong>Zaliczka:</strong> {salaryDetails.zaliczka}</p>
+                <p className="text-sm text-gray-600"><strong>Zal 2021:</strong> {salaryDetails.zal_2021}</p>
+                <p className="text-sm text-gray-600"><strong>Zdrowotne:</strong> {salaryDetails.zdrowotne}</p>
+                <p className="text-sm text-gray-600"><strong>Ulga:</strong> {salaryDetails.ulga}</p>
+                <p className="text-sm text-gray-600"><strong>Koszty:</strong> {salaryDetails.koszty}</p>
+                <p className="text-sm text-gray-600"><strong>Social Base:</strong> {salaryDetails.social_base}</p>
+              </>
+            )}
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="mt-4 w-full bg-gray-300 text-black py-2 rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {showDetails ? 'Hide Details' : 'Show More Details'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
 
 export default SalaryCalculator;

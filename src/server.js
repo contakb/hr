@@ -625,7 +625,7 @@ app.get('/check-employee', verifyJWT, async (req, res) => {
 });
 
 app.post('/api/badania', verifyJWT, async (req, res) => {
-  const { employee_id, type, issue_date, termination_date } = req.body;
+  const { employee_id, type, issue_date, termination_date, stanowisko, physicalFactors, dusts, chemicalFactors, biologicalFactors, otherFactors } = req.body;
   const schemaName = req.headers['x-schema-name'];
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -635,7 +635,7 @@ app.post('/api/badania', verifyJWT, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('badania')
-      .insert([{ employee_id, type, issue_date, termination_date }])
+      .insert([{ employee_id, type, issue_date, termination_date, stanowisko, physicalFactors, dusts, chemicalFactors, biologicalFactors, otherFactors }])
       .select();
 
     if (error) {
@@ -681,7 +681,7 @@ app.get('/api/badania/:employee_id', verifyJWT, async (req, res) => {
 
 app.put('/api/badania/:id', verifyJWT, async (req, res) => {
   const { id } = req.params;
-  const { type, issue_date, termination_date } = req.body;
+  const { type, issue_date, termination_date, stanowisko, physicalFactors, dusts, chemicalFactors, biologicalFactors, otherFactors } = req.body;
   const schemaName = req.headers['x-schema-name'];
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -691,7 +691,17 @@ app.put('/api/badania/:id', verifyJWT, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('badania')
-      .update({ type, issue_date, termination_date })
+      .update([{
+        type,
+        issue_date,
+        termination_date,
+        stanowisko,
+        physicalfactors: physicalFactors, // map camelCase to lowercase
+        dusts,
+        chemicalfactors: chemicalFactors, // map camelCase to lowercase
+        biologicalfactors: biologicalFactors, // map camelCase to lowercase
+        otherfactors: otherFactors // map camelCase to lowercase
+      }])
       .eq('id', id)
       .select();
 
