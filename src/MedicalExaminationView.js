@@ -315,7 +315,7 @@ const fetchBadaniaData = async () => {
         type: firstBadanie.type,
         issue_date: new Date(firstBadanie.issue_date),
         termination_date: new Date(firstBadanie.termination_date),
-        stanowisko: firstBadanie.stanowisko || [],
+        stanowisko: firstBadanie.stanowisko ? firstBadanie.stanowisko.map(item => JSON.parse(item)) : [],
         physicalfactors: firstBadanie.physicalfactors || [],
         dusts: firstBadanie.dusts || [],
         chemicalfactors: firstBadanie.chemicalfactors || [],
@@ -380,8 +380,9 @@ const handleEditBadanie = (badanie) => {
     type: badanie.type,
     issue_date: new Date(badanie.issue_date),
     termination_date: new Date(badanie.termination_date),
-    stanowisko: badanie.stanowisko || [],
+    stanowisko: badanie.stanowisko.map(item => JSON.parse(item)),  // Assuming items are JSON strings
     physicalFactors: badanie.physicalFactors || [],
+    
     dusts: badanie.dusts || [],
     chemicalFactors: badanie.chemicalFactors || [],
     biologicalFactors: badanie.biologicalFactors || [],
@@ -391,6 +392,8 @@ const handleEditBadanie = (badanie) => {
   setEditingBadanieId(badanie.id);
   setShowForm(true);
 };
+
+
 
 
 const handleDeleteBadanie = async (id) => {
@@ -564,7 +567,7 @@ const onDateChange = (date) => {
                       <CreatableSelect
                         isMulti
                         options={opisstanowiska}
-                        value={stanowisko}
+                        value={newBadanie.stanowisko}
                         onChange={setStanowisko}
                         placeholder="dodaj opis..."
                       />
@@ -573,7 +576,7 @@ const onDateChange = (date) => {
                       <CreatableSelect
                         isMulti
                         options={physicalOptions}
-                        value={physicalFactors}
+                        value={newBadanie.physicalfactors}
                         onChange={setPhysicalFactors}
                         placeholder="brak lub dodaj czynnik..."
                       />
@@ -723,12 +726,14 @@ const onDateChange = (date) => {
             <td className="border px-4 py-2">
               <div>{newBadanie.stanowisko ? newBadanie.stanowisko.map(item => {
                 try {
-                  return JSON.parse(item).label;
+                  const parsedItem = JSON.parse(item);
+          return parsedItem.label || parsedItem.value;
                 } catch (e) {
                   return item; // Fallback in case JSON parsing fails
                 }
               }).join(', ') : "Brak danych"}</div>
             </td>
+            
           </div>
           <div className="h-4"></div>
           <p>

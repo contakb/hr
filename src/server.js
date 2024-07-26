@@ -635,7 +635,13 @@ app.post('/api/badania', verifyJWT, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('badania')
-      .insert([{ employee_id, type, issue_date, termination_date, stanowisko, physicalFactors, dusts, chemicalFactors, biologicalFactors, otherFactors }])
+      .insert([{ employee_id, type, issue_date, termination_date, stanowisko, 
+        physicalfactors: physicalFactors, // map camelCase to lowercase
+        dusts,
+        chemicalfactors: chemicalFactors, // map camelCase to lowercase
+        biologicalfactors: biologicalFactors, // map camelCase to lowercase
+        otherfactors: otherFactors // map camelCase to lowercase
+       }])
       .select();
 
     if (error) {
