@@ -300,6 +300,28 @@ const opisstanowiska = [
   // Add more options as needed
 ];
 
+// Function to set the stanowisko state with parsing
+const handleStanowiskoChange = (selectedOptions) => {
+  setStanowisko(selectedOptions || []); // Ensure it's always an array
+};
+
+// useEffect for initializing state if editing
+useEffect(() => {
+  if (isEditing) {
+    // Parse JSON strings to objects if necessary
+    const parsedStanowisko = newBadanie.stanowisko.map(item => {
+      try {
+        return JSON.parse(item);
+      } catch (error) {
+        return item; // If it's already an object, return as is
+      }
+    });
+    setStanowisko(parsedStanowisko);
+  }
+}, [isEditing, newBadanie]);
+
+
+
 
 const fetchBadaniaData = async () => {
   try {
@@ -382,14 +404,14 @@ const handleEditBadanie = (badanie) => {
     type: badanie.type,
     issue_date: new Date(badanie.issue_date),
     termination_date: new Date(badanie.termination_date),
-    stanowisko: badanie.stanowisko || [],
+    stanowisko: badanie.stanowisko ? badanie.stanowisko.map(item => JSON.parse(item)) : [],
     physicalfactors: badanie.physicalfactors || [],
     dusts: badanie.dusts || [],
     chemicalfactors: badanie.chemicalfactors || [],
     biologicalfactors: badanie.biologicalfactors || [],
     otherfactors: badanie.otherfactors || [],
   });
-  setStanowisko(badanie.stanowisko || []);
+  setStanowisko(badanie.stanowisko ? badanie.stanowisko.map(item => JSON.parse(item)) : []);
   setPhysicalFactors(badanie.physicalfactors || []);
   setDusts(badanie.dusts || []);
   setChemicalFactors(badanie.chemicalfactors || []);
@@ -426,6 +448,34 @@ const handleShowDocument = (badanie) => {
   setSelectedBadanie(badanie);
   setShowDocument(true);
 };
+
+useEffect(() => {
+  console.log('Current stanowisko:', stanowisko);
+}, [stanowisko]);
+
+// Clear function
+const clearForm = () => {
+  setNewBadanie({
+    type: '',
+    issue_date: new Date(),
+    termination_date: new Date(),
+    stanowisko: [],
+    physicalfactors: [],
+    dusts: [],
+    chemicalfactors: [],
+    biologicalFactors: [],
+    otherFactors: [],
+  });
+};
+
+// Clear and Add New Function
+const handleAddNewBadanie = () => {
+  clearForm();
+  setIsEditing(false);
+  setShowForm(true);
+};
+
+
 
 
     if (isLoading) {
@@ -468,8 +518,8 @@ const handleShowDocument = (badanie) => {
         <div className="max-w-2xl mx-auto">
           {/* List of badania */}
           <h2 className="text-xl font-semibold mb-2">Badania for Employee {employeeId}</h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full bg-white table-auto text-xs">
+          <div className="text-xs  mb-2 max-w-2xl mx-auto">
+          <table className="min-w-full leading-normal">
               <thead>
                 <tr>
                   <th className="py-1 px-2 border-b">Data od</th>
@@ -539,144 +589,166 @@ const handleShowDocument = (badanie) => {
             </button>
           )}
     
-          {/* Form for adding/editing badania */}
-          {showForm && user.role !== 'employee' && (
-            <form onSubmit={handleBadanieSubmit} className="mb-4 mt-4">
-              <h3 className="text-l font-semibold">{isEditing ? 'Edytuj badanie' : 'Dodaj badanie'}</h3>
-              <table className="min-w-full bg-white table-auto text-xs">
-                <thead>
-                  <tr>
-                    <th className="py-1 px-2 border-b">Typ badania</th>
-                    <th className="py-1 px-2 border-b">Data od</th>
-                    <th className="py-1 px-2 border-b">Data do</th>
-                    <th className="py-1 px-2 border-b">Stanowisko</th>
-                    <th className="py-1 px-2 border-b">Czynniki fizyczne</th>
-                    <th className="py-1 px-2 border-b">Pyły</th>
-                    <th className="py-1 px-2 border-b">Czynniki chemiczne</th>
-                    <th className="py-1 px-2 border-b">Czynniki biologiczne</th>
-                    <th className="py-1 px-2 border-b">Inne czynniki</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-1 px-2 border-b">
-                      <select
-                        name="type"
-                        value={newBadanie.type}
-                        onChange={handleBadanieChange}
-                        className="text-xs p-1 rounded border-gray-300 w-full"
-                      >
-                        <option value="">wybierz</option>
-                        <option value="wstępne">wstępne</option>
-                        <option value="okresowe">okresowe</option>
-                        <option value="kontrolne">kontrolne</option>
-                      </select>
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <DatePicker
-                        selected={newBadanie.issue_date}
-                        onChange={(date) => handleBadanieDateChange(date, 'issue_date')}
-                        className="text-xs p-1 rounded border-gray-300 w-full"
-                      />
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <DatePicker
-                        selected={newBadanie.termination_date}
-                        onChange={(date) => handleBadanieDateChange(date, 'termination_date')}
-                        className="text-xs p-1 rounded border-gray-300 w-full"
-                      />
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <CreatableSelect
-                        isMulti
-                        options={opisstanowiska}
-                        value={stanowisko}
-                        onChange={setStanowisko}
-                        placeholder="dodaj opis..."
-                      />
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <CreatableSelect
-                        isMulti
-                        options={physicalOptions}
-                        value={physicalFactors}
-                        onChange={setPhysicalFactors}
-                        placeholder="brak lub dodaj czynnik..."
-                      />
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <CreatableSelect
-                        isMulti
-                        options={dustOptions}
-                        value={dusts}
-                        onChange={setDusts}
-                        placeholder="brak lub dodaj pyły..."
-                      />
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <CreatableSelect
-                        isMulti
-                        options={chemicalOptions}
-                        value={chemicalFactors}
-                        onChange={setChemicalFactors}
-                        placeholder="brak lub dodaj czynnik..."
-                      />
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <CreatableSelect
-                        isMulti
-                        options={biologicalOptions}
-                        value={biologicalFactors}
-                        onChange={setBiologicalFactors}
-                        placeholder="brak lub dodaj czynnik..."
-                      />
-                    </td>
-                    <td className="py-1 px-2 border-b">
-                      <CreatableSelect
-                        isMulti
-                        options={otherOptions}
-                        value={otherFactors}
-                        onChange={setOtherFactors}
-                        placeholder="brak lub dodaj czynnik..."
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="flex space-x-2 mt-2">
-                <button type="submit" className="bg-blue-500 text-white text-xs p-2 rounded">
-                  {isEditing ? 'Update Badanie' : 'Add Badanie'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setIsEditing(false);
-                    setNewBadanie({
-                      type: '',
-                      issue_date: new Date(),
-                      termination_date: new Date(),
-                      stanowisko: [],
-                      physicalfactors: [],
-                      dusts: [],
-                      chemicalfactors: [],
-                      biologicalFactors: [],
-                      otherFactors: [],
-                    });
-                  }}
-                  className="bg-gray-500 text-white text-xs p-2 rounded"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
+    {showForm && user.role !== 'employee' && (
+  <form onSubmit={handleBadanieSubmit} className="mb-8 mt-6 max-w-4xl mx-auto p-4 bg-white shadow-lg rounded-lg">
+    <h3 className="text-lg font-semibold mb-6">{isEditing ? 'Edytuj badanie' : 'Dodaj badanie'}</h3>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div className="flex flex-col">
+        <label htmlFor="type" className="mb-1">Typ badania</label>
+        <select
+          id="type"
+          name="type"
+          value={newBadanie.type}
+          onChange={handleBadanieChange}
+          className="block w-full p-2 rounded border border-gray-300 focus:ring focus:ring-blue-200 focus:border-blue-400"
+        >
+          <option value="">wybierz</option>
+          <option value="wstępne">wstępne</option>
+          <option value="okresowe">okresowe</option>
+          <option value="kontrolne">kontrolne</option>
+        </select>
+      </div>
+      <div className="flex flex-col">
+        <label htmlFor="issue_date" className="mb-1">Data od</label>
+        <DatePicker
+          id="issue_date"
+          selected={newBadanie.issue_date}
+          onChange={(date) => handleBadanieDateChange(date, 'issue_date')}
+          className="block w-full p-2 rounded border border-gray-300 focus:ring focus:ring-blue-200 focus:border-blue-400"
+          dateFormat="dd/MM/yyyy"
+        />
+      </div>
+      <div className="flex flex-col">
+        <label htmlFor="termination_date" className="mb-1">Data do</label>
+        <DatePicker
+          id="termination_date"
+          selected={newBadanie.termination_date}
+          onChange={(date) => handleBadanieDateChange(date, 'termination_date')}
+          className="block w-full p-2 rounded border border-gray-300 focus:ring focus:ring-blue-200 focus:border-blue-400"
+          dateFormat="dd/MM/yyyy"
+        />
+      </div>
+      <div className="flex flex-col">
+  <label htmlFor="stanowisko" className="mb-1">Stanowisko</label>
+  <CreatableSelect
+    key={`stanowisko-${isEditing}`} // Unique key ensures full re-render
+    isMulti
+    options={opisstanowiska}
+    value={stanowisko}
+    onChange={(value) => setStanowisko(value)}
+    className="text-sm rounded border-gray-300 w-full"
+    placeholder="dodaj opis..."
+  />
+</div>
+
+<div className="flex flex-col">
+        <label htmlFor="physicalfactors" className="mb-1">Czynniki fizyczne</label>
+        <CreatableSelect
+          key={`physicalfactors-${isEditing}`} // Unique key ensures full re-render
+          isMulti
+          options={physicalOptions}
+          value={newBadanie.physicalfactors}
+          onChange={(value) => setNewBadanie((prev) => ({ ...prev, physicalfactors: value }))}
+          className="text-sm rounded border-gray-300 w-full"
+          placeholder="brak lub dodaj czynnik..."
+        />
+      </div>
+      <div className="flex flex-col">
+  <label htmlFor="dusts" className="mb-1">Pyły</label>
+  <CreatableSelect
+    key={`dusts-${isEditing}`} // Unique key ensures full re-render
+    id="dusts"
+    isMulti
+    options={dustOptions}
+    value={dusts}
+    onChange={setDusts}
+    className="text-sm rounded border-gray-300 w-full"
+    placeholder="brak lub dodaj pyły..."
+  />
+</div>
+<div className="flex flex-col">
+  <label htmlFor="chemicalFactors" className="mb-1">Czynniki chemiczne</label>
+  <CreatableSelect
+    key={`chemicalFactors-${isEditing}`} // Unique key ensures full re-render
+    id="chemicalFactors"
+    isMulti
+    options={chemicalOptions}
+    value={chemicalFactors}
+    onChange={setChemicalFactors}
+    className="text-sm rounded border-gray-300 w-full"
+    placeholder="brak lub dodaj czynnik..."
+  />
+</div>
+<div className="flex flex-col">
+  <label htmlFor="biologicalFactors" className="mb-1">Czynniki biologiczne</label>
+  <CreatableSelect
+    key={`biologicalFactors-${isEditing}`} // Unique key ensures full re-render
+    id="biologicalFactors"
+    isMulti
+    options={biologicalOptions}
+    value={biologicalFactors}
+    onChange={setBiologicalFactors}
+    className="text-sm rounded border-gray-300 w-full"
+    placeholder="brak lub dodaj czynnik..."
+  />
+</div>
+<div className="flex flex-col">
+  <label htmlFor="otherFactors" className="mb-1">Inne czynniki</label>
+  <CreatableSelect
+    key={`otherFactors-${isEditing}`} // Unique key ensures full re-render
+    id="otherFactors"
+    isMulti
+    options={otherOptions}
+    value={otherFactors}
+    onChange={setOtherFactors}
+    className="text-sm rounded border-gray-300 w-full"
+    placeholder="brak lub dodaj czynnik..."
+  />
+</div>
+
+    </div>
+    <div className="flex justify-end space-x-2 mt-4">
+      <button type="submit" className="bg-blue-500 text-white text-sm p-2 rounded shadow-md hover:bg-blue-600">
+        {isEditing ? 'Update Badanie' : 'Add Badanie'}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setShowForm(false);
+          setIsEditing(false);
+          setNewBadanie({
+            type: '',
+            issue_date: new Date(),
+            termination_date: new Date(),
+            stanowisko: [],
+            physicalfactors: [],
+            dusts: [],
+            chemicalfactors: [],
+            biologicalFactors: [],
+            otherFactors: [],
+          });
+        }}
+        className="bg-gray-500 text-white text-sm p-2 rounded shadow-md hover:bg-gray-600"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={clearForm}
+        className="bg-yellow-500 text-white text-sm p-2 rounded shadow-md hover:bg-yellow-600"
+      >
+        Clear
+      </button>
+    </div>
+  </form>
+)}
+
           
           {showDocument && selectedBadanie ? (
             <>
               {/* Contract Section */}
               <div className="mb-4">
-                <h2 className="text-xl font-semibold mb-2">Wybierz umowę</h2>
+                <h2 className="text-xl font-semibold mb-2">Stanowisko z umowy:</h2>
                 <select
                   className="form-select block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding bg-no-repeat border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
                   onChange={handleContractSelection}
@@ -841,9 +913,7 @@ const handleShowDocument = (badanie) => {
                 <p>No badanie selected.</p>
               )}
             </>
-          ) : (
-            <p>No document selected.</p>
-          )}
+          )  : null}
         </div>
       </div>
     );
