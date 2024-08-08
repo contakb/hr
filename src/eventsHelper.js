@@ -1,7 +1,7 @@
 // eventsHelper.js
-import { addDays, isSaturday, isSunday } from 'date-fns';
+import { addDays, isSaturday, isSunday, isSameDay } from 'date-fns';
 
-export const generateRecurringEvents = (year) => {
+export const generateRecurringEvents = (year, badaniaData, employeeData) => {
   const events = [];
   for (let month = 0; month < 12; month++) {
     let socialInsuranceDate = new Date(year, month, 15);
@@ -51,5 +51,19 @@ export const generateRecurringEvents = (year) => {
       date: incomeTaxDate,
     });
   }
+  // Integrate badania termination dates
+  badaniaData.forEach((badanie) => {
+    const terminationDate = new Date(badanie.termination_date);
+    // Only add to events if it is within the same year
+    if (terminationDate.getFullYear() === year) {
+      const employee = employeeData.find(emp => emp.id === badanie.employee_id);
+      events.push({
+        id: `badanie_${badanie.id}`,
+        title: `Termin badania dla ${employee.surname}`,
+        description: `Termin zakończenia badania: ${badanie.type}`,
+        date: terminationDate,
+      });
+    }
+  });
   return events;
 };

@@ -684,6 +684,38 @@ app.get('/api/badania/:employee_id', verifyJWT, async (req, res) => {
   }
 });
 
+app.get('/api/badania', verifyJWT, async (req, res) => {
+  const schemaName = req.headers['x-schema-name'];
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data: badaniaData, error: badaniaError } = await supabase
+      .from('badania')
+      .select('*');
+
+    if (badaniaError) {
+      console.error('Error fetching badania data:', badaniaError);
+      res.status(500).send('Error occurred while fetching badania data.');
+      return;
+    }
+
+    
+
+    const responseData = {
+      badania: badaniaData,
+    };
+
+    res.status(200).send(responseData);
+  } catch (err) {
+    console.error('An unexpected error occurred:', err);
+    res.status(500).send('An unexpected error occurred.');
+  }
+});
+
+
 
 app.put('/api/badania/:id', verifyJWT, async (req, res) => {
   const { id } = req.params;
