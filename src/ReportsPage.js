@@ -157,7 +157,6 @@ const toggleContracts = async (employeeIdToUse) => {
 
 
 const handleGenerateReport = async () => {
-  
   setIsReportGenerated(false); // Reset the flag before generating a new report
 
   try {
@@ -167,9 +166,40 @@ const handleGenerateReport = async () => {
 
     console.log('Using employeeId:', employeeIdToUse); // Debugging log
 
-    
     await fetchEmployeeDetails(employeeIdToUse); // Fetch employee details
     await toggleContracts(employeeIdToUse); // Fetch contracts
+
+    if (reportType === 'badania-termination') {
+      const badaniaResponse = await axiosInstance.get('http://localhost:3001/api/badania', {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`,
+          'x-schema-name': user.schemaName,
+        }
+      });
+
+      const employeesResponse = await axiosInstance.get('http://localhost:3001/employees', {
+        headers: {
+          Authorization: `Bearer ${user.access_token}`,
+          'x-schema-name': user.schemaName,
+        }
+      });
+
+      const badaniaData = badaniaResponse.data.badania;
+      const employeesData = employeesResponse.data.employees;
+
+      // Combine badania data with employee names
+      const combinedData = badaniaData.map(badanie => {
+        const employee = employeesData.find(emp => emp.id === badanie.employee_id);
+        return {
+          ...badanie,
+          employeeName: employee ? `${employee.name} ${employee.surname}` : 'Unknown',
+        };
+      });
+
+      setReportData(combinedData);
+      setIsReportGenerated(true); // Ensure this is only set after data is ready
+      return; // Exit the function to avoid running other report types
+    }
 
     if (reportType === 'earnings-certificate' && (selectedEmployee || user.role === 'employee')) {
       // Fetch contracts if not already done
@@ -220,18 +250,6 @@ const handleGenerateReport = async () => {
       setReportData(recentData); // Store the fetched data
       setIsReportGenerated(true);
     } else if (reportType === 'social-insurance') {
-      // Logic for fetching social insurance data
-      const response = await axiosInstance.get(`http://localhost:3001/reports/social-insurance?month=${month}&year=${year}`, {
-        headers: {
-          'Authorization': `Bearer ${user.access_token}`, // Use the access token
-          'X-Schema-Name': user.schemaName, // Send the schema name as a header
-        }
-      });
-      responseData = processSocialInsuranceData(response.data);
-      setReportData(responseData); // Set the processed data
-      setIsReportGenerated(true);
-    }
-    else if (reportType === 'social-insurance') {
       // Logic for fetching social insurance data
       const response = await axiosInstance.get(`http://localhost:3001/reports/social-insurance?month=${month}&year=${year}`, {
         headers: {
@@ -373,8 +391,7 @@ const handleGenerateReport = async () => {
         breakDetails: breaks.filter(brk => brk.break_type === 'urlop' && new Date(brk.break_start_date).getFullYear() === selectedYear) // Add break details for the current year
       }]); // Store the calculated available holiday days
       setIsReportGenerated(true);
-    }
-      else {
+    } else {
       // Existing logic for other report types
       const response = await axiosInstance.get(`http://localhost:3001/reports?month=${month}&year=${year}`, {
         headers: {
@@ -391,12 +408,14 @@ const handleGenerateReport = async () => {
       }
       setReportData(responseData); // Set the response data
       setIsReportGenerated(true);
-    } 
+    }
   } catch (error) {
     console.error(`Error fetching ${reportType} data:`, error);
     setReportData([]);
+    setIsReportGenerated(true); // Ensure this is set in case of error
   }
 };
+
 
 
   const reportRef = useRef();
@@ -623,7 +642,11 @@ useEffect(() => {
         <p>Generating report for: {user.email}</p>
       );
     }
+    // Ensure that no extra fields are returned for "badania-termination"
+    return null;
   };
+  
+  
   
   
 
@@ -871,6 +894,29 @@ useEffect(() => {
     </table>
   </>
  )}
+ {reportType === 'badania-termination' && (
+  <>
+  <h3 className="text-xl font-bold mb-4">Termination Dates for Employees in Badania</h3>
+        <table className="min-w-full bg-white">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 border">Employee Name</th>
+              <th className="px-4 py-2 border">Badanie Type</th>
+              <th className="px-4 py-2 border">Termination Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reportData.map((record, index) => (
+              <tr key={index}>
+                <td className="px-4 py-2 border">{record.employeeName}</td>
+                <td className="px-4 py-2 border">{record.type}</td>
+                <td className="px-4 py-2 border">{new Date(record.termination_date).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+  </>
+  )}
 
        <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
        {reportType === 'social-insurance' && (
@@ -1027,6 +1073,7 @@ return (
                     <option value="total-gross-amount">Total Gross Amount by Month and Year</option>
                     <option value="total-net-amount">Total Net Amount by Month and Year</option>
                     <option value="social-insurance">Składki ZUS za okres</option>
+                    <option value="badania-termination">Termination Dates for Employees in Badania</option> {/* New Option */}
                   </>
                 )}
                 <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
@@ -1035,7 +1082,7 @@ return (
             </label>
           </div>
           {renderFormFields()}
-          {reportType !== 'earnings-certificate' && reportType !== 'available-holiday-days' && (
+          {reportType !== 'earnings-certificate' && reportType !== 'available-holiday-days' && reportType !== 'badania-termination' && (
             <div className="grid grid-cols-2 gap-4">
               <label className="block text-lg font-medium text-gray-700">
                 Miesiąc:
