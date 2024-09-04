@@ -46,6 +46,9 @@ import TrialEnded from './TrialEnded';
 import EmployeeReportsPage from './EmployeeReportsPage';
 import Konwerterxml from './Konwerterxml';
 import SalaryCalculator from './SalaryCalculator';
+import AddCivilContractForm from './AddCivilContractForm'; // Adjust the import path
+
+
 
 const stripePromise = loadStripe('pk_live_51PWCkCC24aqQf542gaveEHeqLSBQ724b0jzLDCs9nGsurKvRp2sHvWepk7waJmeX5e0xSiZtCzxzV39brkyBC7TW00PM67gLmm');
 
@@ -104,11 +107,17 @@ function App() {
       <Route path="/employee-param/:employeeId" element={<EmployeeParam />} />
       <Route path="/TerminateContract/:employeeId" element={<TerminateContract />} />
       <Route path="/add-contract/:employeeId/:contractId" element={<AddContractForm />} />
+      <Route path="/add-civil-contract/:employeeId/:contractId" element={<AddCivilContractForm />} />
+     
+
+
+
       <Route path="/Aneks/:employeeId/:contractId" element={<Aneks />} />
       <Route path="/createcompany" element={<CreateCompany />} />
       <Route path="/setup" element={<SetupPage />} />
       <Route path="/createEmployee" element={<AddEmployees />} />
       <Route path="/add-contract/:employeeId"  element={<AddContractToEmployee />} /> {/* New route */}
+      <Route path="/add-civil-contract/:employeeId" element={<PrivateRoute element={AddCivilContractForm} allowedRoles={['admin']} />} />
       <Route path="/employee-param/:employeeId" element={<AddParamsToEmployee />} /> {/* New route */}
       <Route path="/calendar" element={<CalendarPage />} />
       <Route path="/empbreakcalendar" element={<AdminBreaksCalendar />} />

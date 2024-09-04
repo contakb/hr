@@ -43,6 +43,8 @@
 const [holidayBase, setHolidayBase] = useState(null); // State for storing holiday base data
 const [editHolidayBaseMode, setEditHolidayBaseMode] = useState(false);
 const [activeTab, setActiveTab] = useState('details');
+const [civilContractsVisible, setCivilContractsVisible] = useState(false); // To toggle `umowa cywilnoprawna`
+const [civilContracts, setCivilContracts] = useState([]); // State for civil contracts
 
 
 
@@ -71,6 +73,17 @@ const [activeTab, setActiveTab] = useState('details');
     const handleAddContract = () => {
       navigate(`/add-contract/${id}`);
     };
+
+    const handleAddCivilContract = () => {
+      // Navigate to the form where you add a new umowa cywilnoprawna
+      navigate(`/add-civil-contract/${id}`);
+    };
+
+    const handleCivilContractFullEdit = (contractId) => {
+      navigate(`/add-civil-contract/${id}/${contractId}`);
+    };
+    
+    
 
     const handleGenerateContractPage = (id) => {
       navigate(`/EmployeeContract/${id}`);
@@ -217,6 +230,25 @@ const [activeTab, setActiveTab] = useState('details');
           )}
         </div>
       );
+    };
+
+    const toggleCivilContracts = async () => {
+      if (!civilContractsVisible) {
+        try {
+          const response = await axiosInstance.get(`http://localhost:3001/api/civil-contracts/${id}`, {
+            headers: {
+              'Authorization': `Bearer ${user.access_token}`,
+              'X-Schema-Name': user.schemaName,
+            }
+          });
+          setCivilContracts(response.data.contracts);
+        } catch (error) {
+          console.error('Error fetching civil contracts:', error);
+          setCivilContracts([]);
+        }
+      }
+      setCivilContractsVisible(!civilContractsVisible);
+      setContractsVisible(false); // Hide employment contracts when civil contracts are shown
     };
 
 
@@ -509,6 +541,12 @@ const [activeTab, setActiveTab] = useState('details');
       {contractsVisible ? 'Ukryj umowy' : 'umowy'}
     </button>
     <button 
+    className="bg-blue-500 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded text-xs"
+    onClick={toggleCivilContracts}
+  >
+    {civilContractsVisible ? 'Ukryj Umowy Cywilnoprawne' : 'Pokaż Umowy Cywilnoprawne'}
+  </button>
+    <button 
       className="bg-red-500 hover:bg-red-700 text-white font-medium py-1 px-2 rounded text-xs"
       onClick={() => handleGenerateContractPage(id)}
     >
@@ -761,6 +799,59 @@ const [activeTab, setActiveTab] = useState('details');
   </div>
 )}
 
+{civilContractsVisible && (
+  <div className="border-t pt-4">
+    <h3 className="text-lg font-semibold">Umowy Cywilnoprawne:</h3>
+    {civilContracts.length === 0 ? (
+      <div>
+        <div className="mb-4">
+          <p>Nie znaleziono umów cywilnoprawnych.</p>
+        </div>
+        <div className="flex gap-2 mb-2">
+          <button
+            className="bg-green-500 hover:bg-green-700 text-white font-medium py-1 px-2 rounded text-xs"
+            onClick={handleAddCivilContract}
+          >
+            Dodaj Umowę Cywilnoprawną
+          </button>
+        </div>
+      </div>
+    ) : (
+      civilContracts.map((civilContract) => (
+        <div key={civilContract.id} className="mb-6">
+          {/* Render Civil Contract Details */}
+          <div className="mb-2">
+            <p className="font-medium">ID Umowy: {civilContract.id}</p>
+            <p>Kwota brutto: {civilContract.gross_amount}</p>
+            <p>Od: {new Date(civilContract.contract_from_date).toLocaleDateString()}</p>
+            <p>Do: {new Date(civilContract.contract_to_date).toLocaleDateString()}</p>
+            <p>Stanowisko: {civilContract.stanowisko}</p>
+            <p>Opis zadania: {civilContract.task_description}</p>
+            <p>Godziny pracy: {civilContract.hours_worked}</p>
+            <p>Stawka za godzinę: {civilContract.pay_per_hour}</p>
+          </div>
+          {/* Add the Edit button */}
+          <button
+      className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+      onClick={() => handleCivilContractFullEdit(civilContract.id)}
+    >
+      Edycja umowy cywilnoprawnej
+    </button>
+
+          {/* Add more contract details as needed */}
+          
+          {/* Option to add another Civil Contract */}
+          <button
+            className="bg-green-500 hover:bg-green-700 text-white font-medium py-1 px-2 rounded text-xs"
+            onClick={handleAddCivilContract}
+          >
+            Dodaj Kolejną Umowę Cywilnoprawną
+          </button>
+        </div>
+      ))
+    )}
+  </div>
+)}
 
   {contractsVisible && (
     <div className="border-t pt-4">

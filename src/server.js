@@ -2584,7 +2584,168 @@ app.put('/api/contracts/:contractId/terminate', verifyJWT, async (req, res) => {
   }
 });
 
+app.get('/api/civil-contracts/:employeeId', verifyJWT, async (req, res) => {
+  const employeeId = req.params.employeeId;
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
+  console.log(`Fetching civil contracts from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // Use custom schema
+  });
+
+  try {
+    // Fetch 'umowa cywilnoprawna' contracts from the specified schema
+    const { data, error } = await supabase
+      .from('umowa_cywilnoprawna')
+      .select('*')
+      .eq('employee_id', employeeId);
+
+    if (error) {
+      console.error('Error fetching civil contracts:', error);
+      return res.status(500).json({ error: 'Error fetching civil contracts' });
+    }
+
+    res.json({ contracts: data });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/civil-contracts', verifyJWT, async (req, res) => {
+  const { employee_id, gross_amount, contract_from_date, contract_to_date, stanowisko, task_description, hours_worked, pay_per_hour } = req.body;
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Creating civil contract in schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // Use custom schema
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('umowa_cywilnoprawna') // Use 'umowa_cywilnoprawna' table
+      .insert([{
+        employee_id,
+        gross_amount,
+        contract_from_date,
+        contract_to_date,
+        stanowisko,
+        task_description,
+        hours_worked,
+        pay_per_hour,
+        created_at: new Date(),
+        updated_at: new Date(),
+      }]);
+
+    if (error) {
+      console.error('Error creating civil contract:', error);
+      return res.status(500).json({ error: 'Error creating civil contract' });
+    }
+
+    res.json({ message: 'Civil contract created successfully', contract: data });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/civil-contracts/:contractId', verifyJWT, async (req, res) => {
+  const contractId = req.params.contractId;
+  const { gross_amount, contract_from_date, contract_to_date, stanowisko, task_description, hours_worked, pay_per_hour } = req.body;
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('umowa_cywilnoprawna')
+      .update({
+        gross_amount,
+        contract_from_date,
+        contract_to_date,
+        stanowisko,
+        task_description,
+        hours_worked,
+        pay_per_hour,
+        updated_at: new Date(),
+      })
+      .eq('id', contractId)
+      .select(); // Ensure updated data is returned after update
+
+    if (error) {
+      console.error('Error updating civil contract:', error);
+      return res.status(500).json({ error: 'Error updating civil contract' });
+    }
+
+    res.json({ message: 'Civil contract updated successfully', updatedContract: data[0] }); // Return the updated contract
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+app.get('/api/civil-contract/:contractId', verifyJWT, async (req, res) => {
+  const contractId = req.params.contractId;
+  const schemaName = req.headers['x-schema-name'];
+
+  console.log(`Fetching civil contract with ID: ${contractId} from schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    // Fetch the specific civil contract by its ID
+    const { data, error } = await supabase
+      .from('umowa_cywilnoprawna')
+      .select('*')
+      .eq('id', contractId)
+      .single();  // Use .single() to get one contract
+
+    if (error) {
+      console.error('Error fetching civil contract:', error);
+      return res.status(500).json({ error: 'Error fetching civil contract' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/civil-contracts/:contractId', verifyJWT, async (req, res) => {
+  const contractId = req.params.contractId;
+  const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
+
+  console.log(`Deleting civil contract with ID ${contractId} in schema: ${schemaName}`);
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName }
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('umowa_cywilnoprawna') // Use 'umowa_cywilnoprawna' table
+      .delete()
+      .eq('id', contractId);
+
+    if (error) {
+      console.error('Error deleting civil contract:', error);
+      return res.status(500).json({ error: 'Error deleting civil contract' });
+    }
+
+    res.json({ message: 'Civil contract deleted successfully' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 

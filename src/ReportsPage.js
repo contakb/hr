@@ -896,13 +896,13 @@ useEffect(() => {
  )}
  {reportType === 'badania-termination' && (
   <>
-  <h3 className="text-xl font-bold mb-4">Termination Dates for Employees in Badania</h3>
+  <h3 className="text-xl font-bold mb-4">Data ważności badań lekarskich:</h3>
         <table className="min-w-full bg-white">
           <thead>
             <tr>
-              <th className="px-4 py-2 border">Employee Name</th>
-              <th className="px-4 py-2 border">Badanie Type</th>
-              <th className="px-4 py-2 border">Termination Date</th>
+              <th className="px-4 py-2 border">Nazwisko pracownika</th>
+              <th className="px-4 py-2 border">Rodzaj badania</th>
+              <th className="px-4 py-2 border">Data</th>
             </tr>
           </thead>
           <tbody>
@@ -1073,7 +1073,7 @@ return (
                     <option value="total-gross-amount">Total Gross Amount by Month and Year</option>
                     <option value="total-net-amount">Total Net Amount by Month and Year</option>
                     <option value="social-insurance">Składki ZUS za okres</option>
-                    <option value="badania-termination">Termination Dates for Employees in Badania</option> {/* New Option */}
+                    <option value="badania-termination">Data ważności badań lekarskich</option> {/* New Option */}
                   </>
                 )}
                 <option value="earnings-certificate">Zaświadczenie o Zarobkach</option>
