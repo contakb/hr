@@ -12,6 +12,8 @@ import SalaryCalculator from './SalaryCalculator'; // Import the SalaryCalculato
 function AddCivilContractForm() {
   const { employeeId, contractId } = useParams();
   const navigate = useNavigate();
+  const [contractType, setContractType] = useState(''); // Default to 'umowa o dzieło'
+  const [amountInWords, setAmountInWords] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -30,7 +32,14 @@ function AddCivilContractForm() {
   const { currentStep, setCurrentStep, nextStep, steps } = useSetup(); // Use the context to control steps
   const { markStepAsCompleted } = useSetup();
   const [showNextStepButton, setShowNextStepButton] = useState(false);
+  const [projectStartDate, setProjectStartDate] = useState(''); // For "umowa o dzieło"
+  const [projectEndDate, setProjectEndDate] = useState(''); // For "umowa o dzieło"
+  const [prawaAutorskie, setPrawaAutorskie] = useState(false); // Checkbox for "Prawa Autorskie"
+  const [prawaAutorskieText, setPrawaAutorskieText] = useState(
+    "Wykonawca upoważnia również Zamawiającego do rozporządzania oraz korzystania z utworów stanowiących opracowanie dzieła, w zakresie wskazanym w ust. 1 powyżej.Wskazane upoważnienie może być przenoszone na osoby trzecie bez konieczności uzyskiwania odrębnej zgody.Przejście praw autorskich do dzieła nastąpi z momentem przekazania dzieła Zamawiającemu."
+  ); // Default text for "Prawa Autorskie"
 
+  const [deadlineDzieło, setDeadlineDzieło] = useState(''); // New state for "Dzieło zostanie wykonane w terminie do"
 
   const { setIsInSetupProcess } = useSetup();
   const user = useRequireAuth();
@@ -38,6 +47,15 @@ function AddCivilContractForm() {
 
   const queryParams = new URLSearchParams(location.search);
   const isInSetupProcess = queryParams.get('setup') === 'true';
+
+  useEffect(() => {
+    const parsedValue = parseFloat(grossAmount);
+    if (!isNaN(parsedValue)) {
+      setAmountInWords(numberToPolishWords(parsedValue));
+    } else {
+      setAmountInWords('');
+    }
+  }, [grossAmount]);
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -72,7 +90,7 @@ function AddCivilContractForm() {
             },
           });
           const contract = response.data;
-    
+  
           // Pre-fill the form with contract data
           setGrossAmount(contract.gross_amount);
           setStartDate(contract.contract_from_date);
@@ -81,6 +99,18 @@ function AddCivilContractForm() {
           setTaskDescription(contract.task_description);
           setHoursWorked(contract.hours_worked);
           setPayPerHour(contract.pay_per_hour);
+          setContractType(contract.contract_type);
+  
+          // Set projectStartDate, projectEndDate, and deadline_dzieło only if contract type is "umowa o dzieło"
+          if (contract.contract_type === 'umowa o dzieło') {
+            setProjectStartDate(contract.contract_from_date);
+            setProjectEndDate(contract.contract_to_date);
+            setDeadlineDzieło(contract.deadline_dzieło); // Set deadline_dzieło for umowa o dzieło
+          }
+  
+          // Set prawa_autorskie if it exists
+          setPrawaAutorskie(!!contract.prawa_autorskie);
+          setPrawaAutorskieText(contract.prawa_autorskie || prawaAutorskieText);
         } catch (error) {
           console.error('Error fetching civil contract:', error);
         }
@@ -89,6 +119,8 @@ function AddCivilContractForm() {
     
     fetchContractDetails();
   }, [contractId]);
+  
+  
   
   
   
@@ -108,6 +140,9 @@ function AddCivilContractForm() {
       task_description: taskDescription,
       hours_worked: hoursWorked,
       pay_per_hour: payPerHour,
+      contract_type: contractType, // Add contract_type to the data
+      prawa_autorskie: prawaAutorskie ? prawaAutorskieText : null, // Add prawa autorskie if applicable
+      deadline_dzieło: contractType === 'umowa o dzieło' ? deadlineDzieło : null, // Add deadline_dzieło only if contract type is "umowa o dzieło"
     };
   
     try {
@@ -135,15 +170,28 @@ function AddCivilContractForm() {
       }
   
       const savedContract = response.data.updatedContract || response.data.contract; // Handle both cases
-      if (savedContract) {
-        setGrossAmount(savedContract.gross_amount);
-        setStartDate(savedContract.contract_from_date);
-        setEndDate(savedContract.contract_to_date);
-        setStanowisko(savedContract.stanowisko);
-        setTaskDescription(savedContract.task_description);
-        setHoursWorked(savedContract.hours_worked);
-        setPayPerHour(savedContract.pay_per_hour);
-      }
+if (savedContract) {
+  setGrossAmount(savedContract.gross_amount);
+  setStartDate(savedContract.contract_from_date);
+  setEndDate(savedContract.contract_to_date);
+  setStanowisko(savedContract.stanowisko);
+  setTaskDescription(savedContract.task_description);
+  setHoursWorked(savedContract.hours_worked);
+  setPayPerHour(savedContract.pay_per_hour);
+  setContractType(savedContract.contract_type);
+
+  // Set projectStartDate and projectEndDate if contract type is "umowa o dzieło"
+  if (savedContract.contract_type === 'umowa o dzieło') {
+    setProjectStartDate(savedContract.contract_from_date);
+    setProjectEndDate(savedContract.contract_to_date);
+    setDeadlineDzieło(savedContract.deadline_dzieło || '');  // Ensure it's updated in the state
+  }
+
+  // Handle prawa_autorskie field
+  setPrawaAutorskie(!!savedContract.prawa_autorskie);
+  setPrawaAutorskieText(savedContract.prawa_autorskie || prawaAutorskieText);
+}
+
   
       setIsSubmitting(false);
     } catch (error) {
@@ -187,85 +235,175 @@ function AddCivilContractForm() {
   return (
     <div>
       <div className="bg-gray-100 min-h-screen p-8">
-        {isInSetupProcess && <StepIndicator steps={steps} currentStep={currentStep} />}
         <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
-          <h2 className="text-2xl font-semibold mb-6">{isEditMode ? 'Edytuj umowę cywilnoprawną' : 'Dodaj umowę cywilnoprawną'}</h2>
+          <h2 className="text-2xl font-semibold mb-6">
+            {isEditMode ? 'Edytuj umowę cywilnoprawną' : 'Dodaj umowę cywilnoprawną'}
+          </h2>
           {feedbackMessage && (
-  <div className={`mb-4 p-4 rounded ${isError ? 'text-red-700 bg-red-100' : 'text-green-700 bg-green-100'}`}>
-    {feedbackMessage}
-  </div>
-)}
-          <form onSubmit={handleSubmit} className="space-y-4 bg-white shadow rounded p-6">
-            <div className="flex flex-wrap -mx-2">
-              <div className="w-full px-2 mb-4">
-                <label className="block text-sm font-medium text-gray-700">Gross Amount:</label>
-                <input 
-                  type="text" 
-                  value={grossAmount} 
-                  onChange={(e) => setGrossAmount(e.target.value)} 
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
-                />
-              </div>
-
-              <div className="w-1/2 px-2 mb-4">
-                <label className="block text-sm font-medium text-gray-700">Start Date:</label>
-                <input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="w-1/2 px-2 mb-4">
-                <label className="block text-sm font-medium text-gray-700">End Date:</label>
-                <input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="w-full px-2 mb-4">
-                <label className="block text-sm font-medium text-gray-700">Stanowisko:</label>
-                <input 
-                  type="text" 
-                  value={stanowisko} 
-                  onChange={(e) => setStanowisko(e.target.value)} 
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
-                />
-              </div>
-
-              <div className="w-full px-2 mb-4">
-                <label className="block text-sm font-medium text-gray-700">Opis zadania:</label>
-                <textarea
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="w-full px-2 mb-4">
-                <label className="block text-sm font-medium text-gray-700">Godziny pracy:</label>
-                <input 
-                  type="number" 
-                  value={hoursWorked} 
-                  onChange={(e) => setHoursWorked(e.target.value)} 
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
-                />
-              </div>
-
-              <div className="w-full px-2 mb-4">
-                <label className="block text-sm font-medium text-gray-700">Stawka za godzinę:</label>
-                <input 
-                  type="number" 
-                  value={payPerHour} 
-                  onChange={(e) => setPayPerHour(e.target.value)} 
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
-                />
-              </div>
+            <div className={`mb-4 p-4 rounded ${isError ? 'text-red-700 bg-red-100' : 'text-green-700 bg-green-100'}`}>
+              {feedbackMessage}
             </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-4 bg-white shadow rounded p-6">
+            {/* Contract Type Selection */}
+            <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Typ umowy cywilnoprawnej:</label>
+              <select
+                value={contractType}
+                onChange={(e) => setContractType(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="" disabled hidden>wybierz typ umowy</option>
+                <option value="umowa o dzieło">Umowa o dzieło</option>
+                <option value="umowa zlecenie">Umowa zlecenie</option>
+              </select>
+            </div>
+
+            {/* Gross Amount and Amount in Words */}
+            <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Gross Amount:</label>
+              <input
+                type="text"
+                value={grossAmount}
+                onChange={(e) => setGrossAmount(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Kwota brutto słownie:</label>
+              <p className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100">
+                {amountInWords || '—'}
+              </p>
+            </div>
+
+            {/* Conditional Fields for Contract Type */}
+            {contractType === 'umowa o dzieło' ? (
+              <>
+                <div className="w-full px-2 mb-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Wykonawca przystąpi do wykonywania dzieła w dniu:
+      </label>
+      <input
+        type="date"
+        value={startDate}  // Populate startDate
+        onChange={(e) => setStartDate(e.target.value)}
+        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      />
+    </div>
+
+    <div className="w-full px-2 mb-4">
+      <label className="block text-sm font-medium text-gray-700">Zakończenie prac nastąpi w dniu:</label>
+      <input
+        type="date"
+        value={endDate}  // Populate endDate
+        onChange={(e) => setEndDate(e.target.value)}
+        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      />
+    </div>
+
+    <div className="w-full px-2 mb-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Dzieło zostanie wykonane w terminie do:
+      </label>
+      <input
+        type="date"
+        value={deadlineDzieło}  // Populate deadline_dzieło from state
+        onChange={(e) => setDeadlineDzieło(e.target.value)}  // Update the state on change
+        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      />
+    </div>
+              {/* Prawa Autorskie Checkbox */}
+              <div className="w-full px-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={prawaAutorskie}
+                      onChange={(e) => setPrawaAutorskie(e.target.checked)}
+                      className="mr-2"
+                    />
+                    Dodaj prawa autorskie do umowy o dzieło
+                  </label>
+                </div>
+
+                {/* Prawa Autorskie Conditions */}
+                {prawaAutorskie && (
+              <div className="w-full px-2 mb-4">
+                <label className="block text-sm font-medium text-gray-700">Prawa Autorskie:</label>
+                <textarea
+                  value={prawaAutorskieText}
+                  onChange={(e) => setPrawaAutorskieText(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            )}
+              </>
+            ) : (
+              <>
+                {/* Fields for Umowa Zlecenie */}
+                <div className="w-1/2 px-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Data rozpoczęcia:</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="w-1/2 px-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Data końca:</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Task Description, Hours, Pay Rate */}
+            <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Zakres prac:</label>
+              <textarea
+                value={taskDescription}
+                onChange={(e) => setTaskDescription(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Ilość godzin do przepracowania:</label>
+              <input
+                type="number"
+                value={hoursWorked}
+                onChange={(e) => setHoursWorked(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Stawka za godzinę pracy w złotych:</label>
+              <input
+                type="number"
+                value={payPerHour}
+                onChange={(e) => setPayPerHour(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            {/* Remarks */}
+            <div className="w-full px-2 mb-4">
+              <label className="block text-sm font-medium text-gray-700">Uwagi dodatkowe:</label>
+              <input
+                type="text"
+                value={stanowisko}
+                onChange={(e) => setStanowisko(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
             <button className={`inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${isSubmitting ? 'bg-blue-400' : 'bg-blue-500 hover:bg-blue-600'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}  type="submit" disabled={isSubmitting}>
               {isEditMode ? 'Update Contract' : 'Add Contract'}
             </button>
@@ -308,5 +446,50 @@ function AddCivilContractForm() {
     </div>
   );
 }
+
+
+// Conversion function from earlier
+function numberToPolishWords(value) {
+    const units = ['', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć'];
+    const teens = ['dziesięć', 'jedenaście', 'dwanaście', 'trzynaście', 'czternaście', 'piętnaście', 'szesnaście', 'siedemnaście', 'osiemnaście', 'dziewiętnaście'];
+    const tens = ['', '', 'dwadzieścia', 'trzydzieści', 'czterdzieści', 'pięćdziesiąt', 'sześćdziesiąt', 'siedemdziesiąt', 'osiemdziesiąt', 'dziewięćdziesiąt'];
+    const hundreds = ['', 'sto', 'dwieście', 'trzysta', 'czterysta', 'pięćset', 'sześćset', 'siedemset', 'osiemset', 'dziewięćset'];
+    const thousands = ['tysiąc', 'tysiące', 'tysięcy'];
+  
+    if (value === 0) return 'zero złotych zero groszy';
+  
+    let zlote = Math.floor(value);
+    let grosze = Math.round((value - zlote) * 100);
+  
+    const groszePart = grosze === 0 ? 'zero groszy' : `${grosze} groszy`;
+  
+    let result = '';
+  
+    if (zlote > 999) {
+      const thousandPart = Math.floor(zlote / 1000);
+      zlote %= 1000;
+      result += `${units[thousandPart]} ${thousands[1]} `;
+    }
+  
+    if (zlote >= 100) {
+      result += `${hundreds[Math.floor(zlote / 100)]} `;
+      zlote %= 100;
+    }
+  
+    if (zlote >= 20) {
+      result += `${tens[Math.floor(zlote / 10)]} `;
+      zlote %= 10;
+    } else if (zlote >= 10) {
+      result += `${teens[zlote - 10]} `;
+      zlote = 0;
+    }
+  
+    if (zlote > 0) {
+      result += `${units[zlote]} `;
+    }
+  
+    result += `złotych ${groszePart}`;
+    return result.trim();
+  }
 
 export default AddCivilContractForm;
