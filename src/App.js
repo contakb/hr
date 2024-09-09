@@ -47,6 +47,7 @@ import EmployeeReportsPage from './EmployeeReportsPage';
 import Konwerterxml from './Konwerterxml';
 import SalaryCalculator from './SalaryCalculator';
 import AddCivilContractForm from './AddCivilContractForm'; // Adjust the import path
+import UmowaCywilnoprawna from './UmowaCywilnoprawna'; // Import your new component
 
 
 
@@ -102,6 +103,10 @@ function App() {
                 path="/EmployeeContract/:employeeId"
                 element={<PrivateRoute element={EmployeeContract} allowedRoles={['admin', 'employee']} />}
               />
+      <Route
+          path="/UmowaCywilnoprawna/:employeeId"
+          element={<PrivateRoute element={UmowaCywilnoprawna} allowedRoles={['admin', 'employee']} />}
+        />
       <Route path="/ToDo" element={<PrivateRoute element={ToDo}  allowedRoles={['admin']}/>} />
       <Route path="/medical-examination/:employeeId" element={<PrivateRoute element={MedicalExaminationView} allowedRoles={['admin', 'employee']} />} />
       <Route path="/employee-param/:employeeId" element={<EmployeeParam />} />

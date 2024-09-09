@@ -573,7 +573,8 @@ return (
           <div>
             <p>Podpis osoby reprezentującej firmę</p>
             <div class="signature-line w-full border-t border-gray-400"></div>
-            <p>{companyData.representative_name}</p>
+            <p>{companyData.representative_name
+              }</p>
           </div>
         </div>
       

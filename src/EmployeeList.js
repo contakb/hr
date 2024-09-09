@@ -89,6 +89,10 @@ const [civilContracts, setCivilContracts] = useState([]); // State for civil con
       navigate(`/EmployeeContract/${id}`);
   };
 
+  const handleGenerateUmowyPage = (id) => {
+    navigate(`/UmowaCywilnoprawna/${id}`); // Navigate to the UmowaCywilnoprawna page for the given employee ID
+  };
+
       
 
 
@@ -814,6 +818,7 @@ const [civilContracts, setCivilContracts] = useState([]); // State for civil con
           >
             Dodaj Umowę Cywilnoprawną
           </button>
+          
         </div>
       </div>
     ) : (
@@ -822,6 +827,7 @@ const [civilContracts, setCivilContracts] = useState([]); // State for civil con
           {/* Render Civil Contract Details */}
           <div className="mb-2">
             <p className="font-medium">ID Umowy: {civilContract.id}</p>
+            <p>Typ umowy: {civilContract.contract_type}</p>
             <p>Kwota brutto: {civilContract.gross_amount}</p>
             <p>Od: {new Date(civilContract.contract_from_date).toLocaleDateString()}</p>
             <p>Do: {new Date(civilContract.contract_to_date).toLocaleDateString()}</p>
@@ -847,6 +853,11 @@ const [civilContracts, setCivilContracts] = useState([]); // State for civil con
           >
             Dodaj Kolejną Umowę Cywilnoprawną
           </button>
+          <button 
+        className="bg-blue-500 text-white px-4 py-2 rounded" 
+        onClick={() => handleGenerateUmowyPage(employee.id)}>
+        Pokaż Umowę
+      </button>
         </div>
       ))
     )}

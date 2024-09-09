@@ -22,7 +22,7 @@ function AddCivilContractForm() {
   const [grossAmount, setGrossAmount] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [stanowisko, setStanowisko] = useState('');
+  const [additionalInfo, setAdditionalInfo] = useState('');
   const [taskDescription, setTaskDescription] = useState(''); // Task description for umowa cywilnoprawna
   const [hoursWorked, setHoursWorked] = useState(''); // Hours worked for umowa cywilnoprawna
   const [payPerHour, setPayPerHour] = useState(''); // Pay per hour for umowa cywilnoprawna
@@ -44,6 +44,7 @@ function AddCivilContractForm() {
   const { setIsInSetupProcess } = useSetup();
   const user = useRequireAuth();
   const location = useLocation();
+  
 
   const queryParams = new URLSearchParams(location.search);
   const isInSetupProcess = queryParams.get('setup') === 'true';
@@ -68,6 +69,10 @@ function AddCivilContractForm() {
   const isSetupCompleted = () => {
     const setupCompleted = localStorage.getItem('setupCompleted');
     return setupCompleted === 'true';
+  };
+
+  const handleShowContract = () => {
+    navigate(`/UmowaCywilnoprawna/${employeeId}`); // Navigate to the UmowaCywilnoprawna page for the given employee ID
   };
 
   useEffect(() => {
@@ -95,7 +100,7 @@ function AddCivilContractForm() {
           setGrossAmount(contract.gross_amount);
           setStartDate(contract.contract_from_date);
           setEndDate(contract.contract_to_date);
-          setStanowisko(contract.stanowisko);
+          setAdditionalInfo(contract.additional_info);
           setTaskDescription(contract.task_description);
           setHoursWorked(contract.hours_worked);
           setPayPerHour(contract.pay_per_hour);
@@ -136,7 +141,7 @@ function AddCivilContractForm() {
       gross_amount: grossAmount,
       contract_from_date: startDate,
       contract_to_date: endDate,
-      stanowisko,
+      additional_info: additionalInfo,  // Correct this line
       task_description: taskDescription,
       hours_worked: hoursWorked,
       pay_per_hour: payPerHour,
@@ -174,7 +179,7 @@ if (savedContract) {
   setGrossAmount(savedContract.gross_amount);
   setStartDate(savedContract.contract_from_date);
   setEndDate(savedContract.contract_to_date);
-  setStanowisko(savedContract.stanowisko);
+  setAdditionalInfo(savedContract.additional_info);
   setTaskDescription(savedContract.task_description);
   setHoursWorked(savedContract.hours_worked);
   setPayPerHour(savedContract.pay_per_hour);
@@ -398,8 +403,8 @@ if (savedContract) {
               <label className="block text-sm font-medium text-gray-700">Uwagi dodatkowe:</label>
               <input
                 type="text"
-                value={stanowisko}
-                onChange={(e) => setStanowisko(e.target.value)}
+                value={additionalInfo}  // Make sure the state is updated to additionalInfo
+                onChange={(e) => setAdditionalInfo(e.target.value)}  // Change handler
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
@@ -420,6 +425,11 @@ if (savedContract) {
             <button className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 mt-4" onClick={handleBackToEmployeeList}>
               Back to Employee List
             </button>
+            <button 
+  className="bg-blue-500 text-white px-4 py-2 rounded mt-4" 
+  onClick={handleShowContract}>
+  Pokaż Umowę
+</button>
           </form>
         </div>
       </div>

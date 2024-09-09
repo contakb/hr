@@ -2614,7 +2614,7 @@ app.get('/api/civil-contracts/:employeeId', verifyJWT, async (req, res) => {
 });
 
 app.post('/api/civil-contracts', verifyJWT, async (req, res) => {
-  const { employee_id, gross_amount, contract_from_date, contract_to_date, stanowisko, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie,deadline_dzieło } = req.body;
+  const { employee_id, gross_amount, contract_from_date, contract_to_date, additional_info, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie,deadline_dzieło } = req.body;
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
   console.log(`Creating civil contract in schema: ${schemaName}`);
@@ -2631,7 +2631,7 @@ app.post('/api/civil-contracts', verifyJWT, async (req, res) => {
         gross_amount,
         contract_from_date,
         contract_to_date,
-        stanowisko,
+        additional_info,
         task_description,
         hours_worked,
         pay_per_hour,
@@ -2656,7 +2656,7 @@ app.post('/api/civil-contracts', verifyJWT, async (req, res) => {
 
 app.put('/api/civil-contracts/:contractId', verifyJWT, async (req, res) => {
   const contractId = req.params.contractId;
-  const { gross_amount, contract_from_date, contract_to_date, stanowisko, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie, deadline_dzieło } = req.body;
+  const { gross_amount, contract_from_date, contract_to_date, additional_info, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie, deadline_dzieło } = req.body;
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -2670,7 +2670,7 @@ app.put('/api/civil-contracts/:contractId', verifyJWT, async (req, res) => {
         gross_amount,
         contract_from_date,
         contract_to_date,
-        stanowisko,
+        additional_info,
         task_description,
         hours_worked,
         pay_per_hour,
