@@ -2614,7 +2614,7 @@ app.get('/api/civil-contracts/:employeeId', verifyJWT, async (req, res) => {
 });
 
 app.post('/api/civil-contracts', verifyJWT, async (req, res) => {
-  const { employee_id, gross_amount, contract_from_date, contract_to_date, additional_info, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie,deadline_dzieło } = req.body;
+  const { employee_id, gross_amount, contract_from_date, contract_to_date, additional_info, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie,deadline_dzieło,data_wyplaty } = req.body;
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
   console.log(`Creating civil contract in schema: ${schemaName}`);
@@ -2640,6 +2640,7 @@ app.post('/api/civil-contracts', verifyJWT, async (req, res) => {
         updated_at: new Date(),
         prawa_autorskie,
         deadline_dzieło: contract_type === 'umowa o dzieło' ? deadline_dzieło : null,  // Only for umowa o dzieło
+        data_wyplaty: data_wyplaty || null, // Add data_wyplaty to the insert
       }]);
 
     if (error) {
@@ -2656,7 +2657,7 @@ app.post('/api/civil-contracts', verifyJWT, async (req, res) => {
 
 app.put('/api/civil-contracts/:contractId', verifyJWT, async (req, res) => {
   const contractId = req.params.contractId;
-  const { gross_amount, contract_from_date, contract_to_date, additional_info, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie, deadline_dzieło } = req.body;
+  const { gross_amount, contract_from_date, contract_to_date, additional_info, task_description, hours_worked, pay_per_hour,contract_type,prawa_autorskie, deadline_dzieło,data_wyplaty } = req.body;
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -2678,6 +2679,7 @@ app.put('/api/civil-contracts/:contractId', verifyJWT, async (req, res) => {
         updated_at: new Date(),
         prawa_autorskie,
         deadline_dzieło: contract_type === 'umowa o dzieło' ? deadline_dzieło : null,  // Deadline only for umowa o dzieło
+        data_wyplaty: data_wyplaty || null, // Add data_wyplaty to the insert
       })
       .eq('id', contractId)
       .select(); // Ensure updated data is returned after update

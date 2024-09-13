@@ -40,6 +40,8 @@ function AddCivilContractForm() {
   ); // Default text for "Prawa Autorskie"
 
   const [deadlineDzieło, setDeadlineDzieło] = useState(''); // New state for "Dzieło zostanie wykonane w terminie do"
+  const [dataWyplaty, setDataWyplaty] = useState(''); // New state for "data_wyplaty"
+
 
   const { setIsInSetupProcess } = useSetup();
   const user = useRequireAuth();
@@ -105,6 +107,7 @@ function AddCivilContractForm() {
           setHoursWorked(contract.hours_worked);
           setPayPerHour(contract.pay_per_hour);
           setContractType(contract.contract_type);
+          setDataWyplaty(contract.data_wyplaty || '');
   
           // Set projectStartDate, projectEndDate, and deadline_dzieło only if contract type is "umowa o dzieło"
           if (contract.contract_type === 'umowa o dzieło') {
@@ -148,6 +151,7 @@ function AddCivilContractForm() {
       contract_type: contractType, // Add contract_type to the data
       prawa_autorskie: prawaAutorskie ? prawaAutorskieText : null, // Add prawa autorskie if applicable
       deadline_dzieło: contractType === 'umowa o dzieło' ? deadlineDzieło : null, // Add deadline_dzieło only if contract type is "umowa o dzieło"
+      data_wyplaty: dataWyplaty || null, // Add data_wyplaty to contract data
     };
   
     try {
@@ -184,12 +188,14 @@ if (savedContract) {
   setHoursWorked(savedContract.hours_worked);
   setPayPerHour(savedContract.pay_per_hour);
   setContractType(savedContract.contract_type);
+  setDataWyplaty(savedContract.data_wyplaty || '');
 
   // Set projectStartDate and projectEndDate if contract type is "umowa o dzieło"
   if (savedContract.contract_type === 'umowa o dzieło') {
     setProjectStartDate(savedContract.contract_from_date);
     setProjectEndDate(savedContract.contract_to_date);
     setDeadlineDzieło(savedContract.deadline_dzieło || '');  // Ensure it's updated in the state
+    
   }
 
   // Handle prawa_autorskie field
@@ -318,6 +324,16 @@ if (savedContract) {
         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
       />
     </div>
+    <div className="w-full px-2 mb-4">
+  <label className="block text-sm font-medium text-gray-700">Data Wypłaty - uzupełnij po dokonaniu wypłaty:</label>
+  <input
+    type="date"
+    value={dataWyplaty}
+    onChange={(e) => setDataWyplaty(e.target.value)}
+    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+  />
+</div>
+
               {/* Prawa Autorskie Checkbox */}
               <div className="w-full px-2 mb-4">
                   <label className="block text-sm font-medium text-gray-700">
@@ -365,6 +381,16 @@ if (savedContract) {
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
+                <div className="w-full px-2 mb-4">
+  <label className="block text-sm font-medium text-gray-700">Data Wypłaty - (uzupełnij po dokonaniu wypłaty):</label>
+  <input
+    type="date"
+    value={dataWyplaty}
+    onChange={(e) => setDataWyplaty(e.target.value)}
+    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+  />
+</div>
+
               </>
             )}
 
@@ -502,4 +528,4 @@ function numberToPolishWords(value) {
     return result.trim();
   }
 
-export default AddCivilContractForm;
+export default  AddCivilContractForm;
