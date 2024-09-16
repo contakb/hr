@@ -8,6 +8,8 @@ import axiosInstance from './axiosInstance';
 import { useRequireAuth } from './useRequireAuth';
 import Modal from './Modal'; // Import the Modal component
 import SalaryCalculator from './SalaryCalculator'; // Import the SalaryCalculator component
+import CivilContractCalculator from './CivilContractCalculator'; // Import the SalaryCalculator component
+
 
 function AddCivilContractForm() {
   const { employeeId, contractId } = useParams();
@@ -46,6 +48,14 @@ function AddCivilContractForm() {
   const { setIsInSetupProcess } = useSetup();
   const user = useRequireAuth();
   const location = useLocation();
+  
+  const openCalculator = () => {
+    setIsModalOpen(true);
+  };
+  
+  const closeCalculator = () => {
+    setIsModalOpen(false);
+  };
   
 
   const queryParams = new URLSearchParams(location.search);
@@ -279,6 +289,13 @@ if (savedContract) {
                 onChange={(e) => setGrossAmount(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               />
+              <button 
+    type="button" 
+    onClick={openCalculator} 
+    className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm"
+  >
+    Calculate Net Salary
+  </button>
             </div>
 
             <div className="w-full px-2 mb-4">
@@ -479,6 +496,15 @@ if (savedContract) {
           </div>
         </div>
       </Modal>
+       {/* Modal for salary calculator */}
+       <Modal isOpen={isModalOpen} onClose={closeCalculator} title="Net Salary Calculator">
+  <CivilContractCalculator 
+    grossAmount={grossAmount} 
+    prawaAutorskie={prawaAutorskie} 
+    onClose={closeCalculator} 
+    employeeId={employeeId}
+  />
+</Modal>
     </div>
   );
 }
@@ -527,5 +553,7 @@ function numberToPolishWords(value) {
     result += `złotych ${groszePart}`;
     return result.trim();
   }
+
+ 
 
 export default  AddCivilContractForm;

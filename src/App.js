@@ -48,6 +48,8 @@ import Konwerterxml from './Konwerterxml';
 import SalaryCalculator from './SalaryCalculator';
 import AddCivilContractForm from './AddCivilContractForm'; // Adjust the import path
 import UmowaCywilnoprawna from './UmowaCywilnoprawna'; // Import your new component
+import CivilContractCalculator from './CivilContractCalculator'; // Import your new component
+
 
 
 
