@@ -120,7 +120,7 @@ function AddCivilContractForm() {
           setDataWyplaty(contract.data_wyplaty || '');
   
           // Set projectStartDate, projectEndDate, and deadline_dzieło only if contract type is "umowa o dzieło"
-          if (contract.contract_type === 'umowa o dzieło') {
+          if (contract.contract_type === 'umowa_o_dzielo') {
             setProjectStartDate(contract.contract_from_date);
             setProjectEndDate(contract.contract_to_date);
             setDeadlineDzieło(contract.deadline_dzieło); // Set deadline_dzieło for umowa o dzieło
@@ -160,7 +160,7 @@ function AddCivilContractForm() {
       pay_per_hour: payPerHour,
       contract_type: contractType, // Add contract_type to the data
       prawa_autorskie: prawaAutorskie ? prawaAutorskieText : null, // Add prawa autorskie if applicable
-      deadline_dzieło: contractType === 'umowa o dzieło' ? deadlineDzieło : null, // Add deadline_dzieło only if contract type is "umowa o dzieło"
+      deadline_dzieło: contractType === 'umowa_o_dzielo' ? deadlineDzieło : null, // Add deadline_dzieło only if contract type is "umowa o dzieło"
       data_wyplaty: dataWyplaty || null, // Add data_wyplaty to contract data
     };
   
@@ -201,7 +201,7 @@ if (savedContract) {
   setDataWyplaty(savedContract.data_wyplaty || '');
 
   // Set projectStartDate and projectEndDate if contract type is "umowa o dzieło"
-  if (savedContract.contract_type === 'umowa o dzieło') {
+  if (savedContract.contract_type === 'umowa_o_dzielo') {
     setProjectStartDate(savedContract.contract_from_date);
     setProjectEndDate(savedContract.contract_to_date);
     setDeadlineDzieło(savedContract.deadline_dzieło || '');  // Ensure it's updated in the state
@@ -275,8 +275,8 @@ if (savedContract) {
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="" disabled hidden>wybierz typ umowy</option>
-                <option value="umowa o dzieło">Umowa o dzieło</option>
-                <option value="umowa zlecenie">Umowa zlecenie</option>
+                <option value="umowa_o_dzielo">Umowa o dzieło</option>
+                <option value="umowa_zlecenie">Umowa zlecenie</option>
               </select>
             </div>
 
@@ -306,7 +306,7 @@ if (savedContract) {
             </div>
 
             {/* Conditional Fields for Contract Type */}
-            {contractType === 'umowa o dzieło' ? (
+            {contractType === 'umowa_o_dzielo' ? (
               <>
                 <div className="w-full px-2 mb-4">
       <label className="block text-sm font-medium text-gray-700">
@@ -503,6 +503,7 @@ if (savedContract) {
     prawaAutorskie={prawaAutorskie} 
     onClose={closeCalculator} 
     employeeId={employeeId}
+    contractType={contractType}  // Pass contractType here
   />
 </Modal>
     </div>
