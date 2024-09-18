@@ -42,22 +42,36 @@ const CivilContractCalculator = ({ grossAmount, prawaAutorskie, employeeId, empl
   };
 
   // Fetch parameters (ulga) for the employee
+  // Fetch parameters (ulga) for the employee based on contract_type
   const fetchAllParameters = async (employeeId) => {
     try {
       const response = await axiosInstance.get(`/api/employee-params/${employeeId}`, {
         headers: {
           'Authorization': `Bearer ${user.access_token}`,
           'X-Schema-Name': user.schemaName,
-        }
+        },
       });
-      const params = response.data.parameters[0] || {};
-      const ulgaValue = params.ulga ?? 300; // Default to 300 if not provided
-      setUlga(ulgaValue);
+  
+      // Filter the parameters for the 'umowa_cywilnoprawna' contract type
+      const cywilnoprawnaParams = response.data.parameters.find(param => param.contract_type === 'umowa_cywilnoprawna');
+  
+      if (cywilnoprawnaParams) {
+        const ulgaValue = cywilnoprawnaParams.ulga ?? 300; // Default to 300 if not provided
+        setUlga(ulgaValue);
+  
+        
+      } else {
+        // No parameters for 'umowa_cywilnoprawna' found
+        setUlga(300); // Use default ulga if none found
+        alert('Brak parametrów dla umowa cywilnoprawna. Proszę dodać nowe w ustawieniach danych pracownika. Przyjęta została ulga 300 zł');
+      }
     } catch (error) {
       console.error(`Error fetching parameters for employee ${employeeId}:`, error);
       setUlga(300); // Use default if there's an error
     }
   };
+  
+
 
   const fetchEmployee = async (employeeId) => {
     try {
@@ -240,7 +254,7 @@ const CivilContractCalculator = ({ grossAmount, prawaAutorskie, employeeId, empl
 
   useEffect(() => {
     // Fetch parameters (ulga) for the employee when component mounts
-    fetchAllParameters(employeeId);
+    fetchAllParameters(employeeId, contractType);
     if (grossAmount) {
       handleRecalculate();
     }

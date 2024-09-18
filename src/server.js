@@ -1962,7 +1962,7 @@ app.put('/employees/:employeeId/update-params', verifyJWT, async (req, res) => {
   try {
     const updateResponse = await supabase
       .from('emp_var')
-      .update({ koszty, ulga, kod_ub: kodUb, valid_from: validFrom,contract_type })
+      .update({ koszty, ulga, kod_ub: kodUb, valid_from: validFrom, contract_type })
       .eq('employee_id', employeeId)
       .select(); // Chain a select() after update()
 
@@ -1988,20 +1988,20 @@ app.put('/employees/:employeeId/update-params', verifyJWT, async (req, res) => {
 
 app.get('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
   const employeeId = req.params.employeeId;
-
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
-    console.log(`Fetching employees from schema: ${schemaName}`);
+  console.log(`Fetching employees from schema: ${schemaName}`);
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-        db: { schema: schemaName } // set your custom schema here
-    });
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    db: { schema: schemaName } // set your custom schema here
+  });
 
   try {
+    // Add filtering by both employee_id and contract_type
     const { data, error } = await supabase
       .from('emp_var')  // Target the emp_var table
       .select('*')  // Select all columns or specify like 'id, koszty, ulga, kod_ub, valid_from'
-      .eq('employee_id', employeeId);  // Use the employee_id column to filter
+      .eq('employee_id', employeeId)  // Use the employee_id column to filter
 
     if (error) {
       console.error('Error fetching employee parameters:', error);
@@ -2013,7 +2013,7 @@ app.get('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
           parameters,
         });
       } else {
-        res.status(404).json({ error: 'Parameters not found for the given employee' });
+        res.status(404).json({ error: 'Parameters not found for the given employee and contract type' });
       }
     }
   } catch (error) {
@@ -2021,6 +2021,7 @@ app.get('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 app.put('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
   const { employeeId } = req.params; // get employee ID from URL
