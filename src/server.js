@@ -1898,7 +1898,7 @@ app.post('/employees/:employeeId/add-contract',verifyJWT, async (req, res) => {
 
 app.post('/employees/:employeeId/add-params',verifyJWT, async (req, res) => {
   const { employeeId } = req.params; // Retrieve the employeeId from the URL parameter
-  const { koszty, ulga, kodUb, validFrom } = req.body;
+  const { koszty, ulga, kodUb, validFrom, contract_type } = req.body;
 
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
@@ -1915,7 +1915,8 @@ app.post('/employees/:employeeId/add-params',verifyJWT, async (req, res) => {
       koszty,
       ulga,
       kod_ub: kodUb,
-      valid_from: validFrom
+      valid_from: validFrom,
+      contract_type,  // Include contract_type here
     };
 
     // Insert the employee parameter data into your 'emp_var' table using Supabase
@@ -1951,7 +1952,7 @@ app.post('/employees/:employeeId/add-params',verifyJWT, async (req, res) => {
 
 app.put('/employees/:employeeId/update-params', verifyJWT, async (req, res) => {
   const { employeeId } = req.params;
-  const { koszty, ulga, kodUb, validFrom } = req.body;
+  const { koszty, ulga, kodUb, validFrom, contract_type } = req.body;
   const schemaName = req.headers['x-schema-name'];
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -1961,7 +1962,7 @@ app.put('/employees/:employeeId/update-params', verifyJWT, async (req, res) => {
   try {
     const updateResponse = await supabase
       .from('emp_var')
-      .update({ koszty, ulga, kod_ub: kodUb, valid_from: validFrom })
+      .update({ koszty, ulga, kod_ub: kodUb, valid_from: validFrom,contract_type })
       .eq('employee_id', employeeId)
       .select(); // Chain a select() after update()
 
@@ -2023,7 +2024,7 @@ app.get('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
 
 app.put('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
   const { employeeId } = req.params; // get employee ID from URL
-  const { koszty, ulga, kod_ub, valid_from } = req.body; // get updated parameters from request body
+  const { koszty, ulga, kod_ub, valid_from, contract_type } = req.body; // get updated parameters from request body
   const schemaName = req.headers['x-schema-name']; // Get the schema name from the request headers
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -2033,7 +2034,7 @@ app.put('/api/employee-params/:employeeId', verifyJWT, async (req, res) => {
   try {
     const updateResponse = await supabase
       .from('emp_var')
-      .update({ koszty, ulga, kod_ub, valid_from })
+      .update({ koszty, ulga, kod_ub, valid_from, contract_type })
       .eq('employee_id', employeeId)
       .select(); // Chain a select() after update()
 

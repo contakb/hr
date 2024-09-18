@@ -79,7 +79,7 @@ const CivilContractCalculator = ({ grossAmount, prawaAutorskie, employeeId, empl
 
     // Social security contributions (umowa zlecenie)
     let emeryt_pr = 0, emeryt_ub = 0, rent_pr = 0, rent_ub = 0, chorobowe = 0, wypadkowe = 0, FP = 0, FGSP = 0, zdrowotne = 0;
-    let podstawa_zdrow = grossAmount;
+    let podstawa_zdrow = 0;
 
     // Determine contributions based on contract type and employment type
     if (contractType === 'umowa_o_dzielo') {
@@ -90,9 +90,10 @@ const CivilContractCalculator = ({ grossAmount, prawaAutorskie, employeeId, empl
         rent_pr = (grossAmount * 0.065).toFixed(2);
         rent_ub = (grossAmount * 0.015).toFixed(2);
         wypadkowe = (grossAmount * 0.0167).toFixed(2);
+        chorobowe = (grossAmount * 0.0245).toFixed(2);
         FP = (grossAmount * 0.0245).toFixed(2);
         FGSP = (grossAmount * 0.001).toFixed(2);
-        podstawa_zdrow = (grossAmount - emeryt_ub - rent_ub).toFixed(2); // Exclude chorobowe for umowa o dzieło
+        podstawa_zdrow = (grossAmount - emeryt_ub - rent_ub - chorobowe).toFixed(2); // Exclude chorobowe for umowa o dzieło
         zdrowotne = (podstawa_zdrow * 0.09).toFixed(2);
       } else {
         // No insurance for umowa o dzieło without employee status
@@ -161,10 +162,14 @@ const CivilContractCalculator = ({ grossAmount, prawaAutorskie, employeeId, empl
   } else if (employmentType === 'emeryt') {
     // Deduct only 11.26% (13.71% - 2.45%) when no chorobowe
     kosztyUzyskaniaValue = ((grossAmount - 0.1126 * grossAmount) * kosztyUzyskania).toFixed(2);
+  }  else if (employmentType === 'withoutInsurance') {
+    // No social security deduction, only koszty uzyskania (grossAmount * kosztyUzyskania)
+    kosztyUzyskaniaValue = (grossAmount * kosztyUzyskania).toFixed(2);
   } else {
     // Full social security deduction of 13.71%
     kosztyUzyskaniaValue = ((grossAmount - 0.1371 * grossAmount) * kosztyUzyskania).toFixed(2);
-  }
+  } 
+
     const podstawa_zaliczki = (grossAmount - kosztyUzyskaniaValue - emeryt_ub - rent_ub - chorobowe).toFixed(0);
 
     // Fetch employee age from their PESEL
@@ -191,7 +196,7 @@ const CivilContractCalculator = ({ grossAmount, prawaAutorskie, employeeId, empl
       : parseFloat(zdrowotne);
 
     // Final net amount after deductions
-    const netAmount = (parseFloat(podstawa_zdrow) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
+    const netAmount = ((grossAmount - emeryt_ub - rent_ub - chorobowe) - parseFloat(zdrowotne) - parseFloat(zaliczka)).toFixed(2);
 
     // Details for showing deductions
     const details = {

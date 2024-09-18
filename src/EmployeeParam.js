@@ -17,6 +17,7 @@ function EmployeeParam() {
   // New state variables for the employee parameters
   const [koszty, setKoszty] = useState('250');
   const [ulga, setUlga] = useState('');
+  const [contractType, setContractType] = useState('');
   const [kodUb, setKodUb] = useState('');
   const [validFrom, setValidFrom] = useState('');
   // Add a state to store the response data for the notification
@@ -41,6 +42,7 @@ const clearForm = () => {
   setUlga('');
   setKodUb('');
   setValidFrom('');
+  setContractType('');
   // Reset any other state variables or form fields as necessary
 };
 
@@ -110,6 +112,7 @@ useEffect(() => {
         setUlga(fetchedParams.ulga);
         setKodUb(fetchedParams.kod_ub);
         setValidFrom(fetchedParams.valid_from);
+        setContractType(fetchedParams.contract_type);
         setParamData(fetchedParams); // Store fetched data in state
       }
     } catch (error) {
@@ -150,7 +153,8 @@ const handleSubmit = async (event) => {
         koszty,
         ulga,
         kodUb,
-        validFrom
+        validFrom,
+        contract_type: contractType,  // Include contractType here
       }, {
         headers: {
           Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
@@ -167,7 +171,8 @@ const handleSubmit = async (event) => {
         koszty,
         ulga,
         kodUb,
-        validFrom
+        validFrom,
+        contract_type: contractType,  // Include contractType here
       }, {
         headers: {
           Authorization: `Bearer ${user.access_token}`, // Add the access token to the request
@@ -191,20 +196,31 @@ const handleSubmit = async (event) => {
 };
 
   
-  const constructKodUb = (isRetired, hasDisabilityBenefit, hasDisability) => {
-    let kodUb = '0110'; // The fixed part
-    // Determine the second part based on emerytura/renta
-    if (isRetired) {
-      kodUb += '1';
-    } else if (hasDisabilityBenefit) {
-      kodUb += '2';
-    } else {
-      kodUb += '0';
-    }
-    // Add the third part based on the degree of disability
-    kodUb += hasDisability;
-    return kodUb;
-  };
+const constructKodUb = (isRetired, hasDisabilityBenefit, hasDisability, contractType) => {
+  let kodUb = '';
+
+  // Determine the prefix based on contract type
+  if (contractType === 'umowa_o_prace') {
+    kodUb = '0110'; // Prefix for Umowa o Pracę
+  } else if (contractType === 'umowa_cywilnoprawna') {
+    kodUb = '0411'; // Prefix for Umowa Cywilnoprawna
+  }
+
+  // Add the second part based on emerytura/renta
+  if (isRetired) {
+    kodUb += '1'; // Add '1' if retired
+  } else if (hasDisabilityBenefit) {
+    kodUb += '2'; // Add '2' if receiving a disability benefit
+  } else {
+    kodUb += '0'; // Add '0' otherwise
+  }
+
+  // Add the third part based on the degree of disability
+  kodUb += hasDisability || '0'; // Ensure hasDisability is never undefined
+
+  return kodUb;
+};
+
   
 
   // Add handlers for the new input fields
@@ -212,6 +228,7 @@ const handleSubmit = async (event) => {
   const handleUlgaChange = (event) => setUlga(event.target.value);
   const handleKodUbChange = (event) => setKodUb(event.target.value);
   const handleValidFromChange = (event) => setValidFrom(event.target.value);
+
 
   const handleWorksOutsideHomeChange = (event) => {
     const answer = event.target.value === 'yes';
@@ -233,7 +250,7 @@ const handleSubmit = async (event) => {
   const handleDisabilityChange = (event) => {
     const disabilityDegree = event.target.value; // '0', '1', '2', '3'
     setHasDisability(disabilityDegree);
-    setKodUb(constructKodUb(hasPension, disabilityDegree));
+    setKodUb(constructKodUb(hasPension, disabilityDegree, contractType));
   };
   const handleRetirementChange = (event) => {
     const selectedValue = event.target.value;
@@ -247,7 +264,7 @@ const handleSubmit = async (event) => {
     }
   
     // Update the kod_ub and ulga values
-    setKodUb(constructKodUb(isRetirementSelected, false, hasDisability));
+    setKodUb(constructKodUb(isRetirementSelected, false, hasDisability,contractType));
     setUlga(calculateUlga(isRetirementSelected, false));
   };
   
@@ -263,7 +280,7 @@ const handleSubmit = async (event) => {
     }
   
     // Update the kod_ub and ulga values
-    setKodUb(constructKodUb(false, isBenefitSelected, hasDisability));
+    setKodUb(constructKodUb(false, isBenefitSelected, hasDisability,contractType));
     setUlga(calculateUlga(false, isBenefitSelected));
   };
   
@@ -293,8 +310,8 @@ const handleSubmit = async (event) => {
   
  // Call this whenever hasPension or hasDisability changes
  useEffect(() => {
-    setKodUb(constructKodUb(isRetired, hasDisabilityBenefit, hasDisability));
-  }, [isRetired, hasDisabilityBenefit, hasDisability]);
+    setKodUb(constructKodUb(isRetired, hasDisabilityBenefit, hasDisability,contractType));
+  }, [isRetired, hasDisabilityBenefit, hasDisability, contractType]);
   
    
 
@@ -306,6 +323,21 @@ const handleSubmit = async (event) => {
       <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
       <h2 className="text-2xl font-semibold mb-6">{hasParams ? 'Update Employee Parameters' : 'Add Employee Parameters'} dla { employeeId }</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+      
+<label className="block text-sm font-medium text-gray-700">Typ umowy:</label>
+<select 
+  value={contractType} 
+  onChange={(e) => setContractType(e.target.value)} 
+  
+  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+>
+  <option value="umowa_o_prace">Umowa o pracę</option>
+  <option value="umowa_cywilnoprawna">Umowa cywilnoprawna</option>
+</select>
+      {/* Fields for Umowa o Pracę */}
+  {contractType === 'umowa_o_prace' && (
+    <>
+      {/* Original fields for Umowa o Pracę */}
       <div className="flex items-center space-x-4">
       <label className="block text-sm font-medium text-gray-700">Czy pracownik pracuje poza miejscem zamieszkania?</label>
       <div className="flex items-center space-x-2">
@@ -422,6 +454,98 @@ const handleSubmit = async (event) => {
 
         <label className="block text-sm font-medium text-gray-700">Valid From:</label>
         <input type="date" value={validFrom} onChange={handleValidFromChange} />
+
+        </>
+  )}
+
+  {/* Fields for Umowa Cywilnoprawna */}
+  {contractType === 'umowa_cywilnoprawna' && (
+    <>
+      {/* New fields specific to Umowa Cywilnoprawna */}
+       {/* Ulga Field for Umowa Cywilnoprawna */}
+       <label className="block text-sm font-medium text-gray-700">Ulga podatkowa:</label>
+      <select 
+        value={ulga} 
+        onChange={(e) => setUlga(e.target.value)} 
+        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="brak">Brak</option>
+        <option value="300">Pojedyncza (300 zł)</option>
+        <option value="600">Podwójna (600 zł)</option>
+        <option value="150">½ ulgi (150 zł)</option>
+        <option value="100">⅓ ulgi (100 zł)</option>
+      </select>
+      <div>
+    <label class="block text-sm font-medium text-gray-700">Czy pracownik jest emerytem?</label>
+    <div class="mt-1 flex space-x-2">
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="retirementStatus"
+          value="yes"
+          checked={isRetired}
+          onChange={handleRetirementChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Tak</span>
+      </label>
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="retirementStatus"
+          value="no"
+          checked={!isRetired}
+          onChange={handleRetirementChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Nie</span>
+      </label>
+    </div>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Czy pracownik otrzymuje rentę?</label>
+    <div class="mt-1 flex space-x-2">
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="benefitStatus"
+          value="yes"
+          checked={hasDisabilityBenefit}
+          onChange={handleDisabilityBenefitChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Tak</span>
+      </label>
+      <label class="flex items-center">
+        <input
+          type="radio"
+          name="benefitStatus"
+          value="no"
+          checked={!hasDisabilityBenefit}
+          onChange={handleDisabilityBenefitChange}
+          class="form-radio"
+        /> 
+        <span class="ml-2">Nie</span>
+      </label>
+    </div>
+  </div>
+
+  {/* Question for the degree of disability */}
+<label className="block text-sm font-medium text-gray-700">Stopień niepełnosprawności:</label>
+<select value={hasDisability} onChange={handleDisabilityChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+  <option value="0">Brak</option>
+  <option value="1">Lekki</option>
+  <option value="2">Umiarkowany</option>
+  <option value="3">Znaczny</option>
+</select>
+
+      <label className="block text-sm font-medium text-gray-700">Kod ubezpieczenia:</label>
+        <input type="text" value={kodUb} onChange={handleKodUbChange} className="mt-1 block border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+
+        <label className="block text-sm font-medium text-gray-700">Valid From:</label>
+        <input type="date" value={validFrom} onChange={handleValidFromChange} />
+    </>
+  )}
         <div className="flex  items-center mt-5">
         <button type="submit" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">{hasParams ? 'Update Parameters' : 'Add Parameters'}</button>
         <button onClick={clearForm} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
