@@ -10,7 +10,7 @@ import { useUser } from './UserContext'; // Ensure correct path
 import CalendarPage from './CalendarPage'; // Import the CalendarPage component
 import AdminBreaksCalendar from './AdminBreaksCalendar';
 // In your React component, e.g., AccountDetails.js
-
+// In your React component, e.g., AccountDetails.js
 
 function AccountDetails() {
   const [accountDetails, setAccountDetails] = useState(null);
