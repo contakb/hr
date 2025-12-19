@@ -45,6 +45,9 @@ const [editHolidayBaseMode, setEditHolidayBaseMode] = useState(false);
 const [activeTab, setActiveTab] = useState('details');
 const [civilContractsVisible, setCivilContractsVisible] = useState(false); // To toggle `umowa cywilnoprawna`
 const [civilContracts, setCivilContracts] = useState([]); // State for civil contracts
+const [editingParamId, setEditingParamId] = useState(null); // Track the currently edited parameter
+const [editingValues, setEditingValues] = useState({ koszty: '', ulga: '', kod_ub: '', valid_from: '' }); // Track form input values for inline editing
+
 
 
 
@@ -132,6 +135,17 @@ const [civilContracts, setCivilContracts] = useState([]); // State for civil con
     const toggleCalendar = () => {
       setShowCalendar(!showCalendar); // Toggle calendar visibility
     };
+
+    const toggleInlineEdit = (param) => {
+      setEditingParamId(param.id); // Set the parameter being edited
+      setEditingValues({ 
+        koszty: param.koszty, 
+        ulga: param.ulga, 
+        kod_ub: param.kod_ub, 
+        valid_from: param.valid_from 
+      }); // Initialize the form values
+    };
+    
     
     
 
@@ -263,27 +277,20 @@ const [civilContracts, setCivilContracts] = useState([]); // State for civil con
         try {
           const response = await axiosInstance.get(`http://localhost:3001/api/employee-params/${id}`, {
             headers: {
-              'Authorization': `Bearer ${user.access_token}`, // Use the access token
-              'X-Schema-Name': user.schemaName, // Send the schema name as a header
-            }
+              'Authorization': `Bearer ${user.access_token}`,
+              'X-Schema-Name': user.schemaName,
+            },
           });
-          const hasParameters = response.data.parameters.length > 0;
-          setParameters(hasParameters ? response.data.parameters[0] : null);
-    
-          // Use hasParameters to decide which button to show
-          if (hasParameters) {
-            // Logic for when parameters exist
-          } else {
-            // Logic for when parameters don't exist
-          }
-    
+          console.log('Fetched parameters:', response.data.parameters); // Debug log
+          setParameters(response.data.parameters || []);
         } catch (error) {
           console.error('Error fetching parameters:', error);
-          setParameters(null);
+          setParameters([]);
         }
       }
       setParametersVisible(!parametersVisible);
     };
+    
     
     // Toggle detail editor for an employee
     const toggleDetailEditor = (employeeId) => {
@@ -669,69 +676,119 @@ const [civilContracts, setCivilContracts] = useState([]); // State for civil con
           </div>
           </div>
           )}
+{parametersVisible && (
+  <div className="border-t pt-4">
+    <h3 className="text-lg font-semibold">Parametry ZUS i Podatkowe:</h3>
+    {updateMessage && <div className="update-message">{updateMessage}</div>}
+
+    {Array.isArray(parameters) && parameters.length > 0 ? (
+      parameters.map((param) => (
+        <div key={param.id} className="mb-4 border-b pb-4">
+          {editingParamId === param.id ? (
+            // Edit Mode: Display input fields for editing
+            <form onSubmit={(e) => handleUpdateParameters(e, param.id)}>
+              <label htmlFor="koszty">Koszty:</label>
+              <input 
+                type="text" 
+                name="koszty" 
+                value={editingValues.koszty} 
+                onChange={(e) => setEditingValues({ ...editingValues, koszty: e.target.value })} 
+                placeholder="koszty" 
+                className="form-input" 
+              />
+
+              <label htmlFor="ulga">Ulga podatkowa:</label>
+              <input 
+                type="text" 
+                name="ulga" 
+                value={editingValues.ulga} 
+                onChange={(e) => setEditingValues({ ...editingValues, ulga: e.target.value })} 
+                placeholder="ulga" 
+                className="form-input" 
+              />
+
+              <label htmlFor="kod_ub">Kod ubezpieczenia:</label>
+              <input 
+                type="text" 
+                name="kod_ub" 
+                value={editingValues.kod_ub} 
+                onChange={(e) => setEditingValues({ ...editingValues, kod_ub: e.target.value })} 
+                placeholder="kod_ub" 
+                className="form-input" 
+              />
+
+              <label htmlFor="valid_from">Dane ważne od:</label>
+              <input 
+                type="date" 
+                name="valid_from" 
+                value={editingValues.valid_from} 
+                onChange={(e) => setEditingValues({ ...editingValues, valid_from: e.target.value })} 
+                placeholder="valid_from" 
+                className="form-input" 
+              />
+
+              <div className="flex gap-2 mb-2">
+                <button
+                  className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+                  type="submit"
+                >
+                  Zapisz zmiany
+                </button>
+                <button
+                  className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+                  onClick={() => setEditingParamId(null)}
+                >
+                  Anuluj
+                </button>
+              </div>
+            </form>
+          ) : (
+            // View Mode: Display static data
+            <div>
+              <p><strong>Koszty:</strong> {param.koszty}</p>
+              <p><strong>Ulga:</strong> {param.ulga}</p>
+              <p><strong>Kod UB:</strong> {param.kod_ub}</p>
+              <p><strong>Dane ważne od:</strong> {new Date(param.valid_from).toLocaleDateString()}</p>
+              <p><strong>Typ umowy:</strong> {param.contract_type === 'umowa_o_prace' ? 'Umowa o pracę' : 'Umowa cywilnoprawna'}</p>
+
+              <div className="flex gap-2 mb-2">
+                <button
+                  className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+                  onClick={() => toggleInlineEdit(param)}
+                >
+                  Szybka edycja
+                </button>
+                <button
+            className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
+            onClick={() => handleEditParameters(param)}
+          >
+            Edytuj Parametry
+          </button>
+
+          {/* Add more parameter details as needed */}
           
-            {parametersVisible && (
-              <div className="border-t pt-4">
-    <div>
-      <h3 className="text-lg font-semibold">Parametetry podatkowe i ZUS</h3>
-      {updateMessage && <div className="update-message">{updateMessage}</div>}
-      {editParametersMode ? (
-        <form onSubmit={handleUpdateParameters}>
-          <label htmlFor="koszty">Koszty:</label>
-          <input type="text" name="koszty" defaultValue={parameters.koszty} placeholder="koszty" className="form-input"/>
-
-          <label htmlFor="ulga">Ulga podatkowa:</label>
-          <input type="text" name="ulga" defaultValue={parameters.ulga} placeholder="ulga" className="form-input"/>
-
-          <label htmlFor="kod_ub">Kod ubezpieczenia:</label>
-          <input type="text" name="kod_ub" defaultValue={parameters.kod_ub} placeholder="kod_ub" className="form-input" />
-
-          <label htmlFor="valid_from">Dane ważne od:</label>
-          <input type="date" name="valid_from" defaultValue={parameters.valid_from} placeholder="valid_from" className="form-input"/>
-
-          <div className="flex gap-2 mb-2">
-          <button
-          className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
-          type="submit">Zapisz zmiany</button>
-          <button
-          className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
-          onClick={toggleEditParametersMode}>Anuluj</button>
-          </div>
-        </form>
-      ) : parameters ? (
-        <div>
-          <div className="mb-4">
-          <p><strong>Koszty:</strong> {parameters.koszty}</p>
-          <p><strong>Ulga:</strong> {parameters.ulga}</p>
-          <p><strong>Kod UB:</strong> {parameters.kod_ub}</p>
-          <p><strong>Dane ważne od:</strong> {parameters.valid_from && new Date(parameters.valid_from).toLocaleDateString()}</p>
-          </div>
-          <div className="flex gap-2 mb-2">
-          <button
-          className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
-          onClick={toggleEditParametersMode}>Szybka edycja</button>
-          <button
-          className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
-          onClick={handleEditParameters}>
-    {parameters ? 'Edytuj paramatry' : 'Dodaj parametry'}
-  </button>
-  </div>
-        </div>
-      ) : (
-        <div>
-          <div className="mb-4">
-          <p>Brak parametrów ZUS i podatkowych, dodaj proszę.</p>
-          </div>
-          <div className="flex gap-2 mb-2">
-          <button
-          className="bg-yellow-500 hover:bg-yellow-700 text-white font-medium py-1 px-2 rounded text-xs"
-          onClick={handleAddParameters}>Dodaj parametry</button>
-          </div>
-        </div>
-      )}
-            </div>
+          {/* Option to add another set of parameters */}
+          
+              </div>
             </div>
           )}
+        </div>
+      ))
+    ) : (
+      <div>
+        <p>Brak parametrów ZUS i podatkowych, dodaj proszę.</p>
+        <button
+            className="bg-green-500 hover:bg-green-700 text-white font-medium py-1 px-2 rounded text-xs"
+            onClick={handleAddParameters}
+          >
+            Dodaj Parametry
+          </button>
+      </div>
+    )}
+  </div>
+)}
+
+
         </div>
       )}
 {holidayBaseVisible && (
